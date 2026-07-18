@@ -33,6 +33,7 @@ Read the relevant documents before changing code.
 | `docs/design/UI_UX_DESIGN.md` | Layout, copy, components, responsive behavior, and accessibility |
 | `docs/engineering/ARCHITECTURE.md` | Module boundaries, deployment, security, caching, and scaling |
 | `docs/engineering/DATABASE.md` | Tables, constraints, indexes, transactions, and migrations |
+| `docs/engineering/ERD.md` | Entities, relationships, cardinalities, and data-model invariants |
 | `docs/engineering/API.md` | Queries, commands, DTOs, validation, errors, and idempotency |
 | `docs/delivery/ROADMAP.md` | Sequencing, feature freeze, risks, and release gates |
 
@@ -520,7 +521,7 @@ Update documentation when code changes these concerns:
 | Product scope or priority | `docs/product/PRD.md`, `docs/delivery/ROADMAP.md`, then affected specs |
 | Acceptance criteria | `docs/product/REQUIREMENTS.md` and relevant test references |
 | Eligibility/invariant/state | `docs/product/BUSINESS_RULES.md`, `docs/engineering/DATABASE.md`, `docs/engineering/API.md`, flows/UI as applicable |
-| Schema/index/transaction | `docs/engineering/DATABASE.md`, `docs/engineering/ARCHITECTURE.md`, `docs/engineering/API.md` |
+| Schema/entity relationship/index/transaction | `docs/engineering/DATABASE.md`, `docs/engineering/ERD.md`, `docs/engineering/ARCHITECTURE.md`, `docs/engineering/API.md` |
 | Query/command/error | `docs/engineering/API.md`, `docs/product/USER_FLOW.md`, affected requirements |
 | Route/screen/copy | `docs/product/USER_FLOW.md`, `docs/design/UI_UX_DESIGN.md` |
 | Architecture/provider/deployment | `docs/engineering/ARCHITECTURE.md`, README/environment docs |

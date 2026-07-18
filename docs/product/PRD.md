@@ -20,6 +20,7 @@ This document defines Rintara's product direction, MVP scope, target users, succ
 | `docs/design/UI_UX_DESIGN.md` | Information architecture, screen behavior, accessibility, and content rules |
 | `docs/engineering/ARCHITECTURE.md` | System boundaries, deployment, security, and scaling strategy |
 | `docs/engineering/DATABASE.md` | PostgreSQL schema, constraints, indexes, and transaction design |
+| `docs/engineering/ERD.md` | Canonical entities, relationships, cardinalities, and data-model invariants |
 | `docs/engineering/API.md` | Server-side application contracts, authorization, inputs, and errors |
 | `docs/delivery/ROADMAP.md` | Delivery order, release gates, and post-MVP sequencing |
 | `AGENTS.md` | Repository instructions for AI coding agents and contributors |
