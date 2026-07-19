@@ -111,6 +111,13 @@ Rules:
 
 ADR-012 records Supabase Auth as the accepted provider. Rintara role, account status, ownership, and relationship authorization remain server-owned domain data.
 
+Implementation locations:
+
+- Supabase browser/server clients: `lib/supabase/`
+- Next.js session-refresh boundary: `proxy.ts`
+- Verified identity and Rintara context: `server/auth/identity.ts`
+- Role, active-account, ownership, and party policies: `server/auth/`
+
 ## 7. Authorization
 
 Each private operation checks:

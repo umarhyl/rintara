@@ -251,7 +251,7 @@ Use PostgreSQL query plans for critical discovery, applicant, proof, credit, not
 
 ## 11. Script Contract
 
-The implementation repository should expose or document equivalents for:
+The repository exposes these Bun scripts:
 
 ```text
 test
@@ -263,6 +263,8 @@ build
 ```
 
 CI must use the repository lockfile and declared runtime version. Concrete package-manager commands belong in the root README after the implementation repository establishes them.
+
+Run unit tests with `bun run test` and PostgreSQL integration tests with `bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL` and `RINTARA_ENV=test`; they skip rather than fall back to a development or production database when that URL is absent.
 
 ## 12. CI Release Gates
 

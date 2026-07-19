@@ -412,6 +412,7 @@ Authentication provider callback routes follow provider documentation and are no
 | Code | Meaning | Typical HTTP mapping if applicable |
 | --- | --- | ---: |
 | `UNAUTHENTICATED` | No valid session | 401 |
+| `ONBOARDING_REQUIRED` | Valid Supabase session exists but no Rintara account/profile has been completed | 409 |
 | `ACCOUNT_INACTIVE` | Suspended or deleted account | 403 |
 | `FORBIDDEN` | Role/ownership/relationship denied | 403 |
 | `NOT_FOUND` | Resource absent or intentionally hidden | 404 |

@@ -70,9 +70,9 @@ Start with [the documentation index](./docs/README.md).
 
 Application directories may follow the exact module structure documented in `docs/engineering/ARCHITECTURE.md`. Do not create empty application directories only to match this example.
 
-## Development Script Contract
+## Development Commands
 
-Use the package manager selected by the repository lockfile. The implementation repository should expose these scripts or document their approved equivalents:
+Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
 
 | Script | Purpose |
 | --- | --- |
@@ -86,12 +86,12 @@ Use the package manager selected by the repository lockfile. The implementation 
 | `db:migrate` | Apply committed migrations |
 | `db:seed` | Load synthetic development/demo data |
 
-Do not invent commands in deployment instructions. Update this table when the actual repository scripts are established.
+Run them with `bun run <script>`. Database schema lives under `server/db/schema/`, committed migrations live under `drizzle/`, and database operations enforce the environment guards documented in `.env.example`.
 
 ## Setup Checklist
 
-1. Install the runtime and package manager versions declared by the repository.
-2. Install dependencies using the existing lockfile.
+1. Install the runtime and Bun version declared by the repository.
+2. Install dependencies with `bun install --frozen-lockfile`.
 3. Create local environment configuration from the committed example file.
 4. Provision an isolated development PostgreSQL database.
 5. Run committed migrations.
