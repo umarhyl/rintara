@@ -83,6 +83,7 @@ Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
 | `test` | Run fast unit/domain tests |
 | `test:integration` | Run tests against isolated PostgreSQL |
 | `test:e2e` | Run Playwright golden-path tests |
+| `db:check` | Validate committed Drizzle migration consistency |
 | `db:migrate` | Apply committed migrations |
 | `db:seed` | Load synthetic development/demo data |
 
@@ -100,6 +101,19 @@ Run them with `bun run <script>`. Database schema lives under `server/db/schema/
 8. Run unit and integration tests before opening a pull request.
 
 Secret values never belong in documentation or source control. Required variable names, provider callbacks, and approved commands belong in `.env.example` and deployment documentation without real values.
+
+## Continuous Integration
+
+GitHub Actions runs two required jobs for pushes and pull requests targeting
+`dev` or `main`:
+
+- `Quality`: frozen dependency install, lint, typecheck, unit tests, Drizzle
+  migration check, and production build.
+- `Integration`: PostgreSQL integration tests against a disposable PostgreSQL
+  16 service container.
+
+The integration job uses synthetic test-only credentials declared in the
+workflow. It does not receive Supabase or production database credentials.
 
 ## MVP Scope Guard
 

@@ -266,6 +266,12 @@ CI must use the repository lockfile and declared runtime version. Concrete packa
 
 Run unit tests with `bun run test` and PostgreSQL integration tests with `bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL` and `RINTARA_ENV=test`; they skip rather than fall back to a development or production database when that URL is absent.
 
+Pull requests and pushes targeting `dev` or `main` run `.github/workflows/ci.yml`.
+The `Quality` job performs a frozen Bun install, lint, typecheck, unit tests,
+`bun run db:check`, and a production build. The separate `Integration` job uses
+a disposable PostgreSQL 16 service container with synthetic credentials and
+does not receive development or production database URLs.
+
 ## 12. CI Release Gates
 
 ### Pull request
