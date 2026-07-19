@@ -6,7 +6,7 @@ import {
   Send,
 } from "lucide-react";
 import { JobCard } from "@/components/rintara/job-card";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { demoApplications, demoJobs } from "@/lib/demo-data";
 import { requireDashboardPageRole } from "@/server/auth/page-access";

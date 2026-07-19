@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Clock3, FileCheck2, ShieldCheck, TicketCheck } from "lucide-react";
 
 import { ConfirmAction } from "@/components/rintara/confirm-action";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";

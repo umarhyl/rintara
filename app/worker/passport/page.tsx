@@ -1,5 +1,5 @@
 import { BadgeCheck, FileCheck2, ShieldCheck } from "lucide-react";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { demoProofs as proofs } from "@/lib/demo-data";
 import { requireDashboardPageRole } from "@/server/auth/page-access";

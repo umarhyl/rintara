@@ -1,5 +1,5 @@
-import { AuthShell } from "@/components/rintara/auth-shell";
-import { RoleSelection } from "@/components/rintara/role-selection";
+import { AuthShell } from "@/features/auth/components/auth-shell";
+import { RoleSelection } from "@/features/onboarding/components/role-selection";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
 export const metadata = { title: "Pilih peran" };

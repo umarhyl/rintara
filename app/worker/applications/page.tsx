@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Clock3, FileText, Handshake } from "lucide-react";
 import { EmptyState } from "@/components/rintara/empty-state";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

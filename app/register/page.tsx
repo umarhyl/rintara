@@ -1,6 +1,6 @@
-import { AuthRouteSwitch } from "@/components/rintara/auth-route-switch";
-import { AuthShell } from "@/components/rintara/auth-shell";
-import { RegisterForm } from "@/components/rintara/register-form";
+import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
+import { AuthShell } from "@/features/auth/components/auth-shell";
+import { RegisterForm } from "@/features/auth/components/register-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
 export const metadata = { title: "Buat akun" };

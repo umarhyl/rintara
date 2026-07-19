@@ -1,5 +1,5 @@
 import { BookOpenCheck, CheckCircle2, CircleDashed, Plus } from "lucide-react";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

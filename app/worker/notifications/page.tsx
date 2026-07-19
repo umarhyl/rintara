@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BellRing, CheckCheck } from "lucide-react";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { demoNotifications as notifications } from "@/lib/demo-data";
 import { requireDashboardPageRole } from "@/server/auth/page-access";

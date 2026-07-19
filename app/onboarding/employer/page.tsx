@@ -1,5 +1,5 @@
-import { AuthShell } from "@/components/rintara/auth-shell";
-import { EmployerOnboardingForm } from "@/components/rintara/employer-onboarding-form";
+import { AuthShell } from "@/features/auth/components/auth-shell";
+import { EmployerOnboardingForm } from "@/features/onboarding/components/employer-onboarding-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
 export const dynamic = "force-dynamic";

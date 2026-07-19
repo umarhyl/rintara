@@ -106,33 +106,30 @@ PostgreSQL owns durable data, referential integrity, uniqueness, check constrain
 
 Application validation improves error quality; it does not replace database constraints.
 
-## 5. Recommended Repository Boundaries
+## 5. Repository Boundaries
 
-Adapt names only when an existing repository convention is already stronger.
+Rintara uses the Next.js App Router with application directories at the
+repository root. The optional `src/` wrapper is intentionally not used. Route
+entry points stay in `app/`; there is no application-level `App.tsx` in the
+App Router convention.
 
 ```text
-src/
-  app/                    # routes, layouts, pages, loading/error boundaries
-  components/             # shared presentational components
-  features/
-    auth/
-    profiles/
-    jobs/
-    applications/
-    agreements/
-    work-sessions/
-    passport/
-    credits/
-    reports/
-    admin/
-  server/
-    auth/                  # session and authorization helpers
-    db/                    # client, schema, migrations, query helpers
-    domain/                # commands, policies, transactions
-    queries/               # authorized read models and DTO projections
-    validation/            # shared server schemas
-    observability/         # safe logs and request correlation
-  lib/                     # framework-neutral utilities
+app/                      # routes, layouts, pages, loading/error boundaries
+components/
+  ui/                     # reusable presentation primitives
+  rintara/                # shared cross-feature product presentation
+features/
+  auth/                   # authentication presentation and client state
+  onboarding/             # worker/employer onboarding presentation
+  dashboard/              # shared role-dashboard presentation
+server/
+  auth/                   # session and authorization helpers
+  db/                     # client, schema, migrations, query helpers
+  domain/                 # commands, policies, transactions
+  queries/                # authorized read models and DTO projections
+  validation/             # shared server schemas
+  observability/          # safe logs and request correlation
+lib/                      # framework-neutral utilities
 tests/
   unit/
   integration/
@@ -142,6 +139,9 @@ tests/
 Rules:
 
 - Server-only modules must use the repository's server-only guard.
+- Route modules should remain thin and compose feature or shared components.
+- Feature-specific presentation belongs under `features/<feature>`; only
+  genuinely cross-feature presentation belongs under `components/`.
 - React components never import database schema or client instances.
 - Domain commands do not import React or route modules.
 - Features may share domain types through explicit public modules, not deep cross-feature imports.

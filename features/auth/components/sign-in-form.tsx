@@ -4,11 +4,11 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CircleAlert, LoaderCircle, Mail } from "lucide-react";
 import { submitSignIn } from "@/app/auth/actions";
-import { AuthPasswordField } from "@/components/rintara/auth-password-field";
+import { AuthPasswordField } from "@/features/auth/components/auth-password-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { primePublicAuthState } from "@/components/rintara/use-public-auth-state";
+import { primePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 export function SignInForm({
   initialErrorMessage = null,

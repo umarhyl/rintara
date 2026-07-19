@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { ConfirmAction } from "@/components/rintara/confirm-action";
 import { DetailList } from "@/components/rintara/detail-list";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { ReportProblem } from "@/components/rintara/report-problem";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
