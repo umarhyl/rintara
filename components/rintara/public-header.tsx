@@ -15,7 +15,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { usePublicAuthState } from "@/components/rintara/use-public-auth-state";
+import { usePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 const links = [
   { href: "/jobs", label: "Cari kerja" },

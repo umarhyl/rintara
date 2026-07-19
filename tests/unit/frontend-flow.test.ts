@@ -56,7 +56,7 @@ describe("frontend flow surface", () => {
       "components/rintara/public-shell.tsx",
     ).text();
     const dashboardShell = await Bun.file(
-      "components/rintara/dashboard-shell.tsx",
+      "features/dashboard/components/dashboard-shell.tsx",
     ).text();
 
     expect(css).toContain("prefers-reduced-motion: reduce");
@@ -90,7 +90,11 @@ describe("frontend flow surface", () => {
       "selama MVP",
     ];
 
-    for (const path of [...sourceFiles("app"), ...sourceFiles("components")]) {
+    for (const path of [
+      ...sourceFiles("app"),
+      ...sourceFiles("components"),
+      ...sourceFiles("features"),
+    ]) {
       const source = readFileSync(path, "utf8");
       for (const phrase of forbiddenPhrases) {
         expect(source, `${path} contains \"${phrase}\"`).not.toContain(phrase);
@@ -168,9 +172,9 @@ describe("frontend flow surface", () => {
   });
 
   test("avoids speculative loading of alternate authentication screens", async () => {
-    const shell = await Bun.file("components/rintara/auth-shell.tsx").text();
+    const shell = await Bun.file("features/auth/components/auth-shell.tsx").text();
     const switcher = await Bun.file(
-      "components/rintara/auth-route-switch.tsx",
+      "features/auth/components/auth-route-switch.tsx",
     ).text();
     const header = await Bun.file(
       "components/rintara/public-header.tsx",
@@ -185,14 +189,14 @@ describe("frontend flow surface", () => {
 
   test("preserves the originating job across authentication UI states", async () => {
     const register = await Bun.file(
-      "components/rintara/register-form.tsx",
+      "features/auth/components/register-form.tsx",
     ).text();
     const applyAction = await Bun.file(
       "components/rintara/job-apply-auth-action.tsx",
     ).text();
     const jobDetail = await Bun.file("app/jobs/[id]/page.tsx").text();
     const authState = await Bun.file(
-      "components/rintara/use-public-auth-state.ts",
+      "features/auth/use-public-auth-state.ts",
     ).text();
     const authStatus = await Bun.file("app/auth/status/route.ts").text();
 
@@ -250,11 +254,11 @@ describe("frontend flow surface", () => {
   });
 
   test("keeps the documented registration stages and profile fields visible", async () => {
-    const shell = await Bun.file("components/rintara/auth-shell.tsx").text();
+    const shell = await Bun.file("features/auth/components/auth-shell.tsx").text();
     const workerPage = await Bun.file("app/onboarding/worker/page.tsx").text();
     const employerPage = await Bun.file("app/onboarding/employer/page.tsx").text();
-    const worker = await Bun.file("components/rintara/worker-onboarding-form.tsx").text();
-    const employer = await Bun.file("components/rintara/employer-onboarding-form.tsx").text();
+    const worker = await Bun.file("features/onboarding/components/worker-onboarding-form.tsx").text();
+    const employer = await Bun.file("features/onboarding/components/employer-onboarding-form.tsx").text();
 
     expect(shell).toContain('["Akun", "Peran", "Profil"]');
     expect(shell).toContain("Kesempatan");
@@ -274,10 +278,10 @@ describe("frontend flow surface", () => {
 
   test("prevents same-tick duplicate submissions without clearing valid input", async () => {
     const guardedForms = [
-      "components/rintara/sign-in-form.tsx",
-      "components/rintara/register-form.tsx",
-      "components/rintara/worker-onboarding-form.tsx",
-      "components/rintara/employer-onboarding-form.tsx",
+      "features/auth/components/sign-in-form.tsx",
+      "features/auth/components/register-form.tsx",
+      "features/onboarding/components/worker-onboarding-form.tsx",
+      "features/onboarding/components/employer-onboarding-form.tsx",
     ];
 
     for (const path of guardedForms) {
@@ -289,7 +293,7 @@ describe("frontend flow surface", () => {
     }
 
     const dashboardShell = await Bun.file(
-      "components/rintara/dashboard-shell.tsx",
+      "features/dashboard/components/dashboard-shell.tsx",
     ).text();
     expect(dashboardShell).toContain("signingOutRef");
     expect(dashboardShell).toContain("if (signingOutRef.current) return");
@@ -299,10 +303,10 @@ describe("frontend flow surface", () => {
 
   test("keeps role selection, category grouping, and shared controls accessible", async () => {
     const roleSelection = await Bun.file(
-      "components/rintara/role-selection.tsx",
+      "features/onboarding/components/role-selection.tsx",
     ).text();
     const workerForm = await Bun.file(
-      "components/rintara/worker-onboarding-form.tsx",
+      "features/onboarding/components/worker-onboarding-form.tsx",
     ).text();
     const button = await Bun.file("components/ui/button.tsx").text();
     const input = await Bun.file("components/ui/input.tsx").text();

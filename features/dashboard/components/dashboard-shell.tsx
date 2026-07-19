@@ -37,7 +37,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { primePublicAuthState } from "@/components/rintara/use-public-auth-state";
+import { primePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 type Role = "worker" | "employer" | "admin";
 

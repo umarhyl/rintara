@@ -5,7 +5,7 @@ import {
   TicketCheck,
   UsersRound,
 } from "lucide-react";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 

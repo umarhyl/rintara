@@ -1,4 +1,4 @@
-import { DashboardShell } from "@/components/rintara/dashboard-shell";
+import { DashboardShell } from "@/features/dashboard/components/dashboard-shell";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 
 export const dynamic = "force-dynamic";

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Eye, Info, LockKeyhole, ShieldCheck } from "lucide-react";
 
 import { ConfirmAction } from "@/components/rintara/confirm-action";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

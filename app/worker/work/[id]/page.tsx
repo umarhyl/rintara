@@ -1,7 +1,7 @@
 import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ConfirmAction } from "@/components/rintara/confirm-action";
-import { PageHeader } from "@/components/rintara/page-header";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

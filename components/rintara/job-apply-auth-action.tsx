@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePublicAuthState } from "@/components/rintara/use-public-auth-state";
+import { usePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 export function JobApplyAuthAction({ jobId }: { jobId: string }) {
   const authState = usePublicAuthState();

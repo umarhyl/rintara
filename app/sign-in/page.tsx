@@ -1,6 +1,6 @@
-import { AuthRouteSwitch } from "@/components/rintara/auth-route-switch";
-import { AuthShell } from "@/components/rintara/auth-shell";
-import { SignInForm } from "@/components/rintara/sign-in-form";
+import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
+import { AuthShell } from "@/features/auth/components/auth-shell";
+import { SignInForm } from "@/features/auth/components/sign-in-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
 export const metadata = { title: "Masuk" };

@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Circle, CircleAlert, LoaderCircle, Mail, MailCheck } from "lucide-react";
 import { submitSignUp } from "@/app/auth/actions";
-import { AuthPasswordField } from "@/components/rintara/auth-password-field";
+import { AuthPasswordField } from "@/features/auth/components/auth-password-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { primePublicAuthState } from "@/components/rintara/use-public-auth-state";
+import { primePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 export function RegisterForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
