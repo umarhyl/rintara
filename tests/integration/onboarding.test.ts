@@ -8,7 +8,14 @@ import { synchronizeIdentityInDatabase } from "@/server/auth/onboarding-transact
 import type { OnboardingInput } from "@/server/auth/schemas";
 import { getIntegrationDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
-import { areas, users, workerProfiles } from "@/server/db/schema";
+import {
+  areas,
+  categories,
+  users,
+  workerInterests,
+  workerProfiles,
+} from "@/server/db/schema";
+import { queryOnboardingReferenceData } from "@/server/queries/onboarding-reference-data-query";
 
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
 
@@ -26,12 +33,66 @@ databaseTest(
     try {
       await migrate(database, { migrationsFolder: "./drizzle" });
       const areaId = randomUUID();
+      const inactiveAreaId = randomUUID();
+      const provinceId = randomUUID();
       await database.insert(areas).values({
         id: areaId,
         level: "city_regency",
         code: `test-${areaId}`,
         name: "Kota Uji",
       });
+      await database.insert(areas).values({
+        id: inactiveAreaId,
+        level: "city_regency",
+        code: `test-${inactiveAreaId}`,
+        name: "Kota Uji Nonaktif",
+        isActive: false,
+      });
+      await database.insert(areas).values({
+        id: provinceId,
+        level: "province",
+        code: `test-${provinceId}`,
+        name: "Provinsi Uji",
+      });
+
+      const activeCategoryIds = [randomUUID(), randomUUID()];
+      const inactiveCategoryId = randomUUID();
+      await database.insert(categories).values([
+        {
+          id: activeCategoryIds[0],
+          slug: `test-${activeCategoryIds[0]}`,
+          name: "Kategori Uji A",
+          riskLevel: "low",
+          firstOpportunityAllowed: true,
+        },
+        {
+          id: activeCategoryIds[1],
+          slug: `test-${activeCategoryIds[1]}`,
+          name: "Kategori Uji B",
+          riskLevel: "restricted",
+          firstOpportunityAllowed: false,
+        },
+        {
+          id: inactiveCategoryId,
+          slug: `test-${inactiveCategoryId}`,
+          name: "Kategori Uji Nonaktif",
+          riskLevel: "low",
+          firstOpportunityAllowed: true,
+          isActive: false,
+        },
+      ]);
+
+      const referenceData = await queryOnboardingReferenceData(database);
+      expect(referenceData.areas).toContainEqual({ id: areaId, name: "Kota Uji" });
+      expect(referenceData.areas.some((area) => area.id === inactiveAreaId)).toBe(false);
+      expect(referenceData.areas.some((area) => area.id === provinceId)).toBe(false);
+      expect(referenceData.categories).toContainEqual({
+        id: activeCategoryIds[0],
+        name: "Kategori Uji A",
+      });
+      expect(
+        referenceData.categories.some((category) => category.id === inactiveCategoryId),
+      ).toBe(false);
 
       const authSubject = `auth-${randomUUID()}`;
       const workerInput = {
@@ -40,6 +101,7 @@ databaseTest(
         areaId,
         bio: null,
         availabilityNote: null,
+        categoryInterestIds: activeCategoryIds,
       } satisfies OnboardingInput;
 
       const first = await synchronizeIdentityInDatabase(
@@ -60,6 +122,12 @@ databaseTest(
           .from(users)
           .where(eq(users.authSubject, authSubject)),
       ).toHaveLength(1);
+      expect(
+        await database
+          .select({ categoryId: workerInterests.categoryId })
+          .from(workerInterests)
+          .where(eq(workerInterests.workerId, first.userId)),
+      ).toHaveLength(2);
       expect(
         await database
           .select({ id: workerProfiles.userId })
@@ -93,6 +161,34 @@ databaseTest(
         .update(areas)
         .set({ isActive: true })
         .where(eq(areas.id, areaId));
+
+      const inactiveInterestSubject = `auth-${randomUUID()}`;
+      await expect(
+        synchronizeIdentityInDatabase(database, inactiveInterestSubject, {
+          ...workerInput,
+          categoryInterestIds: [inactiveCategoryId],
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      expect(
+        await database
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.authSubject, inactiveInterestSubject)),
+      ).toHaveLength(0);
+
+      const invalidAreaSubject = `auth-${randomUUID()}`;
+      await expect(
+        synchronizeIdentityInDatabase(database, invalidAreaSubject, {
+          ...workerInput,
+          areaId: provinceId,
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      expect(
+        await database
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.authSubject, invalidAreaSubject)),
+      ).toHaveLength(0);
 
       const suspendedSubject = `auth-${randomUUID()}`;
       await database.insert(users).values({

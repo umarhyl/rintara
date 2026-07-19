@@ -1,7 +1,9 @@
 # Rintara Application API Contracts
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
+> **Version:** 3.1
+>
+> **Date:** July 19, 2026
+>
 > **Status:** MVP server contract baseline  
 > **Domain authority:** `docs/product/BUSINESS_RULES.md`  
 > **Schema authority:** `docs/engineering/DATABASE.md`
@@ -107,7 +109,7 @@ prevent open redirects. Failure returns to sign-in with a generic error.
 Supabase claims. Accepted input is one of:
 
 - worker: `role`, `displayName`, `areaId`, optional `bio`, and optional
-  `availabilityNote`; or
+  `availabilityNote`, plus up to eight unique optional `categoryInterestIds`; or
 - employer: `role`, `displayName`, `areaId`, `employerType`, and optional
   `description`.
 
@@ -116,13 +118,30 @@ trusted-role fields are discarded. The command serializes attempts for one
 external subject and creates `users` plus exactly one matching role profile in
 one transaction. A retry for the existing role returns the existing profile; a
 retry for another role returns `FORBIDDEN`. Suspended or deleted records return
-`ACCOUNT_INACTIVE`.
+`ACCOUNT_INACTIVE`. Worker category interests are self-declared profile data,
+not Work Proof. On first worker profile creation, every supplied category must
+still be active and the matching `worker_interests` rows are inserted in the
+same transaction. An unavailable category fails the entire operation.
 
 `getCurrentUserDashboardContext()` returns only the internal user ID, trusted
 role, and role-profile display name. A valid provider session without a complete
 Rintara account and matching profile returns `ONBOARDING_REQUIRED`.
 
 ## 3. Public Queries
+
+### `getOnboardingReferenceData()`
+
+Access: public.
+
+Returns deterministic, allowlisted reference options for account setup:
+
+- active `city_regency` areas as `id` and `name`; and
+- active categories as `id` and `name`.
+
+Inactive records, area codes and hierarchy, category risk fields, and internal
+administration data are excluded. The onboarding command still revalidates the
+selected IDs transactionally because an option can become inactive after this
+query.
 
 ### `listPublishedJobs(input)`
 

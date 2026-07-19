@@ -22,12 +22,12 @@ function parseCredentials(
   return result.data;
 }
 
-export async function signUp(input: unknown) {
+export async function signUp(input: unknown, nextPath?: string) {
   const credentials = parseCredentials(signUpSchema, input);
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     ...credentials,
-    options: { emailRedirectTo: getAuthenticationCallbackUrl() },
+    options: { emailRedirectTo: getAuthenticationCallbackUrl(nextPath) },
   });
 
   if (error) {

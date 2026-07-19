@@ -1,6 +1,6 @@
 export function safeApplicationPath(
   value: string | null,
-  fallback = "/dashboard",
+  fallback = "/account/continue",
 ): string {
   return value?.startsWith("/") &&
     !value.startsWith("//") &&
@@ -8,4 +8,3 @@ export function safeApplicationPath(
     ? value
     : fallback;
 }
-

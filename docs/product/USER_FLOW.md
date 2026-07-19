@@ -1,9 +1,13 @@
 # Rintara User Flows
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
-> **Status:** MVP experience baseline  
-> **Requirements:** `docs/product/REQUIREMENTS.md`  
+> **Version:** 3.1
+>
+> **Date:** July 19, 2026
+>
+> **Status:** MVP experience baseline
+>
+> **Requirements:** `docs/product/REQUIREMENTS.md`
+>
 > **Domain rules:** `docs/product/BUSINESS_RULES.md`
 
 ## 1. Flow Principles
@@ -15,6 +19,9 @@
 - Explain why an action is unavailable and what the user can do next.
 - Preserve entered form data after recoverable validation or network errors.
 - Use plain product language instead of technical terms such as transaction, escrow, or state machine.
+- Keep the next action visually dominant. Supporting totals and history use open rails or timelines so they do not compete with the current step.
+- On the public landing screen, the compact navigation stays beside the Rintara identity, while the opportunity, agreement, and Work Proof preview remains one clear visual sequence without overlapping artifacts.
+- Public sections below the first viewport may reveal once as the visitor scrolls. The effect never blocks content, repeats on reverse scrolling, or overrides reduced-motion preferences.
 
 ## 2. Actors
 
@@ -55,23 +62,29 @@ sequenceDiagram
 2. Authentication provider completes the approved registration flow.
 3. Rintara asks the user to choose **Find work** or **Offer work**.
 4. User selects **Find work**.
-5. Worker enters display name, general area, optional short biography, availability, and category interests.
-6. Server creates the worker profile and fixes the active role as `worker`.
-7. Worker lands on the worker dashboard with suggested next steps: complete profile, browse jobs, or learn about First Opportunity.
+5. Worker enters display name, selects an active city/regency, and may add a short biography, an availability note, and up to eight category interests.
+6. The interface explains that interests are self-declared and are never treated as Work Proof or First Opportunity eligibility.
+7. Server revalidates the active area and categories, then creates the account, worker profile, and interests together while fixing the active role as `worker`.
+8. Worker lands on the worker dashboard with suggested next steps: complete profile, browse jobs, or learn about First Opportunity.
 
 Recovery and rules:
 
 - If auth succeeds but profile creation fails, onboarding resumes after the next sign-in.
 - Role is not accepted from a client-side redirect or URL parameter.
 - User does not see a “first-time worker” checkbox; eligibility is calculated by category.
+- If an area or category becomes unavailable before submission, retain the entered profile data, show a safe error, and let the worker choose again.
+- While the profile is being saved, prevent a second submission and keep a transport failure recoverable on the same screen.
 
 ### 4.2 New employer
 
 1. Visitor completes registration.
 2. User selects **Offer work**.
-3. Employer enters display/business name, type, general area, and optional description.
-4. Server creates the employer profile and role.
+3. Employer enters display/business name, type, an active city/regency, and optional description.
+4. Server revalidates the active area and creates the employer profile and role together.
 5. Employer lands on the employer dashboard with a **Post a job** primary action.
+
+If the selected area becomes unavailable or saving is interrupted, keep the
+entered values on screen, explain the recoverable problem, and allow retry.
 
 ### 4.3 Returning or inactive account
 
@@ -79,6 +92,13 @@ Recovery and rules:
 - A suspended user sees a neutral account-restricted page and cannot execute protected operations.
 - A deleted account cannot re-enter product flows through an old session.
 - Admin accounts are provisioned through an internal operational process and use the common sign-in flow; public onboarding never offers the `admin` role.
+
+Shared authentication presentation:
+
+- Sign-in, registration, role selection, and profile setup use one visible three-stage journey: Account, Role, Profile.
+- Authentication errors remain on the sign-in screen with safe recovery copy; provider messages are not exposed.
+- Switching light or dark appearance does not reset entered fields or change the active authentication route.
+- When authentication starts from a protected public action, sign-in, registration, and onboarding preserve the validated internal destination and return the completed user there.
 
 ## 5. Employer Creates and Publishes a Job
 
@@ -118,7 +138,8 @@ Alternative paths:
 
 Alternative paths:
 
-- Anonymous visitor selects **Apply**: redirect to sign-in, then return to the same job.
+- Anonymous visitor sees a sign-in gate instead of an editable application form. Selecting it opens sign-in and returns the completed user to the same job after any required registration and onboarding.
+- On narrow screens, a compact application action may remain docked while the application section is offscreen; it leaves the accessibility tree when that section or the footer becomes visible.
 - Employer account selects a worker action: show role-appropriate guidance, not an application form.
 - Worker is already verified in that category: explain that the specific job is reserved for a first opportunity and suggest other jobs.
 - Duplicate application: show the existing application rather than creating another.

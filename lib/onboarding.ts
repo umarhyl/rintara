@@ -1,0 +1,1 @@
+export const MAX_WORKER_CATEGORY_INTERESTS = 8;
