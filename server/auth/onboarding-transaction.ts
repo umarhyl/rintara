@@ -1,10 +1,12 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "@/server/db/schema";
 import {
   areas,
+  categories,
   employerProfiles,
   users,
+  workerInterests,
   workerProfiles,
 } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
@@ -61,8 +63,15 @@ export async function synchronizeIdentityInDatabase(
       const [area] = await tx
         .select({ id: areas.id })
         .from(areas)
-        .where(and(eq(areas.id, input.areaId), eq(areas.isActive, true)))
-        .limit(1);
+        .where(
+          and(
+            eq(areas.id, input.areaId),
+            eq(areas.level, "city_regency"),
+            eq(areas.isActive, true),
+          ),
+        )
+        .limit(1)
+        .for("share");
 
       if (!area) {
         throw new ApplicationError(
@@ -84,6 +93,28 @@ export async function synchronizeIdentityInDatabase(
       }
 
       await requireActiveArea();
+      const categoryInterestIds = input.categoryInterestIds ?? [];
+
+      if (categoryInterestIds.length > 0) {
+        const activeCategories = await tx
+          .select({ id: categories.id })
+          .from(categories)
+          .where(
+            and(
+              inArray(categories.id, categoryInterestIds),
+              eq(categories.isActive, true),
+            ),
+          )
+          .for("share");
+
+        if (activeCategories.length !== categoryInterestIds.length) {
+          throw new ApplicationError(
+            "VALIDATION_FAILED",
+            "Satu atau beberapa kategori minat tidak tersedia.",
+          );
+        }
+      }
+
       const [profile] = await tx
         .insert(workerProfiles)
         .values({
@@ -94,6 +125,15 @@ export async function synchronizeIdentityInDatabase(
           availabilityNote: input.availabilityNote,
         })
         .returning({ displayName: workerProfiles.displayName });
+
+      if (categoryInterestIds.length > 0) {
+        await tx.insert(workerInterests).values(
+          categoryInterestIds.map((categoryId) => ({
+            workerId: userId,
+            categoryId,
+          })),
+        );
+      }
 
       return { userId, role: input.role, ...profile! };
     }

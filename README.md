@@ -83,11 +83,16 @@ Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
 | `test` | Run fast unit/domain tests |
 | `test:integration` | Run tests against isolated PostgreSQL |
 | `test:e2e` | Run Playwright golden-path tests |
+| `test:e2e:install` | Install the local Chromium runtime used by Playwright |
 | `db:check` | Validate committed Drizzle migration consistency |
 | `db:migrate` | Apply committed migrations |
 | `db:seed` | Load synthetic development/demo data |
 
 Run them with `bun run <script>`. Database schema lives under `server/db/schema/`, committed migrations live under `drizzle/`, and database operations enforce the environment guards documented in `.env.example`.
+
+Before the first E2E run, use `bun run test:e2e:install`. E2E requires a
+disposable `TEST_DATABASE_URL` and Supabase email signup with auto-confirm
+enabled; it never falls back to the development database.
 
 ## Setup Checklist
 

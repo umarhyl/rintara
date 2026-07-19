@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import { employerProfiles, users, workerProfiles } from "@/server/db/schema";
@@ -11,7 +12,7 @@ export type DashboardContext = {
   displayName: string;
 };
 
-export async function getCurrentUserDashboardContext(): Promise<DashboardContext> {
+export const getCurrentUserDashboardContext = cache(async (): Promise<DashboardContext> => {
   const context = await requireActiveUser();
   const [account] = await db
     .select({
@@ -34,5 +35,4 @@ export async function getCurrentUserDashboardContext(): Promise<DashboardContext
           ? account!.employerName!
           : "Admin Rintara",
   };
-}
-
+});

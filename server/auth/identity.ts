@@ -2,20 +2,15 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { createClient } from "@/lib/supabase/server";
 import { db } from "@/server/db/client";
 import { employerProfiles, users, workerProfiles } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
 import { assertActiveUser, buildRequestContext } from "./policies";
-import { requireSubjectClaim } from "./identity-claims";
 import { hasCompleteRoleProfile } from "./profile-completeness";
 import type { RequestContext } from "./types";
+import { getVerifiedAuthSubject } from "./verified-subject";
 
-export async function getVerifiedAuthSubject(): Promise<string> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
-  return requireSubjectClaim(data?.claims, Boolean(error));
-}
+export { getVerifiedAuthSubject } from "./verified-subject";
 
 export async function requireUser(
   requestId: string = randomUUID(),

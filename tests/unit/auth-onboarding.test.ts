@@ -5,8 +5,10 @@ import { hasCompleteRoleProfile } from "@/server/auth/profile-completeness";
 import { safeApplicationPath } from "@/server/auth/redirects";
 import { onboardingSchema } from "@/server/auth/schemas";
 import { ApplicationError } from "@/server/errors/application-error";
+import { MAX_WORKER_CATEGORY_INTERESTS } from "@/lib/onboarding";
 
 const areaId = "00000000-0000-4000-8000-000000000001";
+const categoryId = "00000000-0000-4000-8000-000000000002";
 
 describe("authentication identity", () => {
   test("rejects an invalid session claim", () => {
@@ -76,6 +78,40 @@ describe("onboarding input", () => {
       availabilityNote: null,
     });
   });
+
+  test("accepts bounded, unique category interests as self-declared input", () => {
+    const result = onboardingSchema.parse({
+      role: "worker",
+      displayName: "Ayu Pratama",
+      areaId,
+      categoryInterestIds: [categoryId],
+    });
+
+    expect(result).toMatchObject({ categoryInterestIds: [categoryId] });
+  });
+
+  test("rejects duplicate or excessive category interests", () => {
+    expect(
+      onboardingSchema.safeParse({
+        role: "worker",
+        displayName: "Ayu Pratama",
+        areaId,
+        categoryInterestIds: [categoryId, categoryId],
+      }).success,
+    ).toBe(false);
+
+    expect(
+      onboardingSchema.safeParse({
+        role: "worker",
+        displayName: "Ayu Pratama",
+        areaId,
+        categoryInterestIds: Array.from(
+          { length: MAX_WORKER_CATEGORY_INTERESTS + 1 },
+          (_, index) => `00000000-0000-4000-8000-${String(index + 10).padStart(12, "0")}`,
+        ),
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe("authentication provider errors", () => {
@@ -93,8 +129,14 @@ describe("authentication provider errors", () => {
 describe("authentication callback redirect", () => {
   test("accepts local paths and rejects external redirect forms", () => {
     expect(safeApplicationPath("/worker/jobs")).toBe("/worker/jobs");
-    expect(safeApplicationPath("https://attacker.example")).toBe("/dashboard");
-    expect(safeApplicationPath("//attacker.example")).toBe("/dashboard");
-    expect(safeApplicationPath("/\\attacker.example")).toBe("/dashboard");
+    expect(safeApplicationPath("https://attacker.example")).toBe(
+      "/account/continue",
+    );
+    expect(safeApplicationPath("//attacker.example")).toBe(
+      "/account/continue",
+    );
+    expect(safeApplicationPath("/\\attacker.example")).toBe(
+      "/account/continue",
+    );
   });
 });
