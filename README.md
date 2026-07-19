@@ -21,12 +21,13 @@ Payments are recorded as agreement terms but take place outside Rintara during t
 
 - Next.js App Router
 - React and TypeScript
-- PostgreSQL as the source of truth
+- Supabase Managed PostgreSQL as the source of truth
 - Drizzle ORM with repository-managed SQL migrations
-- Mature external authentication integration
+- Supabase Auth with server-side session validation
+- Vercel deployment with `main` as the production branch
 - Unit, PostgreSQL integration, and Playwright end-to-end tests
 
-Provider-specific decisions that remain open are tracked as proposed ADRs under `docs/decisions/`.
+Vercel, Supabase Managed PostgreSQL, and Supabase Auth are accepted in ADR-011 and ADR-012. Project-specific production-readiness evidence such as region, plan limits, backup restore, connection sizing, callbacks, and test accounts must still be recorded before release.
 
 ## Documentation
 
@@ -98,7 +99,7 @@ Do not invent commands in deployment instructions. Update this table when the ac
 7. Start the development server.
 8. Run unit and integration tests before opening a pull request.
 
-Secret values, provider-specific callbacks, and concrete commands belong in the implementation repository's `.env.example` and deployment configuration after the proposed provider ADRs are accepted.
+Secret values never belong in documentation or source control. Required variable names, provider callbacks, and approved commands belong in `.env.example` and deployment documentation without real values.
 
 ## MVP Scope Guard
 
@@ -114,4 +115,4 @@ Any scope change must follow the change-control section of `docs/product/PRD.md`
 
 ## Status
 
-The documentation describes the competition MVP baseline dated July 18, 2026, with a submission target of July 31, 2026. Proposed ADRs remain non-authoritative until explicitly accepted.
+The documentation describes the competition MVP baseline dated July 18, 2026, with a submission target of July 31, 2026. ADR-010 remains proposed; ADR-011 and ADR-012 are accepted provider decisions with production-readiness checks still open.

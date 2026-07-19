@@ -1,3 +1,5 @@
+> **Legacy compatibility copy:** The canonical and authoritative document is [`docs/engineering/API.md`](../engineering/API.md). Do not update or implement from this copy.
+
 # Rintara Application API Contracts
 
 > **Version:** 3.0  

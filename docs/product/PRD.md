@@ -286,15 +286,23 @@ Account counts, page views, and job posts without completion are not sufficient 
 | Auth is enforced only in UI | Server-side session, role, ownership, and relationship checks with negative tests |
 | Demo deployment fails | Deploy early, use deterministic seeds, rehearse reset, and prepare a backup recording |
 
-## 13. Open Decisions
+## 13. Decisions and Open Items
 
-These decisions require explicit team approval and must not be guessed by an AI agent:
+Resolved provider decisions:
+
+| Decision | Approved choice |
+| --- | --- |
+| Application hosting | Vercel, with `main` as the production branch |
+| Managed PostgreSQL | Supabase Managed PostgreSQL through standard PostgreSQL connections |
+| Authentication | Supabase Auth with server-validated cookie-based SSR |
+
+The detailed constraints and remaining production-readiness checks are in [ADR-011](../decisions/ADR-011-managed-platform-selection.md) and [ADR-012](../decisions/ADR-012-authentication-provider-selection.md).
+
+These product/data decisions remain open and require explicit team approval:
 
 | Decision | Temporary default |
 | --- | --- |
 | Pilot location | One city or regency represented by seeded data |
-| Managed PostgreSQL provider | Any provider with pooling, migrations, and backups |
-| Authentication provider | A mature Next.js-compatible provider; do not build password/session handling |
 | Wage data source | Validated source or clearly labeled simulation data |
 | Cancellation wording | Simple policy stored in the agreement snapshot |
 | Credit expiration | No expiration for the competition demo; production policy remains open |

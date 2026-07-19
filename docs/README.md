@@ -68,6 +68,8 @@ Accepted ADRs are implementation constraints. Proposed ADRs record an unresolved
 - Add an ADR for decisions with material, long-lived architectural consequences.
 - Never rewrite the decision of an accepted ADR; supersede it with a new ADR.
 
+The canonical system specifications live under `docs/engineering/`. Files under `docs/system/` are retained only as legacy compatibility copies and must not be edited or treated as authoritative.
+
 ## 9. Diagram and Image Assets
 
 Mermaid diagrams should remain near the text they explain. Store external images and reusable diagram source files under [`assets/`](./assets/README.md) only when inline Markdown is insufficient.

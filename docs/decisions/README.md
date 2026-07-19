@@ -28,8 +28,8 @@ Accepted ADRs are historical records. Do not rewrite their decision after implem
 | [ADR-008](./ADR-008-private-location-separation.md) | Accepted | Separate full work addresses from public job data |
 | [ADR-009](./ADR-009-out-of-platform-payments.md) | Accepted | Keep payment execution outside Rintara for the MVP |
 | [ADR-010](./ADR-010-wage-guideline-source.md) | Proposed | Select and govern the Wage Guideline source |
-| [ADR-011](./ADR-011-managed-platform-selection.md) | Proposed | Select application hosting and managed PostgreSQL providers |
-| [ADR-012](./ADR-012-authentication-provider-selection.md) | Proposed | Select the concrete authentication provider |
+| [ADR-011](./ADR-011-managed-platform-selection.md) | Accepted | Use Vercel and Supabase Managed PostgreSQL |
+| [ADR-012](./ADR-012-authentication-provider-selection.md) | Accepted | Use Supabase Auth |
 
 ## When to Create an ADR
 

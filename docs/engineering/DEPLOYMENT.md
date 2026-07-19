@@ -2,25 +2,25 @@
 
 > **Version:** 1.0  
 > **Date:** July 18, 2026  
-> **Status:** Provider-neutral MVP baseline
+> **Status:** Vercel and Supabase MVP baseline
 
 ## 1. Purpose
 
-This guide defines a safe deployment process for the Next.js application and managed PostgreSQL database. Concrete provider commands must be added only after the proposed platform ADR is accepted.
+This guide defines a safe deployment process for the Next.js application on Vercel and Supabase Managed PostgreSQL. ADR-011 selects the providers; project-specific region, plan, limits, and restore evidence remain production-readiness gates.
 
 ## 2. Environment Model
 
 | Environment | Purpose | Data policy |
 | --- | --- | --- |
 | Local | Development and automated tests | Synthetic data in developer-controlled database |
-| Preview | Pull-request and acceptance review | Synthetic data, isolated credentials, no production integration |
+| Review | Manually triggered preview or acceptance review | Synthetic data, isolated credentials, no production integration |
 | Production | Public MVP and live demo | Controlled synthetic demo data plus legitimate pilot data under approved policy |
 
-Never point local or preview reset/seed commands at production.
+Never point local or review reset/seed commands at production.
 
 ## 3. Provider Requirements
 
-### Application platform
+### Vercel application platform
 
 - supports the selected Next.js version and runtime;
 - supports secure environment variables and preview isolation;
@@ -29,7 +29,7 @@ Never point local or preview reset/seed commands at production.
 - supports custom domain/HTTPS where required; and
 - documents concurrency and execution limits.
 
-### Managed PostgreSQL
+### Supabase Managed PostgreSQL
 
 - compatible PostgreSQL major version;
 - pooled application connections and a direct migration connection when needed;
@@ -61,7 +61,7 @@ Rules:
 - Local, preview, and production use different credentials.
 - Migration credentials are not exposed to normal client bundles or public logs.
 - Secrets are rotated after accidental disclosure.
-- Do not add provider-specific names to this document until the provider ADR is accepted.
+- `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
 
 ## 5. Build Requirements
 
@@ -81,7 +81,9 @@ Builds must not depend on production data being available at build time unless e
 
 - Migrations are committed, ordered, and reviewed.
 - Deployment runs migrations as a controlled step, not concurrently from every application instance.
-- Application instances use pooled connections; migration tools may use a provider-approved direct connection.
+- Vercel runtime instances use a Supabase pooled connection appropriate to serverless traffic.
+- Migration tools use the Supabase direct PostgreSQL connection when reachable from the controlled migration environment, or another Supabase-supported connection explicitly verified for migrations.
+- Transaction-mode pooling does not support prepared statements; configure the selected PostgreSQL driver accordingly when that mode is used.
 - Backward-compatible expand/migrate/contract changes are preferred when a deployment may run mixed versions.
 - Destructive changes require backup, explicit approval, and forward-recovery plan.
 - Do not edit an applied migration.
@@ -178,6 +180,8 @@ Scheduled endpoints require authentication/secret validation, idempotency, bound
 
 See `docs/operations/DEMO_RUNBOOK.md`.
 
-## 14. Provider Decision Block
+## 14. Provider Readiness Block
 
-Do not finalize commands, regions, pricing, connection modes, auth callbacks, backup promises, or uptime claims until `docs/decisions/ADR-011-managed-platform-selection.md` is accepted with verified provider documentation.
+Before production release, record the actual Supabase region and plan, Vercel and Supabase limits, selected runtime and migration connection modes, authentication callbacks, environment isolation, and a tested backup/restore procedure. Backup availability and retention vary by Supabase plan, so do not promise a recovery capability that has not been verified for the configured project.
+
+Automatic Vercel builds are limited to the `main` production branch. Pushes to `dev` and other branches do not build automatically; Umar may trigger an isolated review deployment manually when milestone acceptance requires one.

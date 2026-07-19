@@ -1,14 +1,13 @@
-# ADR-012: Select the Authentication Provider
+# ADR-012: Use Supabase Auth
 
-- **Status:** Proposed
-- **Date:** 2026-07-18
-- **Decision deadline:** Before protected production routes and demo-account finalization
-- **Deciders:** Technical lead and security reviewer
+- **Status:** Accepted
+- **Date:** 2026-07-19
+- **Deciders:** Umar (BE), Zaki (FE), Catur (PM)
 - **Related:** ADR-004, `docs/engineering/SECURITY_MODEL.md`
 
 ## Context
 
-ADR-004 accepts the use of mature external authentication but deliberately does not choose a vendor/library. A concrete selection is needed for registration, sessions, callbacks, test accounts, environment isolation, and account recovery.
+ADR-004 accepts the use of mature external authentication. The repository is already configured with Supabase SSR packages and project environment variables, so the team selected Supabase Auth for registration, sessions, callbacks, and account recovery.
 
 Provider capabilities, pricing, framework support, and limits can change. The decision must use current official documentation and a small proof of integration.
 
@@ -24,9 +23,9 @@ Provider capabilities, pricing, framework support, and limits can change. The de
 - Rate limits, abuse controls, logs, data handling, export, and cost.
 - Minimal coupling to database/hosting provider.
 
-## Options to Evaluate
+## Options Considered
 
-Evaluate current mature options in these categories:
+The team considered mature options in these categories:
 
 - hosted identity provider;
 - maintained authentication library with team-operated data/session storage; and
@@ -34,7 +33,7 @@ Evaluate current mature options in these categories:
 
 Do not implement custom password/session primitives as an option; ADR-004 rejects that approach.
 
-## Required Evaluation Matrix
+## Evaluation Matrix
 
 | Dimension | Required evidence |
 | --- | --- |
@@ -48,31 +47,34 @@ Do not implement custom password/session primitives as an option; ADR-004 reject
 | Cost and limits | Expected pilot usage and overage behavior |
 | Portability | Migration effort and account-linking implications |
 
-## Decision Required
+## Decision
 
-Before acceptance, record:
+- Use Supabase Auth through `@supabase/supabase-js` and `@supabase/ssr` with cookie-based Next.js SSR.
+- Use the Supabase Auth user ID as `users.auth_subject`; Rintara PostgreSQL remains authoritative for role, account status, profiles, ownership, and authorization.
+- Validate identity on the server using the current Supabase SSR guidance. Do not trust the user object returned by `getSession()` as authorization evidence; use verified claims or a fresh server-confirmed user lookup as appropriate.
+- Centralize conversion from Supabase identity to the Rintara `RequestContext`.
+- Keep provider-specific code inside the authentication infrastructure module rather than spreading Supabase fields through domain tables.
+- Isolate callback URLs, keys, test accounts, and credentials between local, review, and production environments.
+- Do not use Supabase role metadata as a substitute for Rintara authorization checks.
 
-- selected provider/library and current version/integration path;
-- approved login methods;
-- session and cookie strategy;
-- callback URLs per environment;
-- mapping from external subject to Rintara user;
-- onboarding/resume behavior after partial profile creation;
-- suspension/deletion enforcement;
-- E2E test-account strategy;
-- secret rotation and incident procedure;
-- expected cost/limits; and
-- rejected alternatives.
+Official implementation references:
 
-No concrete provider is selected by this proposed ADR.
+- [Supabase Auth with Next.js](https://supabase.com/docs/guides/auth/quickstarts/nextjs)
+- [Supabase SSR client guidance](https://supabase.com/docs/guides/auth/server-side/creating-a-client?queryGroups=framework&framework=nextjs)
 
-## Temporary Implementation Boundary
+## Production Readiness Items
 
-- Keep domain authorization independent of auth-provider role claims.
-- Model `users.auth_subject` as the stable integration key.
-- Centralize session-to-Rintara-context conversion.
-- Do not add provider-specific fields throughout domain tables.
-- Do not finalize `.env.example` provider variables until selection.
+Provider choice is closed. Before protected production routes and demo accounts are finalized, Umar must document and verify:
+
+- approved login methods enabled in the Supabase project;
+- callback and redirect URLs for each environment;
+- onboarding resume behavior after partial profile creation;
+- suspended/deleted Rintara account enforcement despite a valid Supabase session;
+- Playwright test-account strategy;
+- session revocation, key rotation, and incident procedure; and
+- selected-plan rate limits, cost, and relevant hard limits.
+
+Missing production-readiness evidence blocks release but does not reopen provider selection.
 
 ## Security, Privacy, and Data Impact
 

@@ -1,3 +1,5 @@
+> **Legacy compatibility copy:** The canonical and authoritative document is [`docs/engineering/ARCHITECTURE.md`](../engineering/ARCHITECTURE.md). Do not update or implement from this copy.
+
 # Rintara System Architecture
 
 > **Version:** 3.0  

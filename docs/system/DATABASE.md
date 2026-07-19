@@ -1,3 +1,5 @@
+> **Legacy compatibility copy:** The canonical and authoritative document is [`docs/engineering/DATABASE.md`](../engineering/DATABASE.md). Do not update or implement from this copy.
+
 # Rintara PostgreSQL Database Design
 
 > **Version:** 3.0  

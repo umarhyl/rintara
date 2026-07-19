@@ -29,21 +29,21 @@ Non-goals include microservices, event streaming, realtime chat, payment infrast
 | Styling | Tailwind CSS and accessible UI primitives already approved by the repository |
 | Forms and validation | React Hook Form with Zod, or an equivalent established repository pattern |
 | Application server | Next.js Server Components, Server Actions, and limited Route Handlers |
-| Database | Managed PostgreSQL |
+| Database | Supabase Managed PostgreSQL through standard PostgreSQL connections |
 | Data access | Drizzle ORM plus explicit SQL where transaction or query-plan control is needed |
-| Authentication | Mature Next.js-compatible provider/library; no custom password or session implementation |
-| Deployment | Vercel or another platform that correctly supports the selected Next.js runtime |
+| Authentication | Supabase Auth with cookie-based Next.js SSR; no custom password or session implementation |
+| Deployment | Vercel; `main` is the production branch |
 | Testing | Unit/domain tests, PostgreSQL integration tests, and Playwright end-to-end tests |
 
-Provider names are deliberately not hard-coded. The managed PostgreSQL provider must support pooled connections, migrations, backups, and the required PostgreSQL features.
+ADR-011 and ADR-012 select Vercel, Supabase Managed PostgreSQL, and Supabase Auth. Business data remains provider-portable: Drizzle and parameterized SQL use standard PostgreSQL connections, while provider-specific authentication code stays behind the auth infrastructure boundary.
 
 ## 3. System Context
 
 ```mermaid
 flowchart TD
     U["Worker, Employer, Admin"] --> W["Next.js Web Application"]
-    W --> A["Authentication Provider"]
-    W --> P["Managed PostgreSQL"]
+    W --> A["Supabase Auth"]
+    W --> P["Supabase Managed PostgreSQL"]
     O["Operations and Monitoring"] --> W
     O --> P
 ```

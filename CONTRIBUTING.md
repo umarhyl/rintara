@@ -15,6 +15,16 @@ If the requested behavior conflicts with the PRD or an accepted ADR, do not impl
 
 ## 2. Scope and Issue Definition
 
+Primary workstream owners are:
+
+| Owner | Responsibility |
+| --- | --- |
+| Umar — Backend Engineer | Database, domain/API, authentication, authorization, backend tests, and deployment operations |
+| Zaki — Frontend Engineer | Screens, forms, responsive behavior, client interactions, accessibility, and frontend tests |
+| Catur — Product Manager | Scope, requirements, acceptance decisions, product documentation, and demo sign-off |
+
+Testing and golden-path delivery are shared responsibilities. Bring cross-boundary changes to every affected owner before implementation diverges.
+
 A task should state:
 
 - user or operational problem;

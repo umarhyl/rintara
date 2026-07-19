@@ -23,8 +23,8 @@ Rintara does not guarantee worker quality, payment, legal resolution, or physica
 ```mermaid
 flowchart TD
     B["Untrusted Browser"] --> N["Next.js Server Boundary"]
-    N --> I["Authentication Provider"]
-    N --> D["PostgreSQL Source of Truth"]
+    N --> I["Supabase Auth"]
+    N --> D["Supabase PostgreSQL Source of Truth"]
     O["Authorized Operator"] --> N
     O --> D
 ```
@@ -101,14 +101,15 @@ Rules:
 
 ## 6. Authentication
 
-- Use a mature external authentication solution.
+- Use Supabase Auth through the approved SSR integration.
 - Do not build password hashing, reset tokens, session rotation, or OAuth protocol handling in Rintara domain code.
-- Verify callback and redirect configuration per provider guidance.
+- Verify callback and redirect configuration per Supabase guidance.
+- Validate identity on the server with verified claims or a fresh server-confirmed user lookup; do not trust the user object from `getSession()` alone for authorization.
 - Use secure, HTTP-only, same-site cookies where supported.
 - Keep local, preview, and production tenants/credentials isolated.
 - Synchronize only the minimum stable external subject needed by `users.auth_subject`.
 
-Provider choice remains proposed until the relevant ADR is accepted.
+ADR-012 records Supabase Auth as the accepted provider. Rintara role, account status, ownership, and relationship authorization remain server-owned domain data.
 
 ## 7. Authorization
 

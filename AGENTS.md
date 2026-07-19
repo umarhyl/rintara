@@ -104,13 +104,13 @@ Run a repository search for stale terminology when touching related code or docu
 - Next.js App Router
 - React
 - TypeScript with strict checking
-- PostgreSQL
+- Supabase Managed PostgreSQL through standard PostgreSQL connections
 - Drizzle ORM plus explicit parameterized SQL where appropriate
 - Repository-approved validation/form libraries
-- Mature Next.js-compatible authentication solution
+- Supabase Auth through the approved Next.js SSR integration
 - Unit/domain tests, PostgreSQL integration tests, and Playwright E2E
 
-Do not replace the stack, introduce Supabase-specific APIs, or add a second source of truth without an approved architecture decision.
+Deploy the application on Vercel and use Supabase Managed PostgreSQL and Supabase Auth as accepted in ADR-011 and ADR-012. Business data access uses Drizzle or explicit parameterized PostgreSQL; do not introduce Supabase Data API, Realtime, Storage, or Edge Functions as a second business-state path without an approved architecture decision.
 
 Use the repository's existing package manager and scripts. Do not switch package manager, formatter, test framework, or component system during an unrelated task.
 
@@ -572,7 +572,7 @@ Stop and ask for a team decision when:
 - two authoritative documents conflict and the correct product behavior is not inferable;
 - a request adds an out-of-scope feature or changes a locked product decision;
 - a destructive migration or data deletion is required;
-- authentication/provider choice is necessary but not approved;
+- an authentication, database, or hosting provider change is proposed without an approved superseding ADR;
 - a legal wage claim or sensitive data collection is proposed;
 - a change would weaken authorization, transactionality, privacy, or auditability;
 - production credentials or real personal data appear in the workspace; or
@@ -594,7 +594,7 @@ An implementation task is complete only when:
 - [ ] Schema changes include migration and representative seed/test updates.
 - [ ] Documentation is synchronized.
 - [ ] Relevant tests and checks were run and their actual results reported.
-- [ ] No stale Karivo, Client, bidding, escrow, chat, payment, Fast Rematch, or Supabase-specific MVP assumptions were introduced.
+- [ ] No stale Karivo, Client, bidding, escrow, chat, payment, Fast Rematch, or unapproved Supabase Data API/Realtime/Storage/Edge Function assumptions were introduced.
 - [ ] No secrets, private addresses, codes, or sensitive request bodies were logged or exposed.
 
 ## 26. Final Review Question

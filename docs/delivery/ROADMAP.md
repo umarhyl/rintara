@@ -30,18 +30,31 @@ No phase is complete because pages exist. Each exit criterion requires authoriza
 - Stop adding features after feature freeze.
 - A newly requested P0 item must remove or reduce another P0 item and receive explicit approval.
 
+## 2.1 Team Ownership
+
+| Owner | Primary responsibility | Shared quality responsibility |
+| --- | --- | --- |
+| Umar — Backend Engineer | PostgreSQL/Drizzle, migrations, domain commands, API contracts, Supabase Auth integration, authorization, backend tests, Vercel/Supabase operations | Security, data integrity, integration/E2E support, deployment and demo reliability |
+| Zaki — Frontend Engineer | App Router screens, forms, responsive UI, client interactions, loading/error/retry states | Accessibility, UI tests, public/private rendering checks, demo interface |
+| Catur — Product Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
+
+Testing is shared: Umar owns domain, PostgreSQL integration, concurrency, and server authorization coverage; Zaki owns component, browser, responsive, and accessibility coverage; Catur owns acceptance scenarios and release evidence. Each owner reviews cross-boundary changes that affect their responsibility.
+
 ## 3. Milestone Plan
 
 ### Milestone 0 — Documentation and decision lock
 
 **Date:** July 18
 
+**Status:** Documentation and ownership recorded on July 19; team walkthrough/sign-off pending.
+
 Deliverables:
 
 - English documentation package aligned to Rintara;
 - approved terminology, P0 boundaries, and out-of-scope list;
 - explicit owners for auth, database, product flow, UI, test, and demo decisions;
-- pilot location, auth provider, PostgreSQL provider, and Wage Guideline data decision tracked.
+- pilot location and Wage Guideline data decision tracked;
+- Vercel, Supabase Managed PostgreSQL, and Supabase Auth recorded in accepted ADR-011 and ADR-012.
 
 Exit criteria:
 
@@ -72,7 +85,7 @@ Exit criteria:
 
 - Worker and employer can sign in and reach role-specific dashboards.
 - Migrations run from an empty database.
-- Preview deployment is reachable.
+- A Vercel review deployment is reachable when required for acceptance; non-`main` branches do not deploy automatically.
 - No secret or synthetic full address leaks into public output.
 
 ### Milestone 2 — Job marketplace vertical slice
@@ -277,7 +290,7 @@ The MVP is releasable only when all five gates pass or an explicit documented wa
 
 Each task should identify:
 
-- owner;
+- owner from the team ownership table;
 - requirement IDs;
 - affected business rules;
 - schema/API/UI impact;
