@@ -78,6 +78,7 @@ Recovery and rules:
 - An authenticated user with incomplete onboarding returns to the missing step.
 - A suspended user sees a neutral account-restricted page and cannot execute protected operations.
 - A deleted account cannot re-enter product flows through an old session.
+- Admin accounts are provisioned through an internal operational process and use the common sign-in flow; public onboarding never offers the `admin` role.
 
 ## 5. Employer Creates and Publishes a Job
 

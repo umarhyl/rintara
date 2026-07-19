@@ -92,6 +92,36 @@ type Page<T> = {
 
 Cursors are opaque and encode deterministic sort keys. Clients must not depend on their internal format.
 
+### 2.5 Authentication and onboarding
+
+`signUp(input)`, `signIn(input)`, and `signOut()` are Server Action adapters over
+Supabase Auth. Credential input is validated and provider errors are mapped to
+the application error catalog; provider messages, tokens, and user objects are
+never returned.
+
+`GET /auth/callback` exchanges the one-time PKCE code for a cookie-backed
+session. Its optional `next` value accepts only an application-relative path to
+prevent open redirects. Failure returns to sign-in with a generic error.
+
+`completeOnboarding(input)` derives `auth_subject` exclusively from verified
+Supabase claims. Accepted input is one of:
+
+- worker: `role`, `displayName`, `areaId`, optional `bio`, and optional
+  `availabilityNote`; or
+- employer: `role`, `displayName`, `areaId`, `employerType`, and optional
+  `description`.
+
+Self-service `admin` is invalid. Caller-supplied user ID, account status, or
+trusted-role fields are discarded. The command serializes attempts for one
+external subject and creates `users` plus exactly one matching role profile in
+one transaction. A retry for the existing role returns the existing profile; a
+retry for another role returns `FORBIDDEN`. Suspended or deleted records return
+`ACCOUNT_INACTIVE`.
+
+`getCurrentUserDashboardContext()` returns only the internal user ID, trusted
+role, and role-profile display name. A valid provider session without a complete
+Rintara account and matching profile returns `ONBOARDING_REQUIRED`.
+
 ## 3. Public Queries
 
 ### `listPublishedJobs(input)`

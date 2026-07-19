@@ -62,6 +62,7 @@ Rules:
 - Migration credentials are not exposed to normal client bundles or public logs.
 - Secrets are rotated after accidental disclosure.
 - `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
+- `RINTARA_APP_URL` is the canonical origin used to build `/auth/callback`; each environment must allowlist that callback in its isolated Supabase project.
 
 ## 5. Build Requirements
 
