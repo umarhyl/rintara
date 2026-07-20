@@ -67,6 +67,18 @@ export function getIntegrationDatabaseUrl() {
     }
   }
 
+  const url = new URL(integrationDatabaseUrl);
+  const databaseName = decodeURIComponent(url.pathname.slice(1));
+  const isLoopback = ["localhost", "127.0.0.1", "[::1]"].includes(
+    url.hostname.toLowerCase(),
+  );
+
+  if (!isLoopback || !/^rintara_test(?:_|$)/.test(databaseName)) {
+    throw new Error(
+      "Integration database refused. TEST_DATABASE_URL must use a loopback host and a database named rintara_test or rintara_test_*.",
+    );
+  }
+
   return integrationDatabaseUrl;
 }
 
