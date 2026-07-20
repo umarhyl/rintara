@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { ApplicationError } from "@/server/errors/application-error";
+import {
+  ApplicationError,
+  type ApplicationErrorCode,
+} from "@/server/errors/application-error";
 import {
   assertActiveUser,
   assertAdmin,
@@ -12,6 +15,19 @@ const activeWorker = buildRequestContext("req-test", {
   role: "worker",
   status: "active",
 });
+
+function expectApplicationErrorCode(
+  action: () => unknown,
+  code: ApplicationErrorCode,
+) {
+  try {
+    action();
+    throw new Error(`Expected ${code}.`);
+  } catch (error) {
+    expect(error).toBeInstanceOf(ApplicationError);
+    expect((error as ApplicationError).code).toBe(code);
+  }
+}
 
 describe("authorization policies", () => {
   test("builds context only from trusted user fields", () => {
@@ -26,20 +42,36 @@ describe("authorization policies", () => {
   test("rejects suspended users", () => {
     const suspendedWorker = { ...activeWorker, accountStatus: "suspended" as const };
 
-    expect(() => assertActiveUser(suspendedWorker)).toThrow(ApplicationError);
-    expect(() => assertActiveUser(suspendedWorker)).toThrow(
-      "cannot perform protected operations",
+    expectApplicationErrorCode(
+      () => assertActiveUser(suspendedWorker),
+      "ACCOUNT_INACTIVE",
+    );
+  });
+
+  test("rejects deleted users", () => {
+    const deletedWorker = { ...activeWorker, accountStatus: "deleted" as const };
+
+    expectApplicationErrorCode(
+      () => assertActiveUser(deletedWorker),
+      "ACCOUNT_INACTIVE",
     );
   });
 
   test("rejects a wrong role", () => {
-    expect(() => assertRole(activeWorker, "employer")).toThrow(ApplicationError);
+    expectApplicationErrorCode(
+      () => assertRole(activeWorker, "employer"),
+      "FORBIDDEN",
+    );
   });
 
   test("requires an active admin", () => {
     const admin = { ...activeWorker, role: "admin" as const };
     expect(assertAdmin(admin)).toEqual(admin);
 
-    expect(() => assertAdmin(activeWorker)).toThrow(ApplicationError);
+    expectApplicationErrorCode(() => assertAdmin(activeWorker), "FORBIDDEN");
+    expectApplicationErrorCode(
+      () => assertAdmin({ ...admin, accountStatus: "suspended" }),
+      "ACCOUNT_INACTIVE",
+    );
   });
 });

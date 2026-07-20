@@ -259,7 +259,7 @@ Alternative paths:
 5. Rintara applies actions consistently and writes audit history.
 6. Parties receive safe status notifications without private moderator notes.
 
-Possible admin actions include hide/cancel job, suspend account, cancel unfinished workflow, revoke Work Proof, revoke credit, and deactivate a related boost.
+Possible admin actions include hide/cancel job, suspend account, cancel unfinished workflow, revoke Work Proof, revoke an earned or redeemed credit, and deactivate a related boost.
 
 ## 13. Notifications
 

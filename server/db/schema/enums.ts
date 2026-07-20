@@ -1,4 +1,12 @@
 import { pgEnum } from "drizzle-orm/pg-core";
+import {
+  APPLICATION_STATUSES,
+  JOB_STATUSES,
+  MINI_AGREEMENT_STATUSES,
+  OPPORTUNITY_CREDIT_STATUSES,
+  REPORT_STATUSES,
+  WORK_SESSION_STATUSES,
+} from "@/server/domain/lifecycle";
 
 export const userRoleEnum = pgEnum("user_role", [
   "worker",
@@ -34,53 +42,37 @@ export const wageStatusEnum = pgEnum("wage_status", [
   "unavailable",
 ]);
 
-export const jobStatusEnum = pgEnum("job_status", [
-  "draft",
-  "published",
-  "filled",
-  "in_progress",
-  "completed",
-  "expired",
-  "cancelled",
-]);
+export const jobStatusEnum = pgEnum("job_status", JOB_STATUSES);
 
 export const jobVisibilityEnum = pgEnum("job_visibility", [
   "visible",
   "hidden",
 ]);
 
-export const applicationStatusEnum = pgEnum("application_status", [
-  "submitted",
-  "accepted",
-  "rejected",
-  "withdrawn",
-]);
+export const applicationStatusEnum = pgEnum(
+  "application_status",
+  APPLICATION_STATUSES,
+);
 
-export const agreementStatusEnum = pgEnum("agreement_status", [
-  "pending_confirmation",
-  "active",
-  "completed",
-  "cancelled",
-]);
+export const agreementStatusEnum = pgEnum(
+  "agreement_status",
+  MINI_AGREEMENT_STATUSES,
+);
 
-export const workSessionStatusEnum = pgEnum("work_session_status", [
-  "scheduled",
-  "checked_in",
-  "checked_out",
-  "verified",
-]);
+export const workSessionStatusEnum = pgEnum(
+  "work_session_status",
+  WORK_SESSION_STATUSES,
+);
 
 export const proofStatusEnum = pgEnum("proof_status", [
   "verified",
   "revoked",
 ]);
 
-export const creditStatusEnum = pgEnum("credit_status", [
-  "earned",
-  "redeemed",
-  "expired",
-  "revoked",
-]);
+export const creditStatusEnum = pgEnum(
+  "credit_status",
+  OPPORTUNITY_CREDIT_STATUSES,
+);
 
 export const boostStatusEnum = pgEnum("boost_status", [
   "active",
@@ -88,12 +80,7 @@ export const boostStatusEnum = pgEnum("boost_status", [
   "revoked",
 ]);
 
-export const reportStatusEnum = pgEnum("report_status", [
-  "open",
-  "reviewing",
-  "resolved",
-  "rejected",
-]);
+export const reportStatusEnum = pgEnum("report_status", REPORT_STATUSES);
 
 export const reportReasonEnum = pgEnum("report_reason", [
   "suspicious_job",

@@ -317,6 +317,8 @@ Rintara Passport is an authorized query over this table. There is no editable `p
 
 The active balance is calculated from owned `earned` credits whose expiry is null or in the future. The maximum balance of three is enforced inside the completion transaction while locking an employer-scoped row or equivalent safe serialization point.
 
+Authorized moderation may transition an `earned` or `redeemed` credit to `revoked`. A revoked redeemed credit retains its redemption metadata, and any related active boost is deactivated consistently.
+
 ### `job_boosts`
 
 | Column | Type | Rules |
