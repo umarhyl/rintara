@@ -2,11 +2,15 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   assertMigrationAllowed,
   assertSeedAllowed,
+  getIntegrationDatabaseUrl,
 } from "@/server/db/environment";
 
 const originalEnvironment = process.env.RINTARA_ENV;
 const originalSeedFlag = process.env.RINTARA_ALLOW_SEED;
 const originalMigrationFlag = process.env.RINTARA_ALLOW_PRODUCTION_MIGRATION;
+const originalTestDatabaseUrl = process.env.TEST_DATABASE_URL;
+const originalRuntimeDatabaseUrl = process.env.DATABASE_URL;
+const originalMigrationDatabaseUrl = process.env.DIRECT_DATABASE_URL;
 
 function restoreEnvironmentVariable(name: string, value: string | undefined) {
   if (value === undefined) {
@@ -23,6 +27,12 @@ afterEach(() => {
   restoreEnvironmentVariable(
     "RINTARA_ALLOW_PRODUCTION_MIGRATION",
     originalMigrationFlag,
+  );
+  restoreEnvironmentVariable("TEST_DATABASE_URL", originalTestDatabaseUrl);
+  restoreEnvironmentVariable("DATABASE_URL", originalRuntimeDatabaseUrl);
+  restoreEnvironmentVariable(
+    "DIRECT_DATABASE_URL",
+    originalMigrationDatabaseUrl,
   );
 });
 
@@ -62,5 +72,48 @@ describe("database operation guards", () => {
     expect(() => assertMigrationAllowed()).toThrow(
       "RINTARA_ALLOW_PRODUCTION_MIGRATION=true",
     );
+  });
+
+  test("refuses an integration database outside the test environment", () => {
+    process.env.RINTARA_ENV = "local";
+    process.env.TEST_DATABASE_URL =
+      "postgresql://postgres:test@127.0.0.1:5432/rintara_test";
+
+    expect(() => getIntegrationDatabaseUrl()).toThrow("RINTARA_ENV=test");
+  });
+
+  test("refuses the runtime database as an integration target", () => {
+    process.env.RINTARA_ENV = "test";
+    process.env.TEST_DATABASE_URL =
+      "postgresql://tester:test@localhost:5432/rintara";
+    process.env.DATABASE_URL =
+      "postgres://runtime:secret@LOCALHOST/rintara?sslmode=require";
+    delete process.env.DIRECT_DATABASE_URL;
+
+    expect(() => getIntegrationDatabaseUrl()).toThrow("must be isolated");
+  });
+
+  test("refuses the migration database as an integration target", () => {
+    process.env.RINTARA_ENV = "test";
+    process.env.TEST_DATABASE_URL =
+      "postgresql://tester:test@localhost:5432/rintara";
+    delete process.env.DATABASE_URL;
+    process.env.DIRECT_DATABASE_URL =
+      "postgresql://migration:secret@localhost/rintara";
+
+    expect(() => getIntegrationDatabaseUrl()).toThrow("must be isolated");
+  });
+
+  test("allows an isolated integration database in the test environment", () => {
+    const testDatabaseUrl =
+      "postgresql://postgres:test@127.0.0.1:5432/rintara_test";
+    process.env.RINTARA_ENV = "test";
+    process.env.TEST_DATABASE_URL = testDatabaseUrl;
+    process.env.DATABASE_URL =
+      "postgresql://postgres:local@127.0.0.1:5432/rintara";
+    process.env.DIRECT_DATABASE_URL =
+      "postgresql://postgres:local@127.0.0.1:5432/rintara";
+
+    expect(getIntegrationDatabaseUrl()).toBe(testDatabaseUrl);
   });
 });
