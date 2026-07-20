@@ -39,7 +39,41 @@ export function getMigrationDatabaseUrl() {
 }
 
 export function getIntegrationDatabaseUrl() {
-  return postgresUrlSchema.parse(process.env.TEST_DATABASE_URL);
+  const environment = getRintaraEnvironment();
+  const integrationDatabaseUrl = postgresUrlSchema.parse(
+    process.env.TEST_DATABASE_URL,
+  );
+
+  if (environment !== "test") {
+    throw new Error(
+      "Integration database refused. Set RINTARA_ENV=test explicitly.",
+    );
+  }
+
+  const integrationTarget = getDatabaseTarget(integrationDatabaseUrl);
+
+  for (const configuredUrl of [
+    process.env.DATABASE_URL,
+    process.env.DIRECT_DATABASE_URL,
+  ]) {
+    if (
+      configuredUrl &&
+      getDatabaseTarget(postgresUrlSchema.parse(configuredUrl)) ===
+        integrationTarget
+    ) {
+      throw new Error(
+        "Integration database refused. TEST_DATABASE_URL must be isolated from DATABASE_URL and DIRECT_DATABASE_URL.",
+      );
+    }
+  }
+
+  return integrationDatabaseUrl;
+}
+
+function getDatabaseTarget(connectionUrl: string) {
+  const url = new URL(connectionUrl);
+
+  return `${url.hostname.toLowerCase()}:${url.port || "5432"}${url.pathname}`;
 }
 
 export function getSeedDatabaseUrl() {

@@ -5,6 +5,7 @@ export type ApplicationErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "VALIDATION_FAILED"
+  | "INVALID_STATE_TRANSITION"
   | "INTERNAL_ERROR";
 
 export class ApplicationError extends Error {

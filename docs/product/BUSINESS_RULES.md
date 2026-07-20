@@ -138,7 +138,7 @@ Only `submitted` applications can transition. Acceptance rejects all other submi
 
 ```text
 pending_confirmation -> active -> completed
-                     \-> cancelled
+pending_confirmation/active -> cancelled through an authorized workflow
 ```
 
 Worker and employer confirmation timestamps are independent. The agreement becomes active only after both exist. The snapshot does not mutate after creation.
@@ -159,9 +159,10 @@ Every agreement has at most one session. Skipping states is prohibited.
 earned -> redeemed
        -> expired
        -> revoked
+redeemed -> revoked through authorized moderation
 ```
 
-`redeemed`, `expired`, and `revoked` are terminal for MVP redemption purposes.
+`redeemed`, `expired`, and `revoked` cannot be redeemed again. Administrative revocation is the only transition allowed from `redeemed` and preserves its redemption history.
 
 ### 6.6 Job Boost
 

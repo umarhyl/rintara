@@ -225,6 +225,7 @@ scheduled -> checked_in -> checked_out -> verified
 ```text
 Credit:
 earned -> redeemed | expired | revoked
+redeemed -> revoked through authorized moderation
 ```
 
 ```text

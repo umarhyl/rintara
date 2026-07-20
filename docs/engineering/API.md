@@ -431,7 +431,9 @@ Access: active admin.
 
 Input includes report ID, outcome `resolved` or `rejected`, factual moderator note, and explicit actions. Supported actions include hide/cancel job, suspend user, revoke Work Proof, revoke credit, and deactivate active boost.
 
-All selected actions and the report transition occur consistently and are audited. A complex action may use a dedicated domain command instead of one generic mutation, but callers may never patch raw state.
+The report must currently be `reviewing`. All selected actions and the report transition occur consistently and are audited. Cancelling an unfinished workflow uses the authorized Job and Mini Agreement transitions without inventing a cancelled Work Session state. A complex action may use a dedicated domain command instead of one generic mutation, but callers may never patch raw state.
+
+Revoking a redeemed credit preserves its redemption metadata and deactivates any related active boost in the same moderated workflow.
 
 ### `adminUpsertWageGuideline(input)`
 
