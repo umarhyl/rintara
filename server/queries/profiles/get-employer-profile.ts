@@ -25,41 +25,45 @@ export const getEmployerProfile = cache(async (): Promise<EmployerProfileData> =
     throw new ApplicationError("FORBIDDEN", "Only employers can access this profile.");
   }
 
-  const [profile] = await db
-    .select({
-      userId: employerProfiles.userId,
-      displayName: employerProfiles.displayName,
-      employerType: employerProfiles.employerType,
-      areaId: employerProfiles.areaId,
-      areaName: areas.name,
-      description: employerProfiles.description,
-    })
-    .from(employerProfiles)
-    .innerJoin(areas, eq(employerProfiles.areaId, areas.id))
-    .where(eq(employerProfiles.userId, context.userId))
-    .limit(1);
+  const [profileResult, proofsResult, creditsResult] = await Promise.all([
+    db
+      .select({
+        userId: employerProfiles.userId,
+        displayName: employerProfiles.displayName,
+        employerType: employerProfiles.employerType,
+        areaId: employerProfiles.areaId,
+        areaName: areas.name,
+        description: employerProfiles.description,
+      })
+      .from(employerProfiles)
+      .innerJoin(areas, eq(employerProfiles.areaId, areas.id))
+      .where(eq(employerProfiles.userId, context.userId))
+      .limit(1),
+    
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(workProofs)
+      .where(
+        and(
+          eq(workProofs.employerId, context.userId),
+          eq(workProofs.verificationStatus, "verified")
+        )
+      ),
+
+    db
+      .select({
+        status: opportunityCredits.status,
+        expiresAt: opportunityCredits.expiresAt,
+      })
+      .from(opportunityCredits)
+      .where(eq(opportunityCredits.employerId, context.userId))
+  ]);
+
+  const profile = profileResult[0];
 
   if (!profile) {
     throw new ApplicationError("NOT_FOUND", "Profil pemberi kerja tidak ditemukan.");
   }
-
-  const [proofsResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(workProofs)
-    .where(
-      and(
-        eq(workProofs.employerId, context.userId),
-        eq(workProofs.verificationStatus, "verified")
-      )
-    );
-
-  const creditsResult = await db
-    .select({
-      status: opportunityCredits.status,
-      expiresAt: opportunityCredits.expiresAt,
-    })
-    .from(opportunityCredits)
-    .where(eq(opportunityCredits.employerId, context.userId));
 
   const hasEarnedCredit = creditsResult.some(c => c.status !== "revoked");
   
@@ -70,7 +74,7 @@ export const getEmployerProfile = cache(async (): Promise<EmployerProfileData> =
 
   return {
     ...profile,
-    completedJobsCount: proofsResult?.count ?? 0,
+    completedJobsCount: proofsResult[0]?.count ?? 0,
     activeCreditsCount,
     isOpportunityGiver: hasEarnedCredit,
   };
