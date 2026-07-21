@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { getEmployerProfile } from "@/server/queries/profiles/get-employer-profile";
 import { getOnboardingAreaOptions } from "@/server/queries/onboarding-reference-data";
 import { EmployerProfileForm } from "@/features/employer/components/employer-profile-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function EmployerProfileSettingsPage() {
+  const { getEmployerProfile } = await import("@/server/queries/profiles/get-employer-profile");
   const profile = await getEmployerProfile();
   const areas = await getOnboardingAreaOptions();
 

@@ -1,11 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db } from "@/server/db/client";
-import { employerProfiles } from "@/server/db/schema";
-import { requireActiveUser } from "@/server/auth/identity";
 import { ApplicationError } from "@/server/errors/application-error";
 
 const employerProfileSchema = z.object({
@@ -25,6 +21,7 @@ export async function updateEmployerProfile(
   input: unknown
 ): Promise<UpdateEmployerProfileResult> {
   try {
+    const { requireActiveUser } = await import("@/server/auth/identity");
     const context = await requireActiveUser();
     if (context.role !== "employer") {
       throw new ApplicationError("FORBIDDEN", "Only employers can update this profile.");
@@ -40,6 +37,10 @@ export async function updateEmployerProfile(
     }
 
     const data = parseResult.data;
+    
+    const { db } = await import("@/server/db/client");
+    const { employerProfiles } = await import("@/server/db/schema");
+    const { eq } = await import("drizzle-orm");
 
     await db
       .update(employerProfiles)
