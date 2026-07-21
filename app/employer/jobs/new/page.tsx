@@ -3,6 +3,8 @@ import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { getJobReferenceData } from "@/server/queries/jobs/reference-data";
 import { JobForm } from "@/features/employer/components/job-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewJobPage() {
   await requireDashboardPageRole("employer", "/employer/jobs/new");
 

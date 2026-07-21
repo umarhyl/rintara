@@ -6,6 +6,8 @@ import { getJobReferenceData } from "@/server/queries/jobs/reference-data";
 import { getEmployerJob } from "@/server/queries/jobs/get-employer-job";
 import { JobForm } from "@/features/employer/components/job-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function EditJobPage({
   params,
 }: {
