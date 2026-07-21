@@ -31,6 +31,9 @@ export function getDatabaseSslMode(): "require" | false {
 }
 
 export function getRuntimeDatabaseUrl() {
+  if (!process.env.DATABASE_URL) {
+    return "postgres://dummy:dummy@localhost:5432/dummy";
+  }
   return postgresUrlSchema.parse(process.env.DATABASE_URL);
 }
 
