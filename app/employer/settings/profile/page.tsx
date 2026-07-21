@@ -11,9 +11,14 @@ export const metadata: Metadata = {
 };
 
 export default async function EmployerProfileSettingsPage() {
-  const { getEmployerProfile } = await import("@/server/queries/profiles/get-employer-profile");
+  const [
+    { getEmployerProfile },
+    areas
+  ] = await Promise.all([
+    import("@/server/queries/profiles/get-employer-profile"),
+    getOnboardingAreaOptions()
+  ]);
   const profile = await getEmployerProfile();
-  const areas = await getOnboardingAreaOptions();
 
   return (
     <div className="grid gap-8 max-w-4xl mx-auto py-8 px-4 sm:px-6">
