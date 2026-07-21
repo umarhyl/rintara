@@ -101,7 +101,7 @@ export const jobs = pgTable(
     ),
     check(
       "jobs_first_opportunity_eligibility_check",
-      sql`NOT ${table.isFirstOpportunity} OR (${table.riskLevel} = 'low' AND ${table.wageStatus} = 'compliant')`,
+      sql`NOT ${table.isFirstOpportunity} OR ${table.status} IN ('draft', 'cancelled') OR (${table.riskLevel} = 'low' AND ${table.wageStatus} = 'compliant')`,
     ),
     check(
       "jobs_published_at_state_check",
