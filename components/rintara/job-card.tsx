@@ -4,9 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { StatusBadge } from "@/components/rintara/status-badge";
 
-type Job = (typeof import("@/lib/demo-data").demoJobs)[number];
+export type JobCardView = {
+  id: string;
+  title: string;
+  category: string;
+  employer: string;
+  publicLocation: string;
+  wage: string;
+  date: string;
+  duration: string;
+  firstOpportunity: boolean;
+  boosted: boolean;
+};
 
-export function JobCard({ job, featured = false }: { job: Job; featured?: boolean }) {
+export function JobCard({
+  job,
+  featured = false,
+}: {
+  job: JobCardView;
+  featured?: boolean;
+}) {
   return (
     <Card className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-[1.65rem] bg-card/78 shadow-none backdrop-blur-sm ${featured ? "lg:col-span-2" : ""}`}>
       {job.firstOpportunity ? <span className="absolute inset-y-7 left-0 w-0.5 rounded-r-full bg-opportunity" aria-hidden="true" /> : null}

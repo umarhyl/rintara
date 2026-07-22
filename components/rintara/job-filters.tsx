@@ -26,27 +26,44 @@ import {
 
 export type JobFilterValues = {
   search: string;
-  category: "all" | "event" | "cleaning" | "admin";
+  categoryId: string;
+  areaId: string;
+  minimumWage: string;
+  maximumWage: string;
   opportunity: "all" | "first" | "general";
 };
 
 type FilterFieldsProps = JobFilterValues & {
   prefix: string;
+  categories: { id: string; name: string }[];
+  areas: { id: string; name: string }[];
   onSearchChange: (value: string) => void;
-  onCategoryChange: (value: JobFilterValues["category"]) => void;
+  onCategoryChange: (value: string) => void;
+  onAreaChange: (value: string) => void;
+  onMinimumWageChange: (value: string) => void;
+  onMaximumWageChange: (value: string) => void;
   onOpportunityChange: (value: JobFilterValues["opportunity"]) => void;
 };
 
 function FilterFields({
   prefix,
+  categories,
+  areas,
   search,
-  category,
+  categoryId,
+  areaId,
+  minimumWage,
+  maximumWage,
   opportunity,
   onSearchChange,
   onCategoryChange,
+  onAreaChange,
+  onMinimumWageChange,
+  onMaximumWageChange,
   onOpportunityChange,
 }: FilterFieldsProps) {
-  const categoryId = `${prefix}-category`;
+  const categorySelectId = `${prefix}-category`;
+  const areaSelectId = `${prefix}-area`;
   const opportunityId = `${prefix}-opportunity`;
 
   return (
@@ -68,18 +85,60 @@ function FilterFields({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor={categoryId}>Kategori</Label>
-        <Select value={category} onValueChange={onCategoryChange}>
-          <SelectTrigger id={categoryId} className="h-12 w-full rounded-xl">
+        <Label htmlFor={categorySelectId}>Kategori</Label>
+        <Select value={categoryId} onValueChange={onCategoryChange}>
+          <SelectTrigger id={categorySelectId} className="h-12 w-full rounded-xl">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua kategori</SelectItem>
-            <SelectItem value="event">Event Helper</SelectItem>
-            <SelectItem value="cleaning">Light Cleaning</SelectItem>
-            <SelectItem value="admin">Administrasi sederhana</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={areaSelectId}>Lokasi</Label>
+        <Select value={areaId} onValueChange={onAreaChange}>
+          <SelectTrigger id={areaSelectId} className="h-12 w-full rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua lokasi</SelectItem>
+            {areas.map((area) => (
+              <SelectItem key={area.id} value={area.id}>
+                {area.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-min-wage`}>Upah min.</Label>
+          <Input
+            id={`${prefix}-min-wage`}
+            value={minimumWage}
+            onChange={(event) => onMinimumWageChange(event.target.value)}
+            inputMode="numeric"
+            className="h-12 rounded-xl"
+            placeholder="0"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-max-wage`}>Upah maks.</Label>
+          <Input
+            id={`${prefix}-max-wage`}
+            value={maximumWage}
+            onChange={(event) => onMaximumWageChange(event.target.value)}
+            inputMode="numeric"
+            className="h-12 rounded-xl"
+            placeholder="500000"
+          />
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor={opportunityId}>Jenis kesempatan</Label>
@@ -100,21 +159,37 @@ function FilterFields({
 
 export function JobFilters({
   initialValues,
+  categories,
+  areas,
 }: {
   initialValues: JobFilterValues;
+  categories: { id: string; name: string }[];
+  areas: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState(initialValues.search);
-  const [category, setCategory] = useState(initialValues.category);
+  const [categoryId, setCategoryId] = useState(initialValues.categoryId);
+  const [areaId, setAreaId] = useState(initialValues.areaId);
+  const [minimumWage, setMinimumWage] = useState(initialValues.minimumWage);
+  const [maximumWage, setMaximumWage] = useState(initialValues.maximumWage);
   const [opportunity, setOpportunity] = useState(initialValues.opportunity);
 
   function navigate(nextValues: JobFilterValues) {
     const query = new URLSearchParams();
 
     if (nextValues.search.trim()) query.set("q", nextValues.search.trim());
-    if (nextValues.category !== "all") {
-      query.set("category", nextValues.category);
+    if (nextValues.categoryId !== "all") {
+      query.set("category", nextValues.categoryId);
+    }
+    if (nextValues.areaId !== "all") {
+      query.set("location", nextValues.areaId);
+    }
+    if (nextValues.minimumWage.trim()) {
+      query.set("minWage", nextValues.minimumWage.trim());
+    }
+    if (nextValues.maximumWage.trim()) {
+      query.set("maxWage", nextValues.maximumWage.trim());
     }
     if (nextValues.opportunity !== "all") {
       query.set("opportunity", nextValues.opportunity);
@@ -125,33 +200,61 @@ export function JobFilters({
   }
 
   function applyFilters() {
-    navigate({ search, category, opportunity });
+    navigate({
+      search,
+      categoryId,
+      areaId,
+      minimumWage,
+      maximumWage,
+      opportunity,
+    });
   }
 
   function resetFilters() {
     setSearch("");
-    setCategory("all");
+    setCategoryId("all");
+    setAreaId("all");
+    setMinimumWage("");
+    setMaximumWage("");
     setOpportunity("all");
-    navigate({ search: "", category: "all", opportunity: "all" });
+    navigate({
+      search: "",
+      categoryId: "all",
+      areaId: "all",
+      minimumWage: "",
+      maximumWage: "",
+      opportunity: "all",
+    });
   }
 
   const filterFieldProps = {
+    categories,
+    areas,
     search,
-    category,
+    categoryId,
+    areaId,
+    minimumWage,
+    maximumWage,
     opportunity,
     onSearchChange: setSearch,
-    onCategoryChange: setCategory,
+    onCategoryChange: setCategoryId,
+    onAreaChange: setAreaId,
+    onMinimumWageChange: setMinimumWage,
+    onMaximumWageChange: setMaximumWage,
     onOpportunityChange: setOpportunity,
   };
   const activeFilterCount =
     Number(search.trim().length > 0) +
-    Number(category !== "all") +
+    Number(categoryId !== "all") +
+    Number(areaId !== "all") +
+    Number(minimumWage.trim().length > 0) +
+    Number(maximumWage.trim().length > 0) +
     Number(opportunity !== "all");
 
   return (
     <section aria-label="Filter pekerjaan">
       <form
-        className="hidden rounded-[1.6rem] border border-border/75 bg-card/92 p-5 shadow-[0_26px_65px_-38px_rgb(15_23_42/0.55)] backdrop-blur-2xl lg:grid lg:grid-cols-[minmax(16rem,1fr)_13rem_13rem_auto] lg:items-end lg:gap-4"
+        className="hidden rounded-[1.6rem] border border-border/75 bg-card/92 p-5 shadow-[0_26px_65px_-38px_rgb(15_23_42/0.55)] backdrop-blur-2xl lg:grid lg:grid-cols-[minmax(16rem,1fr)_13rem_13rem_16rem_13rem_auto] lg:items-end lg:gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
