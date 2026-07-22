@@ -3,6 +3,7 @@ import { expect, mock, test } from "bun:test";
 
 mock.module("server-only", () => ({}));
 
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -15,7 +16,7 @@ import { areas, categories } from "@/server/db/schema";
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
 
 databaseTest(
-  "reads and updates only the authenticated worker profile",
+  "manages only the authenticated profile and evaluates category eligibility",
   async () => {
     expect(process.env.RINTARA_ENV).toBe("test");
     const client = postgres(getIntegrationDatabaseUrl(), {
@@ -28,6 +29,9 @@ databaseTest(
     try {
       const { updateWorkerProfileInDatabase } = await import(
         "@/server/domain/profiles/worker-profile"
+      );
+      const { isFirstOpportunityEligible } = await import(
+        "@/server/domain/first-opportunity-eligibility"
       );
       const { queryWorkerProfile } = await import(
         "@/server/queries/profiles/get-worker-profile"
@@ -42,6 +46,7 @@ databaseTest(
       const categoryAId = randomUUID();
       const categoryBId = randomUUID();
       const inactiveCategoryId = randomUUID();
+      const adminId = randomUUID();
 
       await database.insert(areas).values([
         {
@@ -76,12 +81,14 @@ databaseTest(
           slug: `worker-a-${fixtureId}`,
           name: "Kategori Worker A",
           riskLevel: "low",
+          firstOpportunityAllowed: true,
         },
         {
           id: categoryBId,
           slug: `worker-b-${fixtureId}`,
           name: "Kategori Worker B",
           riskLevel: "low",
+          firstOpportunityAllowed: true,
         },
         {
           id: inactiveCategoryId,
@@ -127,6 +134,11 @@ databaseTest(
           description: null,
         },
       );
+      await database.insert(schema.users).values({
+        id: adminId,
+        authSubject: `admin-${fixtureId}`,
+        role: "admin",
+      });
 
       const context = (
         userId: string,
@@ -141,6 +153,134 @@ databaseTest(
       const workerAContext = context(workerA.userId, "worker");
       const workerBContext = context(workerB.userId, "worker");
       const employerContext = context(employer.userId, "employer");
+
+      expect(
+        await isFirstOpportunityEligible(
+          database,
+          workerA.userId,
+          categoryAId,
+        ),
+      ).toBe(true);
+
+      const proofJobId = randomUUID();
+      const proofApplicationId = randomUUID();
+      const proofAgreementId = randomUUID();
+      const proofId = randomUUID();
+      const startedAt = new Date("2026-07-01T08:00:00.000Z");
+      const completedAt = new Date("2026-07-01T10:00:00.000Z");
+
+      await database.insert(schema.jobs).values({
+        id: proofJobId,
+        employerId: employer.userId,
+        categoryId: categoryAId,
+        areaId: areaAId,
+        title: "Pekerjaan Bukti Sintetis",
+        description: "Data sintetis untuk pengujian eligibility.",
+        taskScope: "Menguji eligibility per kategori.",
+        publicLocationLabel: "Kota Worker A",
+        startsAt: startedAt,
+        estimatedMinutes: 120,
+        wageAmount: BigInt(150_000),
+        wageUnit: "job",
+        wageStatus: "compliant",
+        paymentMethod: "Tunai di luar Rintara",
+        paymentTiming: "Setelah pekerjaan selesai",
+        riskLevel: "low",
+        applicationDeadline: new Date("2026-06-30T08:00:00.000Z"),
+        status: "completed",
+        publishedAt: new Date("2026-06-29T08:00:00.000Z"),
+        completedAt,
+      });
+      await database.insert(schema.applications).values({
+        id: proofApplicationId,
+        jobId: proofJobId,
+        workerId: workerA.userId,
+        note: "Catatan aplikasi sintetis.",
+        firstOpportunityEligibleAtSubmission: false,
+        status: "accepted",
+        decidedAt: new Date("2026-06-30T09:00:00.000Z"),
+      });
+      await database.insert(schema.agreements).values({
+        id: proofAgreementId,
+        applicationId: proofApplicationId,
+        jobId: proofJobId,
+        workerId: workerA.userId,
+        employerId: employer.userId,
+        termsSnapshot: {
+          title: "Pekerjaan Bukti Sintetis",
+          categoryId: categoryAId,
+          categoryName: "Kategori Worker A",
+          taskScope: "Menguji eligibility per kategori.",
+          generalArea: "Kota Worker A",
+          fullAddress: "Alamat sintetis",
+          arrivalInstructions: null,
+          startsAt: startedAt.toISOString(),
+          estimatedMinutes: 120,
+          wageAmount: "150000",
+          wageUnit: "job",
+          paymentMethod: "Tunai di luar Rintara",
+          paymentTiming: "Setelah pekerjaan selesai",
+          toolsProvided: null,
+          toolsRequired: null,
+          cancellationWording: "Kesepakatan sintetis.",
+        },
+        isFirstOpportunity: false,
+        wageStatus: "compliant",
+        workerConfirmedAt: startedAt,
+        employerConfirmedAt: startedAt,
+        status: "completed",
+      });
+      await database.insert(schema.workProofs).values({
+        id: proofId,
+        agreementId: proofAgreementId,
+        workerId: workerA.userId,
+        employerId: employer.userId,
+        categoryId: categoryAId,
+        jobTitleSnapshot: "Pekerjaan Bukti Sintetis",
+        areaLabelSnapshot: "Kota Worker A",
+        wageAmountSnapshot: BigInt(150_000),
+        wageUnitSnapshot: "job",
+        startedAt,
+        completedAt,
+      });
+
+      expect(
+        await database.transaction((tx) =>
+          isFirstOpportunityEligible(tx, workerA.userId, categoryAId),
+        ),
+      ).toBe(false);
+      expect(
+        await isFirstOpportunityEligible(
+          database,
+          workerA.userId,
+          categoryBId,
+        ),
+      ).toBe(true);
+      expect(
+        await isFirstOpportunityEligible(
+          database,
+          workerB.userId,
+          categoryAId,
+        ),
+      ).toBe(true);
+
+      await database
+        .update(schema.workProofs)
+        .set({
+          verificationStatus: "revoked",
+          revokedAt: new Date("2026-07-02T08:00:00.000Z"),
+          revokedBy: adminId,
+          revocationReason: "Revokasi sintetis untuk pengujian.",
+        })
+        .where(eq(schema.workProofs.id, proofId));
+
+      expect(
+        await isFirstOpportunityEligible(
+          database,
+          workerA.userId,
+          categoryAId,
+        ),
+      ).toBe(true);
 
       expect(await queryWorkerProfile(database, workerAContext)).toMatchObject({
         userId: workerA.userId,

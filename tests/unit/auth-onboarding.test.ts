@@ -28,6 +28,13 @@ describe("authentication identity", () => {
     expect(
       hasCompleteRoleProfile({
         role: "worker",
+        workerProfileId: "worker-profile",
+        employerProfileId: null,
+      }),
+    ).toBe(true);
+    expect(
+      hasCompleteRoleProfile({
+        role: "worker",
         workerProfileId: null,
         employerProfileId: "employer-profile",
       }),
