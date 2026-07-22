@@ -29,9 +29,11 @@ import { publicJobCardProjection } from "@/server/queries/public-job-projection"
 type PublicJobsDatabase = PostgresJsDatabase<typeof schema>;
 
 export type OpportunityFilter = "all" | "first" | "general";
+export type PublicJobCategoryFilter = "all" | "event" | "cleaning" | "admin";
 
 export type PublicJobListInput = {
   search?: string;
+  category?: PublicJobCategoryFilter;
   categoryId?: string;
   areaId?: string;
   minimumWage?: number;
@@ -75,23 +77,9 @@ export type PublicJobDetail = PublicJobCard & {
   toolsRequired: string | null;
 };
 
-type PublicJobCardRow = {
-  id: string;
-  title: string;
-  categoryId: string;
-  categoryName: string;
-  areaId: string;
-  areaName: string;
-  publicLocationLabel: string;
+type PublicJobCardRow = Omit<PublicJobCard, "wageAmount" | "publishedAt"> & {
   wageAmount: bigint;
-  wageUnit: "hour" | "day" | "job";
-  startsAt: Date;
-  estimatedMinutes: number;
-  applicationDeadline: Date;
-  isFirstOpportunity: boolean;
   publishedAt: Date | null;
-  employerDisplayName: string;
-  activeBoost: boolean;
 };
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -118,6 +106,13 @@ function activeBoostExpression() {
   )`;
 }
 
+function categoryNameForFilter(category: PublicJobCategoryFilter | undefined) {
+  if (category === "event") return "Event Helper";
+  if (category === "cleaning") return "Light Cleaning";
+  if (category === "admin") return "Simple Administration";
+  return null;
+}
+
 function publicJobConditions(input: PublicJobListInput = {}) {
   const conditions: SQL[] = [
     eq(jobs.status, "published"),
@@ -141,6 +136,8 @@ function publicJobConditions(input: PublicJobListInput = {}) {
     );
   }
 
+  const categoryName = categoryNameForFilter(input.category);
+  if (categoryName) conditions.push(eq(categories.name, categoryName));
   if (input.categoryId) conditions.push(eq(jobs.categoryId, input.categoryId));
   if (input.areaId) conditions.push(eq(jobs.areaId, input.areaId));
   if (input.minimumWage !== undefined) {
@@ -161,22 +158,9 @@ function publicJobConditions(input: PublicJobListInput = {}) {
 
 function toPublicJobCard(row: PublicJobCardRow) {
   return {
-    id: row.id,
-    title: row.title,
-    categoryId: row.categoryId,
-    categoryName: row.categoryName,
-    areaId: row.areaId,
-    areaName: row.areaName,
-    publicLocationLabel: row.publicLocationLabel,
+    ...row,
     wageAmount: Number(row.wageAmount),
-    wageUnit: row.wageUnit,
-    startsAt: row.startsAt,
-    estimatedMinutes: row.estimatedMinutes,
-    applicationDeadline: row.applicationDeadline,
-    isFirstOpportunity: row.isFirstOpportunity,
     publishedAt: row.publishedAt!,
-    employerDisplayName: row.employerDisplayName,
-    activeBoost: row.activeBoost,
   } satisfies PublicJobCard;
 }
 
@@ -219,10 +203,9 @@ export async function listPublishedJobs(
     .offset((page - 1) * pageSize);
 
   const hasNextPage = rows.length > pageSize;
-  const items = rows.slice(0, pageSize).map(toPublicJobCard);
 
   return {
-    items,
+    items: rows.slice(0, pageSize).map(toPublicJobCard),
     page,
     pageSize,
     hasNextPage,
@@ -255,17 +238,13 @@ export async function getPublishedJob(
     .limit(1);
 
   if (!row) {
-    throw new ApplicationError(
-      "JOB_NOT_FOUND",
-      "The requested job was not found.",
-    );
+    throw new ApplicationError("JOB_NOT_FOUND", "The requested job was not found.");
   }
 
   return {
     ...toPublicJobCard(row),
     description: row.description,
     taskScope: row.taskScope,
-    estimatedMinutes: row.estimatedMinutes,
     wageStatus: row.wageStatus,
     paymentMethod: row.paymentMethod,
     paymentTiming: row.paymentTiming,

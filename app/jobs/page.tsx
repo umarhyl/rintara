@@ -1,23 +1,22 @@
-import Link from "next/link";
 import { ArrowDown, SlidersHorizontal } from "lucide-react";
 import { AmbientBackdrop } from "@/components/rintara/ambient-backdrop";
 import { EmptyState } from "@/components/rintara/empty-state";
-import { JobCard, type JobCardView } from "@/components/rintara/job-card";
+import { JobCard } from "@/components/rintara/job-card";
 import {
   JobFilters,
   type JobFilterValues,
 } from "@/components/rintara/job-filters";
 import { PublicShell } from "@/components/rintara/public-shell";
-import { Button } from "@/components/ui/button";
 import {
-  getPublicJobReferenceData,
   listPublishedJobs,
   type OpportunityFilter,
   type PublicJobCard,
+  type PublicJobCategoryFilter,
 } from "@/server/queries/jobs/public-jobs";
 
 export const metadata = { title: "Cari pekerjaan" };
 
+const categoryValues = ["all", "event", "cleaning", "admin"] as const;
 const opportunityValues = ["all", "first", "general"] as const;
 const pageSize = 10;
 
@@ -31,24 +30,21 @@ function parsePositiveInteger(value: string) {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-function parseFilters(
-  searchParams: {
+function parseFilters(searchParams: {
   q?: string | string[];
   category?: string | string[];
-  location?: string | string[];
-  minWage?: string | string[];
-  maxWage?: string | string[];
   opportunity?: string | string[];
-  },
-): JobFilterValues {
+}): JobFilterValues {
+  const rawCategory = firstQueryValue(searchParams.category);
   const rawOpportunity = firstQueryValue(searchParams.opportunity);
 
   return {
     search: firstQueryValue(searchParams.q).trim().slice(0, 120),
-    categoryId: firstQueryValue(searchParams.category) || "all",
-    areaId: firstQueryValue(searchParams.location) || "all",
-    minimumWage: firstQueryValue(searchParams.minWage).replace(/\D/g, "").slice(0, 12),
-    maximumWage: firstQueryValue(searchParams.maxWage).replace(/\D/g, "").slice(0, 12),
+    category: categoryValues.includes(
+      rawCategory as JobFilterValues["category"],
+    )
+      ? (rawCategory as JobFilterValues["category"])
+      : "all",
     opportunity: opportunityValues.includes(
       rawOpportunity as JobFilterValues["opportunity"],
     )
@@ -87,7 +83,7 @@ function formatDuration(minutes: number) {
     : `Sekitar ${hours} jam`;
 }
 
-function toJobCardView(job: PublicJobCard): JobCardView {
+function toJobCardView(job: PublicJobCard) {
   return {
     id: job.id,
     title: job.title,
@@ -102,29 +98,12 @@ function toJobCardView(job: PublicJobCard): JobCardView {
   };
 }
 
-function paginationHref(filters: JobFilterValues, page: number) {
-  const query = new URLSearchParams();
-  if (filters.search) query.set("q", filters.search);
-  if (filters.categoryId !== "all") query.set("category", filters.categoryId);
-  if (filters.areaId !== "all") query.set("location", filters.areaId);
-  if (filters.minimumWage) query.set("minWage", filters.minimumWage);
-  if (filters.maximumWage) query.set("maxWage", filters.maximumWage);
-  if (filters.opportunity !== "all") query.set("opportunity", filters.opportunity);
-  if (page > 1) query.set("page", String(page));
-
-  const serialized = query.toString();
-  return serialized ? `/jobs?${serialized}` : "/jobs";
-}
-
 export default async function JobsPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string | string[];
     category?: string | string[];
-    location?: string | string[];
-    minWage?: string | string[];
-    maxWage?: string | string[];
     opportunity?: string | string[];
     page?: string | string[];
   }>;
@@ -132,20 +111,15 @@ export default async function JobsPage({
   const resolvedSearchParams = await searchParams;
   const filters = parseFilters(resolvedSearchParams);
   const page = parsePage(resolvedSearchParams.page);
-  const [referenceData, jobPage] = await Promise.all([
-    getPublicJobReferenceData(),
-    listPublishedJobs({
-      search: filters.search,
-      categoryId: filters.categoryId === "all" ? undefined : filters.categoryId,
-      areaId: filters.areaId === "all" ? undefined : filters.areaId,
-      minimumWage: parsePositiveInteger(filters.minimumWage),
-      maximumWage: parsePositiveInteger(filters.maximumWage),
-      opportunity: filters.opportunity as OpportunityFilter,
-      page,
-      pageSize,
-    }),
-  ]);
-  const filterKey = `${filters.search}:${filters.categoryId}:${filters.areaId}:${filters.minimumWage}:${filters.maximumWage}:${filters.opportunity}`;
+  const jobPage = await listPublishedJobs({
+    search: filters.search,
+    category: filters.category as PublicJobCategoryFilter,
+    opportunity: filters.opportunity as OpportunityFilter,
+    page,
+    pageSize,
+  });
+  const filteredJobs = jobPage.items.map(toJobCardView);
+  const filterKey = `${filters.search}:${filters.category}:${filters.opportunity}`;
 
   return (
     <PublicShell>
@@ -191,12 +165,7 @@ export default async function JobsPage({
         <AmbientBackdrop variant="page" className="opacity-40" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative z-10 -mt-20 sm:-mt-24">
-            <JobFilters
-              key={filterKey}
-              initialValues={filters}
-              categories={referenceData.categories}
-              areas={referenceData.areas}
-            />
+            <JobFilters key={filterKey} initialValues={filters} />
           </div>
 
           <div className="mt-12 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -205,7 +174,7 @@ export default async function JobsPage({
                 Ditemukan di Bandung
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
-                {jobPage.items.length} pekerjaan terbuka
+                {filteredJobs.length} pekerjaan terbuka
               </h2>
             </div>
             <span className="flex min-h-11 w-fit items-center gap-2 rounded-full px-3 text-sm text-muted-foreground">
@@ -214,12 +183,12 @@ export default async function JobsPage({
             </span>
           </div>
 
-          {jobPage.items.length > 0 ? (
+          {filteredJobs.length > 0 ? (
             <div className="mt-6 grid gap-5 lg:grid-cols-2" data-reveal-list>
-              {jobPage.items.map((job, index) => (
+              {filteredJobs.map((job, index) => (
                 <JobCard
                   key={job.id}
-                  job={toJobCardView(job)}
+                  job={job}
                   featured={index === 0}
                 />
               ))}
@@ -234,45 +203,6 @@ export default async function JobsPage({
               />
             </div>
           )}
-
-          {(jobPage.hasPreviousPage || jobPage.hasNextPage) ? (
-            <nav
-              className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-5"
-              aria-label="Paginasi pekerjaan"
-            >
-              <Button
-                variant="outline"
-                className="rounded-full"
-                asChild={jobPage.hasPreviousPage}
-                disabled={!jobPage.hasPreviousPage}
-              >
-                {jobPage.hasPreviousPage ? (
-                  <Link href={paginationHref(filters, jobPage.page - 1)}>
-                    Sebelumnya
-                  </Link>
-                ) : (
-                  "Sebelumnya"
-                )}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Halaman {jobPage.page}
-              </span>
-              <Button
-                variant="outline"
-                className="rounded-full"
-                asChild={jobPage.hasNextPage}
-                disabled={!jobPage.hasNextPage}
-              >
-                {jobPage.hasNextPage ? (
-                  <Link href={paginationHref(filters, jobPage.page + 1)}>
-                    Berikutnya
-                  </Link>
-                ) : (
-                  "Berikutnya"
-                )}
-              </Button>
-            </nav>
-          ) : null}
         </div>
       </section>
 
