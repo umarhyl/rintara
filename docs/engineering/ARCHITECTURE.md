@@ -37,7 +37,7 @@ Non-goals include microservices, event streaming, realtime chat, payment infrast
 | Data access | Drizzle ORM plus explicit SQL where transaction or query-plan control is needed |
 | Authentication | Supabase Auth with cookie-based Next.js SSR; no custom password or session implementation |
 | Deployment | Vercel; `main` is the production branch |
-| Testing | Unit/domain tests, PostgreSQL integration tests, and Playwright end-to-end tests |
+| Testing | Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing |
 
 ADR-011 and ADR-012 select Vercel, Supabase Managed PostgreSQL, and Supabase Auth. Business data remains provider-portable: Drizzle and parameterized SQL use standard PostgreSQL connections, while provider-specific authentication code stays behind the auth infrastructure boundary.
 
@@ -133,7 +133,6 @@ lib/                      # framework-neutral utilities
 tests/
   unit/
   integration/
-  e2e/
 ```
 
 Rules:
@@ -338,7 +337,7 @@ Database migrations run as a controlled deployment step. Application instances m
 - Integration tests run against real PostgreSQL behavior, not an in-memory substitute for transaction-sensitive paths.
 - Concurrency tests cover acceptance, completion, and credit redemption.
 - Query tests verify public/private projections.
-- Playwright covers the golden path and required authorization scenarios.
+- Manual release smoke testing rehearses the golden path and required authorization scenarios.
 - Seed data creates two employers, multiple workers with category-specific history, compliant and non-compliant jobs, credits, and a report scenario.
 
 ## 16. Architecture Decision Guardrails

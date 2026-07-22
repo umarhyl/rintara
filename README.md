@@ -25,7 +25,7 @@ Payments are recorded as agreement terms but take place outside Rintara during t
 - Drizzle ORM with repository-managed SQL migrations
 - Supabase Auth with server-side session validation
 - Vercel deployment with `main` as the production branch
-- Unit, PostgreSQL integration, and Playwright end-to-end tests
+- Unit tests, PostgreSQL integration tests, and manual release smoke testing
 
 Vercel, Supabase Managed PostgreSQL, and Supabase Auth are accepted in ADR-011 and ADR-012. Project-specific production-readiness evidence such as region, plan limits, backup restore, connection sizing, callbacks, and test accounts must still be recorded before release.
 
@@ -82,17 +82,11 @@ Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
 | `typecheck` | Run strict TypeScript checking |
 | `test` | Run fast unit/domain tests |
 | `test:integration` | Run tests against isolated PostgreSQL |
-| `test:e2e` | Run Playwright golden-path tests |
-| `test:e2e:install` | Install the local Chromium runtime used by Playwright |
 | `db:check` | Validate committed Drizzle migration consistency |
 | `db:migrate` | Apply committed migrations |
 | `db:seed` | Load synthetic development/demo data |
 
 Run them with `bun run <script>`. Database schema lives under `server/db/schema/`, committed migrations live under `drizzle/`, and database operations enforce the environment guards documented in `.env.example`.
-
-Before the first E2E run, use `bun run test:e2e:install`. E2E requires a
-disposable `TEST_DATABASE_URL` and Supabase email signup with auto-confirm
-enabled; it never falls back to the development database.
 
 ## Setup Checklist
 

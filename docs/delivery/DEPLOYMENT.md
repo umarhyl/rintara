@@ -10,7 +10,7 @@ Rintara maintains strict isolation between development, testing, and production 
 ### Local Development (`.env.local`)
 - **Vercel Env**: Handled locally via `.env.local`
 - **Database**: Connects to the local development Supabase project.
-- **Variables**: `DATABASE_URL` (local connection), `NEXT_PUBLIC_SUPABASE_URL` (local API), `NEXT_PUBLIC_SUPABASE_ANON_KEY` (local key).
+- **Variables**: `DATABASE_URL` (local connection), `NEXT_PUBLIC_SUPABASE_URL` (local API), `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (local publishable key).
 
 ### Automated Testing (`ci.yml`)
 - **Environment**: Handled by GitHub Actions and defined in the `integration` job.
@@ -31,6 +31,8 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) guarantees code quality
 The pipeline includes:
 - **Quality Job**: Validates Typescript (`typecheck`), Linting (`eslint`), Unit tests (`bun test`), Drizzle Schema (`db:check`), and performs a Next.js test `build`.
 - **Integration Job**: Runs the backend constraints and authorization logic against a live, isolated test PostgreSQL database.
+
+Browser release smoke testing is manual and uses the approved release-candidate or demo environment; it is not part of the default CI pipeline.
 
 ## 3. Deployment Review Process
 

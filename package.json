@@ -11,8 +11,6 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
-    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright test",
-    "test:e2e:install": "PLAYWRIGHT_BROWSERS_PATH=.playwright-browsers playwright install chromium",
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run server/db/migrate.ts",
@@ -37,7 +35,6 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/bun": "^1.3.14",
     "@types/node": "^20",

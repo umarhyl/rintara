@@ -335,7 +335,7 @@ No concurrency, uptime, or throughput claim may be published without measured ev
 - A forced write failure rolls back the entire transaction.
 - Public job projection excludes private address fields.
 
-### End to end
+### Manual release smoke
 
 1. Employer-to-worker golden path through Work Proof and credit redemption.
 2. Employer B cannot access or modify Employer A's job and applicants.

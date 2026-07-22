@@ -34,7 +34,7 @@ No phase is complete because pages exist. Each exit criterion requires authoriza
 
 | Owner | Primary responsibility | Shared quality responsibility |
 | --- | --- | --- |
-| Umar — Backend Engineer | PostgreSQL/Drizzle, migrations, domain commands, API contracts, Supabase Auth integration, authorization, backend tests, Vercel/Supabase operations | Security, data integrity, integration/E2E support, deployment and demo reliability |
+| Umar — Backend Engineer | PostgreSQL/Drizzle, migrations, domain commands, API contracts, Supabase Auth integration, authorization, backend tests, Vercel/Supabase operations | Security, data integrity, integration support, deployment and demo reliability |
 | Zaki — Frontend Engineer | App Router screens, forms, responsive UI, client interactions, loading/error/retry states | Accessibility, UI tests, public/private rendering checks, demo interface |
 | Catur — Product Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
 
@@ -46,7 +46,7 @@ Testing is shared: Umar owns domain, PostgreSQL integration, concurrency, and se
 
 **Date:** July 18
 
-**Status:** Completed on July 19, 2026; documentation, ownership, team walkthrough, and sign-off recorded.
+**Status:** Completed on July 19, 2026 for repository-controlled documentation and decision lock.
 
 Deliverables:
 
@@ -65,7 +65,7 @@ Exit criteria:
 
 **Dates:** July 18–20
 
-**Status:** Completed on July 21, 2026; milestone-2-ready foundation; all P0 acceptance scenarios tested and passing.
+**Status:** Completed on July 21, 2026 for milestone-2-ready foundation. Full P0 golden-path acceptance remains tracked by Milestones 2-5.
 
 Deliverables:
 
@@ -89,6 +89,11 @@ Exit criteria:
 - Migrations run from an empty database.
 - A Vercel review deployment is reachable when required for acceptance; non-`main` branches do not deploy automatically.
 - No secret or synthetic full address leaks into public output.
+
+Foundation evidence:
+
+- CI runs lint, typecheck, unit tests, migration check, production build, and PostgreSQL integration tests.
+- Manual release smoke testing covers the browser walkthrough; it is not a Milestone 1 CI requirement.
 
 ### Milestone 2 — Job marketplace vertical slice
 

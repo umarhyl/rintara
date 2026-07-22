@@ -19,7 +19,7 @@ Provider capabilities, pricing, framework support, and limits can change. The de
 - Recovery and session revocation.
 - Preview and production environment isolation.
 - Stable external subject for `users.auth_subject`.
-- Testability in PostgreSQL integration and Playwright E2E.
+- Testability in PostgreSQL integration and manual release smoke testing.
 - Rate limits, abuse controls, logs, data handling, export, and cost.
 - Minimal coupling to database/hosting provider.
 
@@ -70,7 +70,7 @@ Provider choice is closed. Before protected production routes and demo accounts 
 - callback and redirect URLs for each environment;
 - onboarding resume behavior after partial profile creation;
 - suspended/deleted Rintara account enforcement despite a valid Supabase session;
-- Playwright test-account strategy;
+- release smoke test-account strategy;
 - session revocation, key rotation, and incident procedure; and
 - selected-plan rate limits, cost, and relevant hard limits.
 
@@ -90,7 +90,7 @@ The proof of integration must demonstrate:
 - suspended Rintara account rejection despite valid auth session;
 - cross-account authorization tests;
 - preview/production callback separation;
-- Playwright test-account flow; and
+- release smoke test-account flow; and
 - secret absence from client build and logs.
 
 ## Review Triggers

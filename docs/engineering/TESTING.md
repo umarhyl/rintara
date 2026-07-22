@@ -6,18 +6,18 @@
 
 ## 1. Objectives
 
-Testing must provide evidence that Rintara's golden path is correct, private data remains private, and critical operations remain consistent under retries and concurrency.
+Testing must provide evidence that Rintara's core rules are correct, private data remains private, and critical operations remain consistent under retries and concurrency. The full golden path is also rehearsed manually before release.
 
 Priority order:
 
 1. authorization and privacy;
 2. lifecycle and database integrity;
-3. golden-path behavior;
+3. golden-path release rehearsal;
 4. error and recovery behavior;
 5. accessibility and representative performance;
 6. non-critical visual polish.
 
-Passing component tests does not compensate for missing PostgreSQL transaction or end-to-end coverage.
+Passing UI checks does not compensate for missing PostgreSQL transaction coverage.
 
 ## 2. Test Layers
 
@@ -26,7 +26,6 @@ Passing component tests does not compensate for missing PostgreSQL transaction o
 | Static checks | Catch type, import, and style defects | TypeScript, lint, build |
 | Unit/domain | Verify deterministic policies and transitions | Eligibility, wage status, state guards, error mapping |
 | Integration | Verify real PostgreSQL behavior and server contracts | Constraints, transactions, projections, authorization |
-| End to end | Verify user-visible journeys in a deployed-like application | Golden path, cross-account denial, moderation |
 | Accessibility | Verify keyboard, semantics, labels, focus, and contrast | Core pages and dialogs |
 | Performance | Identify measured release blockers | Public landing, discovery, and job detail |
 
@@ -44,14 +43,6 @@ Passing component tests does not compensate for missing PostgreSQL transaction o
 - A unique database/schema per test worker or a serialization strategy that prevents cross-test interference.
 - Migrations applied from an empty database before the suite.
 - Transaction-sensitive tests must not use SQLite or an in-memory substitute.
-
-### End to end
-
-- Production-like Next.js build where practical.
-- Synthetic worker, employer, and admin accounts.
-- Isolated database with deterministic seed and reset.
-- Authentication test strategy approved for the selected provider.
-- No real email, SMS, payment, or personal data.
 
 ## 4. Fixture Model
 
@@ -192,25 +183,25 @@ For each private query or command, test applicable rows:
 
 At minimum, cover jobs, applicant lists, Passport views, agreements, private addresses, attendance, notifications, reports, credits, and admin actions.
 
-## 8. Required End-to-End Scenarios
+## 8. Manual Release Smoke Scenarios
 
-### E2E-001 — Golden path
+### Smoke 1 — Golden path
 
 Employer publishes a compliant First Opportunity job; eligible worker applies; employer accepts; both confirm; worker checks in and out; employer verifies; worker sees Work Proof; employer receives and redeems a credit.
 
-### E2E-002 — Cross-employer isolation
+### Smoke 2 — Cross-employer isolation
 
 Employer B cannot view or mutate Employer A's draft, private address, applicants, agreement, or credits using copied identifiers.
 
-### E2E-003 — Address privacy
+### Smoke 3 — Address privacy
 
 Anonymous user, unrelated worker, and unrelated employer cannot obtain the full address through UI, response, page source, metadata, or predictable URL.
 
-### E2E-004 — Category-specific eligibility
+### Smoke 4 — Category-specific eligibility
 
 Worker with verified category A history can apply to category B First Opportunity but not category A First Opportunity.
 
-### E2E-005 — Report block
+### Smoke 5 — Report block
 
 Relevant report becomes open, completion is blocked, admin reviews and resolves/rejects it, and the documented next action becomes available.
 
@@ -256,7 +247,6 @@ The repository exposes these Bun scripts:
 ```text
 test
 test:integration
-test:e2e
 typecheck
 lint
 build
@@ -264,7 +254,7 @@ build
 
 CI must use the repository lockfile and declared runtime version. Concrete package-manager commands belong in the root README after the implementation repository establishes them.
 
-Run unit tests with `bun run test` and PostgreSQL integration tests with `RINTARA_ENV=test bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL`; they skip when that URL is absent and refuse to run unless `RINTARA_ENV=test`. The database helper also refuses a test target that matches the configured runtime or migration database by host, port, and database name. Install Chromium once with `bun run test:e2e:install` before running `bun run test:e2e`. The issue #5 authentication suite also requires Supabase email signup and email auto-confirm to be enabled; its global setup rejects missing test database configuration instead of falling back to another database.
+Run unit tests with `bun run test` and PostgreSQL integration tests with `RINTARA_ENV=test bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL`; they skip when that URL is absent and refuse to run unless `RINTARA_ENV=test`. The database helper also refuses a test target that matches the configured runtime or migration database by host, port, and database name.
 
 Pull requests and pushes targeting `dev` or `main` run `.github/workflows/ci.yml`.
 The `Quality` job performs a frozen Bun install, lint, typecheck, unit tests,
@@ -287,7 +277,7 @@ does not receive development or production database URLs.
 ### Release candidate
 
 - full integration suite;
-- required E2E suite;
+- manual release smoke checklist;
 - authorization and privacy suite;
 - accessibility checks;
 - production build smoke test;

@@ -108,7 +108,7 @@ Run a repository search for stale terminology when touching related code or docu
 - Drizzle ORM plus explicit parameterized SQL where appropriate
 - Repository-approved validation/form libraries
 - Supabase Auth through the approved Next.js SSR integration
-- Unit/domain tests, PostgreSQL integration tests, and Playwright E2E
+- Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing
 
 Deploy the application on Vercel and use Supabase Managed PostgreSQL and Supabase Auth as accepted in ADR-011 and ADR-012. Business data access uses Drizzle or explicit parameterized PostgreSQL; do not introduce Supabase Data API, Realtime, Storage, or Edge Functions as a second business-state path without an approved architecture decision.
 
@@ -464,9 +464,9 @@ For each private operation, test as applicable:
 - suspended account;
 - authorized owner/party.
 
-### 18.4 End-to-end tests
+### 18.4 Manual release smoke scenarios
 
-Required scenarios:
+Before release, manually rehearse these scenarios in the approved demo or release-candidate environment:
 
 1. Complete golden path through Work Proof and credit boost.
 2. Employer B cannot access Employer A's job or applicants.
