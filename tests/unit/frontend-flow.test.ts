@@ -267,6 +267,35 @@ describe("frontend flow surface", () => {
     expect(employer).toContain("submitEmployerOnboarding");
   });
 
+  test("wires the worker profile screen to private data and validated updates", async () => {
+    const page = await Bun.file("app/worker/profile/page.tsx").text();
+    const form = await Bun.file(
+      "features/onboarding/components/worker-onboarding-form.tsx",
+    ).text();
+
+    expect(page).toContain("getMyProfile");
+    expect(page).toContain("getOnboardingReferenceData");
+    expect(page).toContain("<WorkerProfileForm");
+    expect(page).toContain("profile.displayName");
+    expect(page).toContain("profile.areaName");
+    expect(page).not.toContain("Ayu Pratama");
+    expect(page).not.toContain("Bandung");
+    expect(page).not.toContain('type="tel"');
+    expect(page).not.toContain('type="button"');
+
+    expect(form).toContain("updateWorkerProfile");
+    expect(form).toContain("initialProfile");
+    expect(form).toContain("submittingRef.current");
+    expect(form).toContain('aria-busy={isPending}');
+    expect(form).toContain("Profil belum tersimpan");
+    expect(form).toContain("Profil diperbarui");
+    expect(form).toContain("fieldErrors");
+    expect(form).toMatch(/<fieldset[^>]*>\s*<legend/);
+    expect(form).toContain("verifiedCategoryIds");
+    expect(form).toContain("Belum ada Bukti Kerja terverifikasi");
+    expect(form).not.toContain(".reset()");
+  });
+
   test("prevents same-tick duplicate submissions without clearing valid input", async () => {
     const guardedForms = [
       "features/auth/components/sign-in-form.tsx",
@@ -279,9 +308,20 @@ describe("frontend flow surface", () => {
       const source = await Bun.file(path).text();
       expect(source, path).toContain("submittingRef");
       expect(source, path).toContain("submittingRef.current");
-      expect(source, path).not.toContain("router.refresh()");
       expect(source, path).not.toContain(".reset()");
+      if (!path.includes("worker-onboarding-form")) {
+        expect(source, path).not.toContain("router.refresh()");
+      }
     }
+
+    const workerProfileForm = await Bun.file(
+      "features/onboarding/components/worker-onboarding-form.tsx",
+    ).text();
+    expect(workerProfileForm).toContain("if (initialProfile)");
+    expect(workerProfileForm).toContain("router.refresh()");
+    expect(workerProfileForm).toContain(
+      'router.replace(nextPath ?? "/worker/dashboard")',
+    );
 
     const dashboardShell = await Bun.file(
       "features/dashboard/components/dashboard-shell.tsx",

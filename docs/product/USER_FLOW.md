@@ -74,6 +74,11 @@ Recovery and rules:
 - User does not see a “first-time worker” checkbox; eligibility is calculated by category.
 - If an area or category becomes unavailable before submission, retain the entered profile data, show a safe error, and let the worker choose again.
 - While the profile is being saved, prevent a second submission and keep a transport failure recoverable on the same screen.
+- A returning worker edits only their own server-loaded profile and chooses from
+  currently active areas and categories. Unavailable previous selections require
+  a visible replacement or removal before saving.
+- Category interests remain self-declared. Any per-category verified-experience
+  label is derived from Work Proof and cannot be edited in the profile form.
 
 ### 4.2 New employer
 

@@ -59,7 +59,18 @@ export async function updateWorkerProfile(
     return { ok: true };
   } catch (error) {
     if (error instanceof ApplicationError) {
-      return { ok: false, code: error.code, message: error.message };
+      const message =
+        error.code === "UNAUTHENTICATED"
+          ? "Sesi kamu telah berakhir. Masuk kembali untuk melanjutkan."
+          : error.code === "ACCOUNT_INACTIVE"
+            ? "Akun ini sedang dibatasi dan belum dapat menyimpan profil."
+            : error.code === "FORBIDDEN"
+              ? "Profil pekerja tidak dapat diubah oleh akun ini."
+              : error.code === "VALIDATION_FAILED" || error.code === "NOT_FOUND"
+                ? error.message
+                : "Profil belum dapat disimpan. Silakan coba lagi.";
+
+      return { ok: false, code: error.code, message };
     }
 
     return {
