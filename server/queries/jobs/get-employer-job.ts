@@ -1,3 +1,5 @@
+import "server-only";
+
 import { db } from "@/server/db/client";
 import { jobs, jobPrivateDetails } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";

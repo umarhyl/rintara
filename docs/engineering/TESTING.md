@@ -254,7 +254,7 @@ build
 
 CI must use the repository lockfile and declared runtime version. Concrete package-manager commands belong in the root README after the implementation repository establishes them.
 
-Run unit tests with `bun run test` and PostgreSQL integration tests with `RINTARA_ENV=test bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL`; they skip when that URL is absent and refuse to run unless `RINTARA_ENV=test`. The database helper also refuses a test target that matches the configured runtime or migration database by host, port, and database name.
+Run unit tests with `bun run test` and PostgreSQL integration tests with `RINTARA_ENV=test bun run test:integration`. Integration tests require a dedicated disposable `TEST_DATABASE_URL`; they skip when that URL is absent and refuse to run unless `RINTARA_ENV=test`. The database helper accepts only a loopback target named `rintara_test` and also refuses a target matching the configured runtime or migration database.
 
 Pull requests and pushes targeting `dev` or `main` run `.github/workflows/ci.yml`.
 The `Quality` job performs a frozen Bun install, lint, typecheck, unit tests,

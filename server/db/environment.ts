@@ -70,13 +70,30 @@ export function getIntegrationDatabaseUrl() {
     }
   }
 
+  const url = new URL(integrationDatabaseUrl);
+  const isLoopback = normalizeDatabaseHost(url.hostname) === "loopback";
+
+  if (!isLoopback || url.pathname !== "/rintara_test") {
+    throw new Error(
+      "Integration database refused. TEST_DATABASE_URL must use a loopback host and the rintara_test database.",
+    );
+  }
+
   return integrationDatabaseUrl;
 }
 
 function getDatabaseTarget(connectionUrl: string) {
   const url = new URL(connectionUrl);
 
-  return `${url.hostname.toLowerCase()}:${url.port || "5432"}${url.pathname}`;
+  return `${normalizeDatabaseHost(url.hostname)}:${url.port || "5432"}${url.pathname}`;
+}
+
+function normalizeDatabaseHost(hostname: string) {
+  const host = hostname.toLowerCase();
+
+  return ["localhost", "127.0.0.1", "[::1]"].includes(host)
+    ? "loopback"
+    : host;
 }
 
 export function getSeedDatabaseUrl() {
