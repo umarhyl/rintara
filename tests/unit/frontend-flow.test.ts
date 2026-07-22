@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
-import { demoJobs } from "../../lib/demo-data";
 
 const requiredPages = [
   "app/page.tsx", "app/jobs/page.tsx", "app/jobs/[id]/page.tsx", "app/sign-in/page.tsx", "app/register/page.tsx",
@@ -25,14 +24,6 @@ describe("frontend flow surface", () => {
   test("implements every documented MVP page", () => {
     for (const page of requiredPages) expect(existsSync(page), page).toBe(true);
     expect(existsSync("app/onboarding/loading.tsx")).toBe(true);
-  });
-
-  test("public demo job records contain only general location", () => {
-    for (const job of demoJobs) {
-      expect("fullAddress" in job).toBe(false);
-      expect("address" in job).toBe(false);
-      expect(job.publicLocation).not.toContain("Jl.");
-    }
   });
 
   test("public job screens do not contain the private demo street address", async () => {

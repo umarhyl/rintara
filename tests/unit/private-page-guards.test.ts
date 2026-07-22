@@ -15,7 +15,7 @@ const staticGuardedPages = [
   ["app/admin/audit-logs/page.tsx", "admin", "/admin/audit-logs"],
 ] as const;
 
-const dynamicGuardedPages = [
+const demoRecordGuardedPages = [
   [
     "app/worker/agreements/[id]/page.tsx",
     "worker",
@@ -35,12 +35,6 @@ const dynamicGuardedPages = [
     "kru-acara-akhir-pekan",
   ],
   [
-    "app/employer/jobs/[id]/applicants/page.tsx",
-    "employer",
-    "/employer/jobs/${encodeURIComponent(id)}/applicants",
-    "kru-acara-akhir-pekan",
-  ],
-  [
     "app/employer/agreements/[id]/page.tsx",
     "employer",
     "/employer/agreements/${encodeURIComponent(id)}",
@@ -51,6 +45,16 @@ const dynamicGuardedPages = [
     "employer",
     "/employer/work/${encodeURIComponent(id)}",
     "sesi-pekerjaan",
+  ],
+] as const;
+
+const backendRecordGuardedPages = [
+  [
+    "app/employer/jobs/[id]/applicants/page.tsx",
+    "employer",
+    "/employer/jobs/${encodeURIComponent(id)}/applicants",
+    "getEmployerJob(id, account.userId)",
+    "JOB_NOT_FOUND",
   ],
 ] as const;
 
@@ -131,7 +135,7 @@ describe("private page authorization boundaries", () => {
     },
   );
 
-  test.each(dynamicGuardedPages)(
+  test.each(demoRecordGuardedPages)(
     "%s guards the requested resource path before resolving its demo record",
     (path, role, routeExpression, knownId) => {
       const source = readFileSync(path, "utf8");
@@ -149,6 +153,31 @@ describe("private page authorization boundaries", () => {
       expect(source).toContain(`if (id !== "${knownId}") notFound();`);
       expect(guardIndex).toBeGreaterThan(-1);
       expect(notFoundIndex).toBeGreaterThan(guardIndex);
+      expect(renderIndex).toBeGreaterThan(notFoundIndex);
+    },
+  );
+
+  test.each(backendRecordGuardedPages)(
+    "%s guards the requested resource path before resolving its backend record",
+    (path, role, routeExpression, resourceLookup, notFoundCode) => {
+      const source = readFileSync(path, "utf8");
+      const guardIndex = source.indexOf("await requireDashboardPageRole");
+      const lookupIndex = source.indexOf(resourceLookup);
+      const notFoundIndex = source.indexOf("notFound();", lookupIndex);
+      const renderIndex = source.indexOf("return (", notFoundIndex);
+
+      expect(source).toContain(
+        'import { requireDashboardPageRole } from "@/server/auth/page-access";',
+      );
+      expect(source).toMatch(
+        new RegExp(`requireDashboardPageRole\\(\\s*"${role}"`),
+      );
+      expect(source).toContain(routeExpression);
+      expect(source).toContain(resourceLookup);
+      expect(source).toContain(`error.code === "${notFoundCode}"`);
+      expect(guardIndex).toBeGreaterThan(-1);
+      expect(lookupIndex).toBeGreaterThan(guardIndex);
+      expect(notFoundIndex).toBeGreaterThan(lookupIndex);
       expect(renderIndex).toBeGreaterThan(notFoundIndex);
     },
   );

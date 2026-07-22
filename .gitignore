@@ -3,12 +3,6 @@
 /.pnp
 .pnp.js
 
-# testing
-/coverage
-/playwright-report/
-/test-results/
-/.playwright-browsers/
-
 # next.js
 /.next/
 /out/

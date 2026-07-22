@@ -5,38 +5,85 @@ import {
   FileCheck2,
   Send,
 } from "lucide-react";
+import { EmptyState } from "@/components/rintara/empty-state";
 import { JobCard } from "@/components/rintara/job-card";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
-import { demoApplications, demoJobs } from "@/lib/demo-data";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
+import {
+  listPublishedJobs,
+  type PublicJobCard,
+} from "@/server/queries/jobs/public-jobs";
 
 const workerSummary = [
   {
     label: "Lamaran aktif",
-    value: "2",
-    detail: "1 menunggu keputusan",
+    value: "0",
+    detail: "Belum ada data lamaran",
     icon: Send,
   },
   {
     label: "Kesepakatan",
-    value: "1",
-    detail: "Perlu dikonfirmasi",
+    value: "0",
+    detail: "Belum ada kesepakatan",
     icon: BriefcaseBusiness,
   },
   {
     label: "Bukti Kerja",
-    value: "1",
-    detail: "Sudah terverifikasi",
+    value: "0",
+    detail: "Belum ada bukti kerja",
     icon: FileCheck2,
   },
 ] as const;
+
+function formatWage(amount: number, unit: PublicJobCard["wageUnit"]) {
+  const unitLabel = unit === "hour" ? "jam" : unit === "day" ? "hari" : "pekerjaan";
+  return `${new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount)} / ${unitLabel}`;
+}
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(value);
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} menit`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0
+    ? `Sekitar ${hours} jam ${remainingMinutes} menit`
+    : `Sekitar ${hours} jam`;
+}
+
+function toJobCardView(job: PublicJobCard) {
+  return {
+    id: job.id,
+    title: job.title,
+    category: job.categoryName,
+    employer: job.employerDisplayName,
+    publicLocation: job.publicLocationLabel,
+    wage: formatWage(job.wageAmount, job.wageUnit),
+    date: formatDate(job.startsAt),
+    duration: formatDuration(job.estimatedMinutes),
+    firstOpportunity: job.isFirstOpportunity,
+    boosted: job.activeBoost,
+  };
+}
 
 export default async function WorkerDashboardPage() {
   const account = await requireDashboardPageRole(
     "worker",
     "/worker/dashboard",
   );
+  const jobPage = await listPublishedJobs({ pageSize: 4 });
+  const jobs = jobPage.items.map(toJobCardView);
 
   return (
     <div className="grid gap-9">
@@ -94,34 +141,34 @@ export default async function WorkerDashboardPage() {
               id="worker-next-action"
               className="mt-7 max-w-2xl text-balance text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl"
             >
-              Konfirmasi kesepakatan, lalu jadwalmu siap.
+              Belum ada langkah kerja dari data backend.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-blue-100/75">
-              Baca kembali tugas, jadwal, upah, serta ketentuan pembayarannya sebelum
-              menyetujui.
+              Setelah lamaran, kesepakatan, dan bukti kerja tersambung ke operasi
+              backend, langkah terdekat akan muncul di sini.
             </p>
 
             <Button
               className="theme-static-light mt-8 h-12 rounded-full bg-white px-5 text-slate-950 shadow-none hover:bg-blue-50"
               asChild
             >
-              <Link href="/worker/agreements/kesepakatan-kru-acara">
-                Tinjau kesepakatan <ArrowRight aria-hidden="true" />
+              <Link href="/jobs">
+                Cari pekerjaan <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
 
             <dl className="mt-10 grid gap-5 border-t border-white/15 pt-6 sm:grid-cols-3">
               <div>
                 <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Pekerjaan</dt>
-                <dd className="mt-2 text-sm font-medium">Kru Acara Akhir Pekan</dd>
+                <dd className="mt-2 text-sm font-medium">Belum ada</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Jadwal</dt>
-                <dd className="mt-2 text-sm font-medium">30 Juli · 09.00 WIB</dd>
+                <dd className="mt-2 text-sm font-medium">Menunggu lamaran</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Upah tetap</dt>
-                <dd className="mt-2 text-sm font-medium">Rp200.000</dd>
+                <dd className="mt-2 text-sm font-medium">Mengikuti pekerjaan</dd>
               </div>
             </dl>
           </div>
@@ -134,29 +181,12 @@ export default async function WorkerDashboardPage() {
                 </p>
                 <h2 className="mt-2 text-xl font-semibold">Lamaranmu</h2>
               </div>
-              <span className="text-sm text-blue-100/60">2 aktif</span>
+              <span className="text-sm text-blue-100/60">0 aktif</span>
             </div>
 
-            <ol className="mt-8">
-              {demoApplications.map((application, index) => (
-                <li key={application.id} className="relative grid grid-cols-[1.25rem_1fr] gap-4 pb-7 last:pb-0">
-                  {index < demoApplications.length - 1 ? (
-                    <span className="absolute bottom-0 left-[0.34rem] top-3 w-px bg-white/15" aria-hidden="true" />
-                  ) : null}
-                  <span
-                    className={`relative mt-1 size-3 rounded-full border-2 border-[#0f2a59] ${
-                      application.status === "accepted" ? "bg-emerald-400" : "bg-blue-300"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-xs font-medium text-blue-200/70">{application.statusLabel}</p>
-                    <p className="mt-1 font-semibold leading-snug">{application.jobTitle}</p>
-                    <p className="mt-1 text-sm text-blue-100/60">{application.employer}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <div className="mt-8 border-y border-white/10 py-6 text-sm leading-6 text-blue-100/70">
+              Belum ada lamaran dari backend. Data contoh sudah disembunyikan agar halaman tidak menampilkan status palsu.
+            </div>
 
             <Button
               variant="ghost"
@@ -186,11 +216,20 @@ export default async function WorkerDashboardPage() {
             </Link>
           </Button>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {demoJobs.map((job, index) => (
-            <JobCard key={job.id} job={job} featured={index === 0} />
-          ))}
-        </div>
+        {jobs.length > 0 ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {jobs.map((job, index) => (
+              <JobCard key={job.id} job={job} featured={index === 0} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="Belum ada pekerjaan terbuka"
+            description="Pekerjaan yang dipublikasikan pemberi kerja akan muncul di sini dari database."
+            actionLabel="Lihat daftar pekerjaan"
+            actionHref="/jobs"
+          />
+        )}
       </section>
     </div>
   );

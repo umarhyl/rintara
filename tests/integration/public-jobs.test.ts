@@ -10,11 +10,6 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { getIntegrationDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
-import {
-  getPublishedJob,
-  getPublicJobReferenceData,
-  listPublishedJobs,
-} from "@/server/queries/jobs/public-jobs";
 
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
 
@@ -31,6 +26,12 @@ databaseTest(
     const database = drizzle(client, { schema });
 
     try {
+      const {
+        getPublishedJob,
+        getPublicJobReferenceData,
+        listPublishedJobs,
+      } = await import("@/server/queries/jobs/public-jobs");
+
       await migrate(database, { migrationsFolder: "./drizzle" });
 
       const fixtureId = randomUUID();
@@ -123,10 +124,10 @@ databaseTest(
             id: visibleGeneralJobId,
             categoryId: categoryAId,
             areaId: areaAId,
-            title: "Bantu Inventaris Publik",
-            description: "Membantu input data inventaris tanpa akses private.",
+            title: `Bantu Inventaris ${fixtureId} Publik`,
+            description: `Membantu input data inventaris tanpa akses private. Fixture ${fixtureId}.`,
             taskScope: "Input data barang\nPeriksa jumlah barang",
-            publicLocationLabel: "Area Umum A",
+            publicLocationLabel: `Area Umum A ${fixtureId}`,
             wageAmount: BigInt(150_000),
             isFirstOpportunity: false,
             publishedAt: newerPublishedAt,
@@ -136,10 +137,10 @@ databaseTest(
             id: visibleFirstJobId,
             categoryId: categoryBId,
             areaId: areaBId,
-            title: "Kru Acara Publik",
-            description: "Membantu acara komunitas dengan arahan jelas.",
+            title: `Kru Acara Publik ${fixtureId}`,
+            description: `Membantu acara komunitas dengan arahan jelas. Fixture ${fixtureId}.`,
             taskScope: "Merapikan meja registrasi",
-            publicLocationLabel: "Area Umum B",
+            publicLocationLabel: `Area Umum B ${fixtureId}`,
             wageAmount: BigInt(250_000),
             isFirstOpportunity: true,
           },
@@ -148,10 +149,10 @@ databaseTest(
             id: hiddenJobId,
             categoryId: categoryAId,
             areaId: areaAId,
-            title: "Pekerjaan Hidden",
-            description: "Tidak boleh muncul.",
+            title: `Pekerjaan Hidden ${fixtureId}`,
+            description: `Tidak boleh muncul. Fixture ${fixtureId}.`,
             taskScope: "Tidak boleh muncul",
-            publicLocationLabel: "Area Umum A",
+            publicLocationLabel: `Area Umum A ${fixtureId}`,
             wageAmount: BigInt(160_000),
             isFirstOpportunity: false,
             visibility: "hidden",
@@ -164,10 +165,10 @@ databaseTest(
             id: draftJobId,
             categoryId: categoryAId,
             areaId: areaAId,
-            title: "Pekerjaan Draft",
-            description: "Tidak boleh muncul.",
+            title: `Pekerjaan Draft ${fixtureId}`,
+            description: `Tidak boleh muncul. Fixture ${fixtureId}.`,
             taskScope: "Tidak boleh muncul",
-            publicLocationLabel: "Area Umum A",
+            publicLocationLabel: `Area Umum A ${fixtureId}`,
             wageAmount: BigInt(170_000),
             isFirstOpportunity: false,
             status: "draft",
@@ -182,10 +183,10 @@ databaseTest(
             id: deadlinePassedJobId,
             categoryId: categoryAId,
             areaId: areaAId,
-            title: "Pekerjaan Lewat Deadline",
-            description: "Tidak boleh muncul.",
+            title: `Pekerjaan Lewat Deadline ${fixtureId}`,
+            description: `Tidak boleh muncul. Fixture ${fixtureId}.`,
             taskScope: "Tidak boleh muncul",
-            publicLocationLabel: "Area Umum A",
+            publicLocationLabel: `Area Umum A ${fixtureId}`,
             startsAt: new Date("2020-01-10T08:00:00.000Z"),
             applicationDeadline: pastDeadline,
             wageAmount: BigInt(180_000),
@@ -216,31 +217,40 @@ databaseTest(
         name: "Kota Publik A",
       });
 
-      const firstPage = await listPublishedJobs({ pageSize: 1 }, database);
+      const firstPage = await listPublishedJobs(
+        { search: fixtureId, pageSize: 1 },
+        database,
+      );
       expect(firstPage.items).toHaveLength(1);
       expect(firstPage.items[0]!.id).toBe(visibleGeneralJobId);
       expect(firstPage.hasNextPage).toBe(true);
 
-      const secondPage = await listPublishedJobs({ page: 2, pageSize: 1 }, database);
+      const secondPage = await listPublishedJobs(
+        { search: fixtureId, page: 2, pageSize: 1 },
+        database,
+      );
       expect(secondPage.items).toHaveLength(1);
       expect(secondPage.items[0]!.id).toBe(visibleFirstJobId);
       expect(secondPage.hasPreviousPage).toBe(true);
 
       const categoryFiltered = await listPublishedJobs(
-        { categoryId: categoryBId },
+        { search: fixtureId, categoryId: categoryBId },
         database,
       );
       expect(categoryFiltered.items.map((job) => job.id)).toEqual([
         visibleFirstJobId,
       ]);
 
-      const areaFiltered = await listPublishedJobs({ areaId: areaAId }, database);
+      const areaFiltered = await listPublishedJobs(
+        { search: fixtureId, areaId: areaAId },
+        database,
+      );
       expect(areaFiltered.items.map((job) => job.id)).toEqual([
         visibleGeneralJobId,
       ]);
 
       const wageFiltered = await listPublishedJobs(
-        { minimumWage: 200_000, maximumWage: 300_000 },
+        { search: fixtureId, minimumWage: 200_000, maximumWage: 300_000 },
         database,
       );
       expect(wageFiltered.items.map((job) => job.id)).toEqual([
@@ -248,7 +258,7 @@ databaseTest(
       ]);
 
       const opportunityFiltered = await listPublishedJobs(
-        { opportunity: "first" },
+        { search: fixtureId, opportunity: "first" },
         database,
       );
       expect(opportunityFiltered.items.map((job) => job.id)).toEqual([
@@ -256,14 +266,14 @@ databaseTest(
       ]);
 
       const searchFiltered = await listPublishedJobs(
-        { search: "inventaris" },
+        { search: `inventaris ${fixtureId}` },
         database,
       );
       expect(searchFiltered.items.map((job) => job.id)).toEqual([
         visibleGeneralJobId,
       ]);
 
-      const allVisible = await listPublishedJobs({}, database);
+      const allVisible = await listPublishedJobs({ search: fixtureId }, database);
       expect(allVisible.items.map((job) => job.id)).not.toContain(hiddenJobId);
       expect(allVisible.items.map((job) => job.id)).not.toContain(draftJobId);
       expect(allVisible.items.map((job) => job.id)).not.toContain(

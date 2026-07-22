@@ -17,7 +17,10 @@ import { JobCard } from "@/components/rintara/job-card";
 import { LiveIndicator } from "@/components/rintara/motion-primitives";
 import { PublicShell } from "@/components/rintara/public-shell";
 import { Button } from "@/components/ui/button";
-import { demoJobs } from "@/lib/demo-data";
+import {
+  listPublishedJobs,
+  type PublicJobCard,
+} from "@/server/queries/jobs/public-jobs";
 
 const steps = [
   { icon: UserRoundSearch, number: "01", title: "Temukan yang jelas", text: "Tugas, upah, jadwal, dan area terlihat sebelum pekerja melamar." },
@@ -31,8 +34,51 @@ const safeguards = [
   { icon: BadgeCheck, title: "Bukti setelah verifikasi", text: "Riwayat kerja diterbitkan setelah penyelesaian dikonfirmasi." },
 ] as const;
 
-export default function Home() {
-  const featuredJob = demoJobs[0];
+function formatWage(amount: number, unit: PublicJobCard["wageUnit"]) {
+  const unitLabel = unit === "hour" ? "jam" : unit === "day" ? "hari" : "pekerjaan";
+  return `${new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount)} / ${unitLabel}`;
+}
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(value);
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} menit`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0
+    ? `Sekitar ${hours} jam ${remainingMinutes} menit`
+    : `Sekitar ${hours} jam`;
+}
+
+function toJobCardView(job: PublicJobCard) {
+  return {
+    id: job.id,
+    title: job.title,
+    category: job.categoryName,
+    employer: job.employerDisplayName,
+    publicLocation: job.publicLocationLabel,
+    wage: formatWage(job.wageAmount, job.wageUnit),
+    date: formatDate(job.startsAt),
+    duration: formatDuration(job.estimatedMinutes),
+    firstOpportunity: job.isFirstOpportunity,
+    boosted: job.activeBoost,
+  };
+}
+
+export default async function Home() {
+  const jobPage = await listPublishedJobs({ pageSize: 4 });
+  const jobs = jobPage.items.map(toJobCardView);
+  const featuredJob = jobs[0];
 
   return (
     <PublicShell>
@@ -70,26 +116,36 @@ export default function Home() {
             <div className="hero-artifact-slow z-20 mr-2 ml-auto flex w-fit items-center gap-3 rounded-full border border-white/45 bg-card/76 px-4 py-3 text-sm shadow-[0_18px_50px_-28px_rgb(15_23_42/0.65)] backdrop-blur-2xl dark:border-white/12">
               <LiveIndicator label="Kesempatan dibuka" />
               <span className="h-4 w-px bg-border" aria-hidden="true" />
-              <span className="text-muted-foreground">{featuredJob.deadline}</span>
+              <span className="text-muted-foreground">
+                {featuredJob ? `Batas ${formatDate(jobPage.items[0]!.applicationDeadline)}` : "Menunggu pekerjaan terbit"}
+              </span>
             </div>
 
             <article className="hero-card-float relative z-10 mt-8 overflow-hidden rounded-[2rem] border border-white/60 bg-card/82 p-6 shadow-[0_34px_90px_-48px_rgb(15_23_42/0.72)] backdrop-blur-2xl dark:border-white/12 sm:mx-5 sm:p-7">
               <div className="flex items-start justify-between gap-5">
                 <div>
-                  <p className="text-sm font-medium text-primary">{featuredJob.category}</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">{featuredJob.title}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{featuredJob.employer}</p>
+                  <p className="text-sm font-medium text-primary">
+                    {featuredJob?.category ?? "Pekerjaan lokal"}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
+                    {featuredJob?.title ?? "Belum ada pekerjaan terbuka"}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {featuredJob?.employer ?? "Pekerjaan yang diterbitkan akan muncul di sini."}
+                  </p>
                 </div>
                 <span className="grid size-11 shrink-0 place-items-center rounded-full border border-opportunity/25 bg-opportunity-soft text-opportunity"><BriefcaseBusiness className="size-5" aria-hidden="true" /></span>
               </div>
               <p className="mt-7 text-xs font-medium text-muted-foreground">UPAH TETAP</p>
-              <p className="mt-1 text-3xl font-semibold tracking-[-0.04em]">{featuredJob.wage}</p>
+              <p className="mt-1 text-3xl font-semibold tracking-[-0.04em]">
+                {featuredJob?.wage ?? "Terlihat setelah terbit"}
+              </p>
               <div className="mt-7 grid gap-4 border-y border-border/75 py-5 text-sm sm:grid-cols-2">
-                <p className="flex items-center gap-2 text-muted-foreground"><MapPin className="size-4 text-primary" aria-hidden="true" />{featuredJob.publicLocation}</p>
-                <p className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="size-4 text-primary" aria-hidden="true" />{featuredJob.date}</p>
+                <p className="flex items-center gap-2 text-muted-foreground"><MapPin className="size-4 text-primary" aria-hidden="true" />{featuredJob?.publicLocation ?? "Area umum"}</p>
+                <p className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="size-4 text-primary" aria-hidden="true" />{featuredJob?.date ?? "Jadwal jelas"}</p>
               </div>
               <Button variant="ghost" className="mt-4 h-11 w-full justify-between rounded-full px-1 hover:bg-transparent" asChild>
-                <Link href={`/jobs/${featuredJob.id}`}>Lihat ketentuan lengkap <ArrowUpRight aria-hidden="true" /></Link>
+                <Link href={featuredJob ? `/jobs/${featuredJob.id}` : "/jobs"}>Lihat ketentuan lengkap <ArrowUpRight aria-hidden="true" /></Link>
               </Button>
             </article>
 
@@ -136,7 +192,17 @@ export default function Home() {
             <div><p className="text-sm font-medium text-primary">Pekerjaan terbaru</p><h2 className="mt-3 text-4xl font-semibold tracking-[-0.045em]">Mulai dari yang terbuka.</h2></div>
             <Button variant="link" className="w-fit px-0" asChild><Link href="/jobs">Lihat semua pekerjaan <ArrowRight aria-hidden="true" /></Link></Button>
           </div>
-          <div className="mt-10 grid gap-5 lg:grid-cols-2" data-reveal-list>{demoJobs.map((job, index) => <JobCard key={job.id} job={job} featured={index === 0} />)}</div>
+          <div className="mt-10 grid gap-5 lg:grid-cols-2" data-reveal-list>
+            {jobs.length > 0 ? (
+              jobs.map((job, index) => (
+                <JobCard key={job.id} job={job} featured={index === 0} />
+              ))
+            ) : (
+              <div className="border-y border-border py-10 text-base leading-7 text-muted-foreground lg:col-span-2">
+                Belum ada pekerjaan terbuka dari database. Pekerjaan yang dipublikasikan employer akan muncul otomatis di sini.
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

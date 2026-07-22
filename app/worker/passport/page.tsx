@@ -1,7 +1,6 @@
-import { BadgeCheck, FileCheck2, ShieldCheck } from "lucide-react";
+import { FileCheck2, ShieldCheck } from "lucide-react";
+import { EmptyState } from "@/components/rintara/empty-state";
 import { PageHeader } from "@/features/dashboard/components/page-header";
-import { StatusBadge } from "@/components/rintara/status-badge";
-import { demoProofs as proofs } from "@/lib/demo-data";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 
 export default async function PassportPage() {
@@ -42,14 +41,14 @@ export default async function PassportPage() {
             <div className="flex min-h-40 flex-col justify-between p-6 sm:p-7">
               <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/65">Bukti Kerja</dt>
               <dd>
-                <span className="block text-5xl font-semibold tracking-[-0.06em]">{proofs.length}</span>
-                <span className="mt-2 block text-sm text-blue-100/65">Terverifikasi dari 1 kategori</span>
+                <span className="block text-5xl font-semibold tracking-[-0.06em]">0</span>
+                <span className="mt-2 block text-sm text-blue-100/65">Belum ada dari backend</span>
               </dd>
             </div>
             <div className="flex min-h-40 flex-col justify-between border-t border-white/12 p-6 sm:border-l sm:border-t-0 sm:p-7 lg:border-l-0 lg:border-t">
               <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/65">Kategori berpengalaman</dt>
               <dd>
-                <span className="block text-xl font-semibold">Light Cleaning</span>
+                <span className="block text-xl font-semibold">Belum ada</span>
                 <span className="mt-2 block text-base leading-7 text-blue-100/65">Kategori lain tetap dapat menjadi First Opportunity.</span>
               </dd>
             </div>
@@ -63,32 +62,17 @@ export default async function PassportPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Arsip otomatis</p>
             <h2 id="proof-history" className="mt-2 text-2xl font-semibold tracking-[-0.035em]">Riwayat Bukti Kerja</h2>
           </div>
-          <p className="text-sm text-muted-foreground">{proofs.length} bukti diterbitkan</p>
+          <p className="text-sm text-muted-foreground">0 bukti diterbitkan</p>
         </div>
 
-        <ol className="mt-1" aria-label="Bukti Kerja terverifikasi">
-          {proofs.map((proof, index) => (
-            <li key={proof.id} className="group relative grid gap-5 border-b border-border/70 py-7 sm:grid-cols-[3rem_1fr_auto] sm:items-center sm:gap-6">
-              <div className="relative hidden h-full sm:block" aria-hidden="true">
-                {index < proofs.length - 1 ? <span className="absolute left-1/2 top-8 h-[calc(100%+1.75rem)] w-px -translate-x-1/2 bg-border" /> : null}
-                <span className="relative mx-auto mt-2 grid size-9 place-items-center rounded-full border border-success/25 bg-success-soft text-success">
-                  <BadgeCheck className="size-4" />
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.13em] text-primary">{proof.category}</p>
-                <h3 className="mt-2 text-xl font-semibold tracking-[-0.025em] transition-colors duration-500 group-hover:text-primary">{proof.jobTitle}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {proof.employer} <span aria-hidden="true">·</span> {proof.area}
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Selesai pada <time>{proof.completedAt}</time>
-                </p>
-              </div>
-              <StatusBadge status="success">Terverifikasi</StatusBadge>
-            </li>
-          ))}
-        </ol>
+        <div className="mt-6">
+          <EmptyState
+            title="Belum ada Bukti Kerja"
+            description="Data contoh sudah disembunyikan. Bukti Kerja nyata akan muncul setelah alur penyelesaian pekerjaan menerbitkannya."
+            actionLabel="Cari pekerjaan"
+            actionHref="/jobs"
+          />
+        </div>
       </section>
     </div>
   );
