@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAX_WORKER_CATEGORY_INTERESTS } from "@/lib/onboarding";
+import { workerOnboardingProfileSchema } from "@/server/domain/profiles/schemas";
 
 const emailSchema = z.string().trim().email().max(320).toLowerCase();
 const passwordSchema = z.string().min(8).max(128);
@@ -33,20 +33,8 @@ const baseProfileSchema = z.object({
   areaId: z.string().uuid(),
 });
 
-const categoryInterestIdsSchema = z
-  .array(z.string().uuid())
-  .max(MAX_WORKER_CATEGORY_INTERESTS)
-  .refine((ids) => new Set(ids).size === ids.length, {
-    message: "Kategori minat tidak boleh berulang.",
-  });
-
-export const workerOnboardingSchema = baseProfileSchema
-  .extend({
-    role: z.literal("worker"),
-    bio: profileText(1000),
-    availabilityNote: profileText(500),
-    categoryInterestIds: categoryInterestIdsSchema.optional(),
-  })
+export const workerOnboardingSchema = workerOnboardingProfileSchema
+  .extend({ role: z.literal("worker") })
   .strip();
 
 export const employerOnboardingSchema = baseProfileSchema

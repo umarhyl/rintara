@@ -2,7 +2,11 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { ApplicationError } from "@/server/errors/application-error";
+import {
+  ApplicationError,
+  type ApplicationErrorCode,
+} from "@/server/errors/application-error";
+import { workerProfileSchema } from "./schemas";
 
 const employerProfileSchema = z.object({
   displayName: z.string().min(2, "Nama usaha terlalu pendek.").max(120, "Nama usaha terlalu panjang."),
@@ -16,6 +20,55 @@ const employerProfileSchema = z.object({
 export type UpdateEmployerProfileResult =
   | { ok: true }
   | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+
+export type UpdateWorkerProfileResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: ApplicationErrorCode;
+      message: string;
+      fieldErrors?: Record<string, string[] | undefined>;
+    };
+
+export async function updateWorkerProfile(
+  input: unknown,
+): Promise<UpdateWorkerProfileResult> {
+  const parsed = workerProfileSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: "Periksa kembali isian profil.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const { requireActiveUser } = await import("@/server/auth/identity");
+    const { db } = await import("@/server/db/client");
+    const { updateWorkerProfileInDatabase } = await import("./worker-profile");
+
+    await updateWorkerProfileInDatabase(
+      db,
+      await requireActiveUser(),
+      parsed.data,
+    );
+    revalidatePath("/worker/profile");
+    revalidatePath("/worker/dashboard");
+
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof ApplicationError) {
+      return { ok: false, code: error.code, message: error.message };
+    }
+
+    return {
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Profil belum dapat disimpan. Periksa jaringan lalu coba lagi.",
+    };
+  }
+}
 
 export async function updateEmployerProfile(
   input: unknown
