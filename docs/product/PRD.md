@@ -16,7 +16,7 @@ This document defines Rintara's product direction, MVP scope, target users, succ
 | `docs/product/PRD.md` | Product goals, scope, priorities, and release decisions |
 | `docs/product/REQUIREMENTS.md` | Testable functional and non-functional requirements |
 | `docs/product/BUSINESS_RULES.md` | Domain definitions, invariants, eligibility, and state transitions |
-| `docs/product/USER_FLOW.md` | End-to-end user journeys and recovery paths |
+| `docs/product/USER_FLOW.md` | Complete user journeys and recovery paths |
 | `docs/design/UI_UX_DESIGN.md` | Information architecture, screen behavior, accessibility, and content rules |
 | `docs/engineering/ARCHITECTURE.md` | System boundaries, deployment, security, and scaling strategy |
 | `docs/engineering/DATABASE.md` | PostgreSQL schema, constraints, indexes, and transaction design |
@@ -320,7 +320,7 @@ These product/data decisions remain open and require explicit team approval:
 - [ ] A qualifying completion issues at most one credit and a credit creates one 24-hour boost.
 - [ ] Reports and minimum admin moderation work.
 - [ ] Private addresses and cross-account resources are protected.
-- [ ] Required unit, integration, authorization, and end-to-end tests pass.
+- [ ] Required unit, integration, and authorization tests pass, and the release smoke checklist is rehearsed.
 - [ ] Mobile and desktop flows include loading, empty, validation, error, success, and retry states.
 - [ ] Demo seed and reset procedures cannot affect real production data.
 - [ ] Repository documentation, proposal, interface, and code use Rintara terminology and the same MVP scope.

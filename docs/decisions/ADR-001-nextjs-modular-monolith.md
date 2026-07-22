@@ -59,7 +59,7 @@ The modular monolith minimizes delivery and operational risk while preserving cl
 - One build, deployment, session boundary, and local workflow.
 - Direct typed calls between presentation and application layers.
 - Straightforward transaction orchestration.
-- Easier end-to-end testing and demo setup.
+- Easier integrated testing and demo setup.
 
 ### Negative and trade-offs
 

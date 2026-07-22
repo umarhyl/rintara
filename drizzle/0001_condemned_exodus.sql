@@ -1,0 +1,2 @@
+ALTER TABLE "jobs" DROP CONSTRAINT "jobs_first_opportunity_eligibility_check";--> statement-breakpoint
+ALTER TABLE "jobs" ADD CONSTRAINT "jobs_first_opportunity_eligibility_check" CHECK (NOT "jobs"."is_first_opportunity" OR "jobs"."status" IN ('draft', 'cancelled') OR ("jobs"."risk_level" = 'low' AND "jobs"."wage_status" = 'compliant'));

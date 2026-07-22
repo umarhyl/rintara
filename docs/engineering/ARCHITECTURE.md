@@ -1,9 +1,13 @@
 # Rintara System Architecture
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
-> **Status:** MVP technical baseline  
-> **Product scope:** `docs/product/PRD.md`  
+> **Version:** 3.1
+>
+> **Date:** July 19, 2026
+>
+> **Status:** MVP technical baseline
+>
+> **Product scope:** `docs/product/PRD.md`
+>
 > **Domain behavior:** `docs/product/BUSINESS_RULES.md`
 
 ## 1. Architecture Goals
@@ -33,7 +37,7 @@ Non-goals include microservices, event streaming, realtime chat, payment infrast
 | Data access | Drizzle ORM plus explicit SQL where transaction or query-plan control is needed |
 | Authentication | Supabase Auth with cookie-based Next.js SSR; no custom password or session implementation |
 | Deployment | Vercel; `main` is the production branch |
-| Testing | Unit/domain tests, PostgreSQL integration tests, and Playwright end-to-end tests |
+| Testing | Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing |
 
 ADR-011 and ADR-012 select Vercel, Supabase Managed PostgreSQL, and Supabase Auth. Business data remains provider-portable: Drizzle and parameterized SQL use standard PostgreSQL connections, while provider-specific authentication code stays behind the auth infrastructure boundary.
 
@@ -102,42 +106,41 @@ PostgreSQL owns durable data, referential integrity, uniqueness, check constrain
 
 Application validation improves error quality; it does not replace database constraints.
 
-## 5. Recommended Repository Boundaries
+## 5. Repository Boundaries
 
-Adapt names only when an existing repository convention is already stronger.
+Rintara uses the Next.js App Router with application directories at the
+repository root. The optional `src/` wrapper is intentionally not used. Route
+entry points stay in `app/`; there is no application-level `App.tsx` in the
+App Router convention.
 
 ```text
-src/
-  app/                    # routes, layouts, pages, loading/error boundaries
-  components/             # shared presentational components
-  features/
-    auth/
-    profiles/
-    jobs/
-    applications/
-    agreements/
-    work-sessions/
-    passport/
-    credits/
-    reports/
-    admin/
-  server/
-    auth/                  # session and authorization helpers
-    db/                    # client, schema, migrations, query helpers
-    domain/                # commands, policies, transactions
-    queries/               # authorized read models and DTO projections
-    validation/            # shared server schemas
-    observability/         # safe logs and request correlation
-  lib/                     # framework-neutral utilities
+app/                      # routes, layouts, pages, loading/error boundaries
+components/
+  ui/                     # reusable presentation primitives
+  rintara/                # shared cross-feature product presentation
+features/
+  auth/                   # authentication presentation and client state
+  onboarding/             # worker/employer onboarding presentation
+  dashboard/              # shared role-dashboard presentation
+server/
+  auth/                   # session and authorization helpers
+  db/                     # client, schema, migrations, query helpers
+  domain/                 # commands, policies, transactions
+  queries/                # authorized read models and DTO projections
+  validation/             # shared server schemas
+  observability/          # safe logs and request correlation
+lib/                      # framework-neutral utilities
 tests/
   unit/
   integration/
-  e2e/
 ```
 
 Rules:
 
 - Server-only modules must use the repository's server-only guard.
+- Route modules should remain thin and compose feature or shared components.
+- Feature-specific presentation belongs under `features/<feature>`; only
+  genuinely cross-feature presentation belongs under `components/`.
 - React components never import database schema or client instances.
 - Domain commands do not import React or route modules.
 - Features may share domain types through explicit public modules, not deep cross-feature imports.
@@ -226,6 +229,24 @@ Full work addresses live in `job_private_details` and appear only in authorized 
 - Personalized dashboards, agreements, applicant lists, notifications, reports, and admin pages must not use shared public caches.
 - Authorization must run before any private data enters a cacheable response.
 - Cache correctness is more important than avoiding a database read for the MVP.
+
+### 9.1 Client rendering and motion budget
+
+The motion behavior and accessibility requirements remain authoritative in `docs/design/UI_UX_DESIGN.md`. The implementation follows these runtime guardrails:
+
+- Keep decorative client rendering confined to the hero and authentication Canvas 2D islands. Public content and personalized dashboards remain normal semantic markup; dashboards are not registered for broad automatic scroll reveal.
+- Cap the particle field according to the rendered surface and device hint:
+
+| Runtime class | Frame-rate cap | Device-pixel-ratio cap | Hero particles | Authentication particles |
+| --- | ---: | ---: | ---: | ---: |
+| Typical desktop | 30 fps | 1.25 | 160 | 120 |
+| Lower-power desktop | 24 fps | 1.15 | 112 | 88 |
+| Compact fine-pointer viewport | 30 fps | 1.0 | 80 | 64 |
+
+- Do not mount the Canvas renderer for a coarse pointer, data-saving mode, `prefers-reduced-motion`, or very-low-power hardware. Render the static CSS particle layer instead, avoiding a canvas backing buffer and pointer observers. Stop the animation frame loop and pointer listeners whenever a mounted canvas is offscreen or the document is hidden.
+- Keep initial entrances finite. Do not apply a full-page opacity entrance; authentication uses a transform-only entrance and slow-update displays skip it. Public sections use a one-time 760 ms observer reveal with bounded 90 ms item staggering; already-visible content is not hidden or replayed, and keyboard focus reveals its containing section immediately.
+- Scope reveal observation to the active public or dashboard content root instead of observing the entire document body. Newly inserted content is measured in a batch before reveal attributes are written.
+- Remove backdrop-filter blur on narrow viewports, slow-update displays, and reduced-transparency preferences. Reduced-motion mode disables non-essential entrance, reveal, floating, drawing, and theme-transition animation while leaving content visible. Data-saving, slow-update, reduced-motion, and lower-power devices use the simple theme color transition rather than the full-root clip-path reveal.
 
 ## 10. Scalability Strategy
 
@@ -316,7 +337,7 @@ Database migrations run as a controlled deployment step. Application instances m
 - Integration tests run against real PostgreSQL behavior, not an in-memory substitute for transaction-sensitive paths.
 - Concurrency tests cover acceptance, completion, and credit redemption.
 - Query tests verify public/private projections.
-- Playwright covers the golden path and required authorization scenarios.
+- Manual release smoke testing rehearses the golden path and required authorization scenarios.
 - Seed data creates two employers, multiple workers with category-specific history, compliant and non-compliant jobs, credits, and a report scenario.
 
 ## 16. Architecture Decision Guardrails

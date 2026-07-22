@@ -35,7 +35,7 @@ Non-goals include microservices, event streaming, realtime chat, payment infrast
 | Data access | Drizzle ORM plus explicit SQL where transaction or query-plan control is needed |
 | Authentication | Mature Next.js-compatible provider/library; no custom password or session implementation |
 | Deployment | Vercel or another platform that correctly supports the selected Next.js runtime |
-| Testing | Unit/domain tests, PostgreSQL integration tests, and Playwright end-to-end tests |
+| Testing | Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing |
 
 Provider names are deliberately not hard-coded. The managed PostgreSQL provider must support pooled connections, migrations, backups, and the required PostgreSQL features.
 
@@ -134,7 +134,6 @@ src/
 tests/
   unit/
   integration/
-  e2e/
 ```
 
 Rules:
@@ -318,7 +317,7 @@ Database migrations run as a controlled deployment step. Application instances m
 - Integration tests run against real PostgreSQL behavior, not an in-memory substitute for transaction-sensitive paths.
 - Concurrency tests cover acceptance, completion, and credit redemption.
 - Query tests verify public/private projections.
-- Playwright covers the golden path and required authorization scenarios.
+- Manual release smoke testing rehearses the golden path and required authorization scenarios.
 - Seed data creates two employers, multiple workers with category-specific history, compliant and non-compliant jobs, credits, and a report scenario.
 
 ## 16. Architecture Decision Guardrails

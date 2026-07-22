@@ -1,7 +1,9 @@
 # Rintara Application API Contracts
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
+> **Version:** 3.1
+>
+> **Date:** July 19, 2026
+>
 > **Status:** MVP server contract baseline  
 > **Domain authority:** `docs/product/BUSINESS_RULES.md`  
 > **Schema authority:** `docs/engineering/DATABASE.md`
@@ -92,7 +94,54 @@ type Page<T> = {
 
 Cursors are opaque and encode deterministic sort keys. Clients must not depend on their internal format.
 
+### 2.5 Authentication and onboarding
+
+`signUp(input)`, `signIn(input)`, and `signOut()` are Server Action adapters over
+Supabase Auth. Credential input is validated and provider errors are mapped to
+the application error catalog; provider messages, tokens, and user objects are
+never returned.
+
+`GET /auth/callback` exchanges the one-time PKCE code for a cookie-backed
+session. Its optional `next` value accepts only an application-relative path to
+prevent open redirects. Failure returns to sign-in with a generic error.
+
+`completeOnboarding(input)` derives `auth_subject` exclusively from verified
+Supabase claims. Accepted input is one of:
+
+- worker: `role`, `displayName`, `areaId`, optional `bio`, and optional
+  `availabilityNote`, plus up to eight unique optional `categoryInterestIds`; or
+- employer: `role`, `displayName`, `areaId`, `employerType`, and optional
+  `description`.
+
+Self-service `admin` is invalid. Caller-supplied user ID, account status, or
+trusted-role fields are discarded. The command serializes attempts for one
+external subject and creates `users` plus exactly one matching role profile in
+one transaction. A retry for the existing role returns the existing profile; a
+retry for another role returns `FORBIDDEN`. Suspended or deleted records return
+`ACCOUNT_INACTIVE`. Worker category interests are self-declared profile data,
+not Work Proof. On first worker profile creation, every supplied category must
+still be active and the matching `worker_interests` rows are inserted in the
+same transaction. An unavailable category fails the entire operation.
+
+`getCurrentUserDashboardContext()` returns only the internal user ID, trusted
+role, and role-profile display name. A valid provider session without a complete
+Rintara account and matching profile returns `ONBOARDING_REQUIRED`.
+
 ## 3. Public Queries
+
+### `getOnboardingReferenceData()`
+
+Access: public.
+
+Returns deterministic, allowlisted reference options for account setup:
+
+- active `city_regency` areas as `id` and `name`; and
+- active categories as `id` and `name`.
+
+Inactive records, area codes and hierarchy, category risk fields, and internal
+administration data are excluded. The onboarding command still revalidates the
+selected IDs transactionally because an option can become inactive after this
+query.
 
 ### `listPublishedJobs(input)`
 
@@ -205,11 +254,11 @@ Access: active employer. Returns only owned jobs.
 
 ## 6. Application Queries and Commands
 
-### `submitApplication(input)`
+### `submitApplication(jobId, input)`
 
 Access: active worker.
 
-Input: `jobId`, bounded note.
+Input: `jobId` path/action argument plus bounded note.
 
 Behavior validates current job state, visibility, deadline, uniqueness, and category eligibility. It derives `workerId` and stores the eligibility snapshot.
 
@@ -220,6 +269,8 @@ Errors include `JOB_NOT_AVAILABLE`, `APPLICATION_ALREADY_EXISTS`, and `FIRST_OPP
 Access: owning worker.
 
 Allowed only from `submitted`.
+
+Errors include `APPLICATION_NOT_FOUND` and `APPLICATION_NOT_WITHDRAWABLE`.
 
 ### `listMyApplications(page)`
 
@@ -382,7 +433,9 @@ Access: active admin.
 
 Input includes report ID, outcome `resolved` or `rejected`, factual moderator note, and explicit actions. Supported actions include hide/cancel job, suspend user, revoke Work Proof, revoke credit, and deactivate active boost.
 
-All selected actions and the report transition occur consistently and are audited. A complex action may use a dedicated domain command instead of one generic mutation, but callers may never patch raw state.
+The report must currently be `reviewing`. All selected actions and the report transition occur consistently and are audited. Cancelling an unfinished workflow uses the authorized Job and Mini Agreement transitions without inventing a cancelled Work Session state. A complex action may use a dedicated domain command instead of one generic mutation, but callers may never patch raw state.
+
+Revoking a redeemed credit preserves its redemption metadata and deactivates any related active boost in the same moderated workflow.
 
 ### `adminUpsertWageGuideline(input)`
 
@@ -412,6 +465,7 @@ Authentication provider callback routes follow provider documentation and are no
 | Code | Meaning | Typical HTTP mapping if applicable |
 | --- | --- | ---: |
 | `UNAUTHENTICATED` | No valid session | 401 |
+| `ONBOARDING_REQUIRED` | Valid Supabase session exists but no Rintara account/profile has been completed | 409 |
 | `ACCOUNT_INACTIVE` | Suspended or deleted account | 403 |
 | `FORBIDDEN` | Role/ownership/relationship denied | 403 |
 | `NOT_FOUND` | Resource absent or intentionally hidden | 404 |

@@ -25,7 +25,7 @@ Payments are recorded as agreement terms but take place outside Rintara during t
 - Drizzle ORM with repository-managed SQL migrations
 - Supabase Auth with server-side session validation
 - Vercel deployment with `main` as the production branch
-- Unit, PostgreSQL integration, and Playwright end-to-end tests
+- Unit tests, PostgreSQL integration tests, and manual release smoke testing
 
 Vercel, Supabase Managed PostgreSQL, and Supabase Auth are accepted in ADR-011 and ADR-012. Project-specific production-readiness evidence such as region, plan limits, backup restore, connection sizing, callbacks, and test accounts must still be recorded before release.
 
@@ -70,9 +70,9 @@ Start with [the documentation index](./docs/README.md).
 
 Application directories may follow the exact module structure documented in `docs/engineering/ARCHITECTURE.md`. Do not create empty application directories only to match this example.
 
-## Development Script Contract
+## Development Commands
 
-Use the package manager selected by the repository lockfile. The implementation repository should expose these scripts or document their approved equivalents:
+Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
 
 | Script | Purpose |
 | --- | --- |
@@ -82,16 +82,16 @@ Use the package manager selected by the repository lockfile. The implementation 
 | `typecheck` | Run strict TypeScript checking |
 | `test` | Run fast unit/domain tests |
 | `test:integration` | Run tests against isolated PostgreSQL |
-| `test:e2e` | Run Playwright golden-path tests |
+| `db:check` | Validate committed Drizzle migration consistency |
 | `db:migrate` | Apply committed migrations |
 | `db:seed` | Load synthetic development/demo data |
 
-Do not invent commands in deployment instructions. Update this table when the actual repository scripts are established.
+Run them with `bun run <script>`. Database schema lives under `server/db/schema/`, committed migrations live under `drizzle/`, and database operations enforce the environment guards documented in `.env.example`.
 
 ## Setup Checklist
 
-1. Install the runtime and package manager versions declared by the repository.
-2. Install dependencies using the existing lockfile.
+1. Install the runtime and Bun version declared by the repository.
+2. Install dependencies with `bun install --frozen-lockfile`.
 3. Create local environment configuration from the committed example file.
 4. Provision an isolated development PostgreSQL database.
 5. Run committed migrations.
@@ -100,6 +100,19 @@ Do not invent commands in deployment instructions. Update this table when the ac
 8. Run unit and integration tests before opening a pull request.
 
 Secret values never belong in documentation or source control. Required variable names, provider callbacks, and approved commands belong in `.env.example` and deployment documentation without real values.
+
+## Continuous Integration
+
+GitHub Actions runs two required jobs for pushes and pull requests targeting
+`dev` or `main`:
+
+- `Quality`: frozen dependency install, lint, typecheck, unit tests, Drizzle
+  migration check, and production build.
+- `Integration`: PostgreSQL integration tests against a disposable PostgreSQL
+  16 service container.
+
+The integration job uses synthetic test-only credentials declared in the
+workflow. It does not receive Supabase or production database credentials.
 
 ## MVP Scope Guard
 

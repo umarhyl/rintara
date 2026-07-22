@@ -1,8 +1,11 @@
 # Rintara UI/UX Design Guidelines
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
-> **Status:** MVP experience and interface baseline  
+> **Version:** 3.1
+>
+> **Date:** July 19, 2026
+>
+> **Status:** MVP experience and interface baseline
+>
 > **Flows:** `docs/product/USER_FLOW.md`
 
 ## 1. Experience Objectives
@@ -89,6 +92,27 @@ Validate actual text/background combinations for WCAG 2.2 AA. Do not use opportu
 - Use borders and spacing before shadows.
 - Reserve elevation for dialogs, menus, and sticky action surfaces.
 - Avoid decorative gradients or motion that competes with task information.
+
+### Jejak visual system
+
+The product uses a restrained **Jejak/Rute** motif to connect Opportunity, Agreement, and Work Proof without turning the workflow into a game.
+
+- Prefer open editorial composition, dividers, and connected timelines over repeating equal cards on every screen.
+- Use elevation only for interactive or sticky surfaces; informational groups may sit directly on the page.
+- A custom three-node route mark represents the product. Do not substitute emoji or generic sparkle artwork.
+- Light and dark themes must preserve the same information hierarchy and expose an animated, accessible theme switch.
+- Desktop public navigation follows immediately after the Rintara identity instead of floating at the viewport center; account actions remain aligned at the opposite edge.
+- Hero and authentication backgrounds use a lightweight Canvas 2D field of dotted route orbits on capable devices. Light mode uses saturated ink-like particles while dark mode uses brighter cosmic particles, and both preserve readable space beneath text.
+- Fine pointers quickly displace and enlarge nearby particles with a bounded convex response. Coarse pointers, data-saving mode, `prefers-reduced-motion`, and very-low-power hardware receive a static CSS particle layer without allocating a canvas buffer; offscreen or hidden canvases pause entirely.
+- The landing eyebrow is a compact animated opportunity label without a leading rule or underline. Agreement and Passport proof artifacts sit in one non-overlapping row and remain readable at narrow widths.
+- Keep the particle field isolated to prominent hero/authentication surfaces. Its adaptive budget is at most 30 frames per second on a typical device and 24 frames per second on lower-power hardware; device-pixel density and particle count are capped further on compact or constrained devices. Do not add WebGL or a motion library solely for ambience.
+- Initial interface motion is finite and task feedback remains responsive at 260–360 ms. Do not fade the entire public page or dashboard on entry; authentication may use a 560 ms transform-only entrance. Do not add static decorative route-line SVG layers; the landing eyebrow sheen plays once, while continuous ambience is limited to the adaptive particle field and one subtle desktop-only hero-card float.
+- Content below the initial public viewport reveals once as it enters view, using a scoped observer and a 760 ms vertical-rise and opacity transition. Repeated items may stagger by 90 ms, capped at 270 ms, so a long list never feels delayed. Dashboards do not receive a broad automatic reveal; use explicit motion only when it clarifies a state change.
+- Scroll reveal is progressive enhancement: content is visible by default, keyboard focus reveals its containing section immediately, and an item stays visible after its first reveal. Do not hide primary content while waiting for JavaScript.
+- Animate `transform` and `opacity` for ambience. Do not continuously animate every status or notification marker.
+- On narrow viewports, slow-update displays, or when reduced transparency is requested, render translucent surfaces without backdrop-filter blur. Slow-update displays also skip non-essential authentication entrance and eyebrow motion. Keep the visual hierarchy intact when these effects are removed.
+- The theme slider remains functional on every tier, but its full-root reveal falls back to a simple color change for data-saving, slow-update, reduced-motion, or lower-power devices.
+- Under `prefers-reduced-motion`, remove drifting, drawing, floating, and theme-reveal animation while preserving all content and intended opacity.
 
 ## 5. Information Architecture
 
@@ -308,6 +332,7 @@ Admin report screen shows target context, lifecycle state, relevant audit histor
 - Preserve valid fields after failure.
 - Disable duplicate submission while a request is pending, but do not rely on the disabled button for idempotency.
 - Use appropriate mobile input modes for wage, code, date, and time.
+- Text inputs, selects, menu items, checkboxes, and radios keep a practical 44 CSS pixel interaction area without reducing body text below 16 CSS pixels.
 - Never accept formatted currency strings directly in domain logic; normalize safely at the boundary.
 
 ## 10. Accessibility Requirements
@@ -332,6 +357,7 @@ Admin report screen shows target context, lifecycle state, relevant audit histor
 - Prefer Server Components and limit client JavaScript to interactive islands.
 - Avoid autoplay media and large animation libraries.
 - Loading states should show structure without causing major layout shifts.
+- A mobile job-detail action dock may stay visible while the application section is offscreen, but must become hidden and non-interactive when the application section or footer enters view.
 
 ## 12. Privacy and Safety Copy
 

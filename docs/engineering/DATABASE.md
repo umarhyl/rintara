@@ -317,6 +317,8 @@ Rintara Passport is an authorized query over this table. There is no editable `p
 
 The active balance is calculated from owned `earned` credits whose expiry is null or in the future. The maximum balance of three is enforced inside the completion transaction while locking an employer-scoped row or equivalent safe serialization point.
 
+Authorized moderation may transition an `earned` or `redeemed` credit to `revoked`. A revoked redeemed credit retains its redemption metadata, and any related active boost is deactivated consistently.
+
 ### `job_boosts`
 
 | Column | Type | Rules |
@@ -469,3 +471,13 @@ Never serialize complete ORM rows into public responses.
 - Seed data uses deterministic identifiers or stable lookup keys.
 - Demo seeds contain synthetic users and addresses only.
 - Reset scripts must refuse to run against the production database unless a separate, explicit controlled procedure exists.
+
+Implementation locations:
+
+- Drizzle schema: `server/db/schema/`
+- Generated and reviewed SQL migrations: `drizzle/`
+- Guarded migration runner: `server/db/migrate.ts`
+- Deterministic synthetic seed: `server/db/seed.ts`
+- Runtime PostgreSQL boundary: `server/db/client.ts`
+
+Use the pooled `DATABASE_URL` for Vercel runtime traffic and the controlled `DIRECT_DATABASE_URL` for migrations when reachable. `db:seed` requires `RINTARA_ALLOW_SEED=true` and always refuses `RINTARA_ENV=production`.
