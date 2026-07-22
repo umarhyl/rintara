@@ -14,27 +14,73 @@ import { JobApplyAuthAction } from "@/components/rintara/job-apply-auth-action";
 import { MobileApplyDock } from "@/components/rintara/mobile-apply-dock";
 import { PublicShell } from "@/components/rintara/public-shell";
 import { StatusBadge } from "@/components/rintara/status-badge";
-import { demoJobs } from "@/lib/demo-data";
+import { ApplicationError } from "@/server/errors/application-error";
+import { getPublishedJob, type PublicJobDetail } from "@/server/queries/jobs/public-jobs";
+
+function formatWage(amount: number, unit: PublicJobDetail["wageUnit"]) {
+  const unitLabel = unit === "hour" ? "jam" : unit === "day" ? "hari" : "pekerjaan";
+  return `${new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount)} / ${unitLabel}`;
+}
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(value);
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} menit`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0
+    ? `Sekitar ${hours} jam ${remainingMinutes} menit`
+    : `Sekitar ${hours} jam`;
+}
+
+function taskItems(taskScope: string) {
+  return taskScope
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+async function loadPublicJob(id: string) {
+  try {
+    return await getPublishedJob(id);
+  } catch (error) {
+    if (error instanceof ApplicationError && error.code === "JOB_NOT_FOUND") {
+      notFound();
+    }
+    throw error;
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const job = demoJobs.find((item) => item.id === id);
+  const job = await loadPublicJob(id);
 
-  return job
-    ? { title: job.title, description: `${job.description} ${job.publicLocation}.` }
-    : { title: "Pekerjaan tidak ditemukan" };
+  return {
+    title: job.title,
+    description: `${job.description} ${job.publicLocationLabel}.`,
+  };
 }
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const job = demoJobs.find((item) => item.id === id);
-
-  if (!job) notFound();
+  const job = await loadPublicJob(id);
+  const wage = formatWage(job.wageAmount, job.wageUnit);
+  const tasks = taskItems(job.taskScope);
 
   const facts = [
-    { label: "Area umum", value: job.publicLocation, icon: MapPin },
-    { label: "Jadwal", value: job.date, icon: CalendarDays },
-    { label: "Perkiraan durasi", value: job.duration, icon: Clock3 },
+    { label: "Area umum", value: job.publicLocationLabel, icon: MapPin },
+    { label: "Jadwal", value: formatDate(job.startsAt), icon: CalendarDays },
+    { label: "Perkiraan durasi", value: formatDuration(job.estimatedMinutes), icon: Clock3 },
   ] as const;
 
   return (
@@ -51,23 +97,23 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           </Link>
 
           <div className="mt-8 flex flex-wrap gap-2">
-            {job.firstOpportunity ? <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge> : null}
-            {job.boosted ? <StatusBadge tone="info">Prioritas 24 jam</StatusBadge> : null}
+            {job.isFirstOpportunity ? <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge> : null}
+            {job.activeBoost ? <StatusBadge tone="info">Prioritas 24 jam</StatusBadge> : null}
             <StatusBadge tone="success">Menerima lamaran</StatusBadge>
           </div>
 
           <div className="mt-7 grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="text-sm font-medium text-primary">{job.category}</p>
+              <p className="text-sm font-medium text-primary">{job.categoryName}</p>
               <h1 className="mt-3 max-w-4xl text-balance text-[3rem] font-semibold leading-[1.02] tracking-[-0.055em] sm:text-6xl">
                 {job.title}
               </h1>
-              <p className="mt-5 text-lg text-muted-foreground">{job.employer}</p>
+              <p className="mt-5 text-lg text-muted-foreground">{job.employerDisplayName}</p>
             </div>
             <div className="border-l border-border pl-5 lg:min-w-64">
               <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">UPAH TETAP</p>
-              <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">{job.wage}</p>
-              <p className="mt-2 text-sm text-muted-foreground">Batas lamaran {job.deadline}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">{wage}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Batas lamaran {formatDate(job.applicationDeadline)}</p>
             </div>
           </div>
         </div>
@@ -103,7 +149,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <div>
               <h2 id="job-tasks" className="text-2xl font-semibold tracking-[-0.03em]">Yang akan kamu lakukan</h2>
               <ul className="mt-5 divide-y divide-border border-y border-border">
-                {job.tasks.map((task, index) => (
+                {(tasks.length > 0 ? tasks : [job.taskScope]).map((task, index) => (
                   <li key={task} className="grid grid-cols-[2rem_1fr] gap-3 py-4 leading-7">
                     <span className="font-mono text-xs text-primary">{String(index + 1).padStart(2, "0")}</span>
                     <span>{task}</span>
@@ -131,8 +177,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <div className="flex items-center gap-4">
               <span className="grid size-12 shrink-0 place-items-center rounded-full border border-primary/20 bg-secondary font-semibold text-primary">SE</span>
               <div>
-                <h2 id="job-employer" className="font-semibold">{job.employer}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Pemberi kerja di {job.area}</p>
+                <h2 id="job-employer" className="font-semibold">{job.employerDisplayName}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Pemberi kerja di {job.areaName}</p>
               </div>
             </div>
           </section>
@@ -146,8 +192,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <p className="relative mt-3 text-base leading-7 text-blue-100/70">Upah sudah ditetapkan dan tidak ditawar melalui catatan lamaran.</p>
             <div className="relative mt-6 border-y border-white/15 py-5">
               <p className="text-xs text-blue-200/65">Upah yang disepakati</p>
-              <p className="mt-1 text-2xl font-semibold">{job.wage}</p>
-              <p className="mt-2 text-xs text-blue-100/60">Batas lamaran {job.deadline}</p>
+              <p className="mt-1 text-2xl font-semibold">{wage}</p>
+              <p className="mt-2 text-xs text-blue-100/60">Batas lamaran {formatDate(job.applicationDeadline)}</p>
             </div>
           </div>
 
@@ -157,7 +203,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </aside>
       </div>
 
-      <MobileApplyDock wage={job.wage} />
+      <MobileApplyDock wage={wage} />
     </PublicShell>
   );
 }

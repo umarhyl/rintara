@@ -17,6 +17,7 @@ export const publicJobCardProjection = {
   wageAmount: jobs.wageAmount,
   wageUnit: jobs.wageUnit,
   startsAt: jobs.startsAt,
+  estimatedMinutes: jobs.estimatedMinutes,
   applicationDeadline: jobs.applicationDeadline,
   isFirstOpportunity: jobs.isFirstOpportunity,
   publishedAt: jobs.publishedAt,

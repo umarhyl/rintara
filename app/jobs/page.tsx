@@ -1,38 +1,54 @@
+import Link from "next/link";
 import { ArrowDown, SlidersHorizontal } from "lucide-react";
 import { AmbientBackdrop } from "@/components/rintara/ambient-backdrop";
 import { EmptyState } from "@/components/rintara/empty-state";
-import { JobCard } from "@/components/rintara/job-card";
+import { JobCard, type JobCardView } from "@/components/rintara/job-card";
 import {
   JobFilters,
   type JobFilterValues,
 } from "@/components/rintara/job-filters";
 import { PublicShell } from "@/components/rintara/public-shell";
-import { demoJobs } from "@/lib/demo-data";
+import { Button } from "@/components/ui/button";
+import {
+  getPublicJobReferenceData,
+  listPublishedJobs,
+  type OpportunityFilter,
+  type PublicJobCard,
+} from "@/server/queries/jobs/public-jobs";
 
 export const metadata = { title: "Cari pekerjaan" };
 
-const categoryValues = ["all", "event", "cleaning", "admin"] as const;
 const opportunityValues = ["all", "first", "general"] as const;
+const pageSize = 10;
 
 function firstQueryValue(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
 }
 
-function parseFilters(searchParams: {
+function parsePositiveInteger(value: string) {
+  if (!/^\d+$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseFilters(
+  searchParams: {
   q?: string | string[];
   category?: string | string[];
+  location?: string | string[];
+  minWage?: string | string[];
+  maxWage?: string | string[];
   opportunity?: string | string[];
-}): JobFilterValues {
-  const rawCategory = firstQueryValue(searchParams.category);
+  },
+): JobFilterValues {
   const rawOpportunity = firstQueryValue(searchParams.opportunity);
 
   return {
     search: firstQueryValue(searchParams.q).trim().slice(0, 120),
-    category: categoryValues.includes(
-      rawCategory as JobFilterValues["category"],
-    )
-      ? (rawCategory as JobFilterValues["category"])
-      : "all",
+    categoryId: firstQueryValue(searchParams.category) || "all",
+    areaId: firstQueryValue(searchParams.location) || "all",
+    minimumWage: firstQueryValue(searchParams.minWage).replace(/\D/g, "").slice(0, 12),
+    maximumWage: firstQueryValue(searchParams.maxWage).replace(/\D/g, "").slice(0, 12),
     opportunity: opportunityValues.includes(
       rawOpportunity as JobFilterValues["opportunity"],
     )
@@ -41,14 +57,63 @@ function parseFilters(searchParams: {
   };
 }
 
-function matchesCategory(
-  category: JobFilterValues["category"],
-  jobCategory: string,
-) {
-  if (category === "all") return true;
-  if (category === "event") return jobCategory === "Event Helper";
-  if (category === "cleaning") return jobCategory === "Light Cleaning";
-  return jobCategory === "Simple Administration";
+function parsePage(value: string | string[] | undefined) {
+  return parsePositiveInteger(firstQueryValue(value)) ?? 1;
+}
+
+function formatWage(amount: number, unit: PublicJobCard["wageUnit"]) {
+  const unitLabel = unit === "hour" ? "jam" : unit === "day" ? "hari" : "pekerjaan";
+  return `${new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount)} / ${unitLabel}`;
+}
+
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(value);
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} menit`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0
+    ? `Sekitar ${hours} jam ${remainingMinutes} menit`
+    : `Sekitar ${hours} jam`;
+}
+
+function toJobCardView(job: PublicJobCard): JobCardView {
+  return {
+    id: job.id,
+    title: job.title,
+    category: job.categoryName,
+    employer: job.employerDisplayName,
+    publicLocation: job.publicLocationLabel,
+    wage: formatWage(job.wageAmount, job.wageUnit),
+    date: formatDate(job.startsAt),
+    duration: formatDuration(job.estimatedMinutes),
+    firstOpportunity: job.isFirstOpportunity,
+    boosted: job.activeBoost,
+  };
+}
+
+function paginationHref(filters: JobFilterValues, page: number) {
+  const query = new URLSearchParams();
+  if (filters.search) query.set("q", filters.search);
+  if (filters.categoryId !== "all") query.set("category", filters.categoryId);
+  if (filters.areaId !== "all") query.set("location", filters.areaId);
+  if (filters.minimumWage) query.set("minWage", filters.minimumWage);
+  if (filters.maximumWage) query.set("maxWage", filters.maximumWage);
+  if (filters.opportunity !== "all") query.set("opportunity", filters.opportunity);
+  if (page > 1) query.set("page", String(page));
+
+  const serialized = query.toString();
+  return serialized ? `/jobs?${serialized}` : "/jobs";
 }
 
 export default async function JobsPage({
@@ -57,36 +122,30 @@ export default async function JobsPage({
   searchParams: Promise<{
     q?: string | string[];
     category?: string | string[];
+    location?: string | string[];
+    minWage?: string | string[];
+    maxWage?: string | string[];
     opportunity?: string | string[];
+    page?: string | string[];
   }>;
 }) {
-  const filters = parseFilters(await searchParams);
-  const normalizedSearch = filters.search.toLocaleLowerCase("id-ID");
-  const filteredJobs = demoJobs.filter((job) => {
-    const searchableText = [
-      job.title,
-      job.category,
-      job.employer,
-      job.description,
-      ...job.tasks,
-    ]
-      .join(" ")
-      .toLocaleLowerCase("id-ID");
-    const matchesSearch =
-      normalizedSearch.length === 0 || searchableText.includes(normalizedSearch);
-    const matchesOpportunity =
-      filters.opportunity === "all" ||
-      (filters.opportunity === "first"
-        ? job.firstOpportunity
-        : !job.firstOpportunity);
-
-    return (
-      matchesSearch &&
-      matchesCategory(filters.category, job.category) &&
-      matchesOpportunity
-    );
-  });
-  const filterKey = `${filters.search}:${filters.category}:${filters.opportunity}`;
+  const resolvedSearchParams = await searchParams;
+  const filters = parseFilters(resolvedSearchParams);
+  const page = parsePage(resolvedSearchParams.page);
+  const [referenceData, jobPage] = await Promise.all([
+    getPublicJobReferenceData(),
+    listPublishedJobs({
+      search: filters.search,
+      categoryId: filters.categoryId === "all" ? undefined : filters.categoryId,
+      areaId: filters.areaId === "all" ? undefined : filters.areaId,
+      minimumWage: parsePositiveInteger(filters.minimumWage),
+      maximumWage: parsePositiveInteger(filters.maximumWage),
+      opportunity: filters.opportunity as OpportunityFilter,
+      page,
+      pageSize,
+    }),
+  ]);
+  const filterKey = `${filters.search}:${filters.categoryId}:${filters.areaId}:${filters.minimumWage}:${filters.maximumWage}:${filters.opportunity}`;
 
   return (
     <PublicShell>
@@ -112,12 +171,12 @@ export default async function JobsPage({
             </p>
             <div className="mt-8 flex items-end gap-5 border-y border-border/80 py-5">
               <p className="text-4xl font-semibold tracking-[-0.05em]">
-                {demoJobs.length}
+                {jobPage.items.length}
               </p>
               <p className="pb-1 text-base leading-7 text-muted-foreground">
-                pekerjaan tersedia
+                pekerjaan tampil
                 <br />
-                di Bandung
+                halaman {jobPage.page}
               </p>
               <ArrowDown
                 className="mb-1 ml-auto size-5 text-primary"
@@ -132,7 +191,12 @@ export default async function JobsPage({
         <AmbientBackdrop variant="page" className="opacity-40" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative z-10 -mt-20 sm:-mt-24">
-            <JobFilters key={filterKey} initialValues={filters} />
+            <JobFilters
+              key={filterKey}
+              initialValues={filters}
+              categories={referenceData.categories}
+              areas={referenceData.areas}
+            />
           </div>
 
           <div className="mt-12 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -141,21 +205,21 @@ export default async function JobsPage({
                 Ditemukan di Bandung
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
-                {filteredJobs.length} pekerjaan terbuka
+                {jobPage.items.length} pekerjaan terbuka
               </h2>
             </div>
             <span className="flex min-h-11 w-fit items-center gap-2 rounded-full px-3 text-sm text-muted-foreground">
               <SlidersHorizontal aria-hidden="true" />
-              Urutan: terbaru
+              Urutan: boost aktif, lalu terbaru
             </span>
           </div>
 
-          {filteredJobs.length > 0 ? (
+          {jobPage.items.length > 0 ? (
             <div className="mt-6 grid gap-5 lg:grid-cols-2" data-reveal-list>
-              {filteredJobs.map((job, index) => (
+              {jobPage.items.map((job, index) => (
                 <JobCard
                   key={job.id}
-                  job={job}
+                  job={toJobCardView(job)}
                   featured={index === 0}
                 />
               ))}
@@ -170,6 +234,45 @@ export default async function JobsPage({
               />
             </div>
           )}
+
+          {(jobPage.hasPreviousPage || jobPage.hasNextPage) ? (
+            <nav
+              className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-5"
+              aria-label="Paginasi pekerjaan"
+            >
+              <Button
+                variant="outline"
+                className="rounded-full"
+                asChild={jobPage.hasPreviousPage}
+                disabled={!jobPage.hasPreviousPage}
+              >
+                {jobPage.hasPreviousPage ? (
+                  <Link href={paginationHref(filters, jobPage.page - 1)}>
+                    Sebelumnya
+                  </Link>
+                ) : (
+                  "Sebelumnya"
+                )}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Halaman {jobPage.page}
+              </span>
+              <Button
+                variant="outline"
+                className="rounded-full"
+                asChild={jobPage.hasNextPage}
+                disabled={!jobPage.hasNextPage}
+              >
+                {jobPage.hasNextPage ? (
+                  <Link href={paginationHref(filters, jobPage.page + 1)}>
+                    Berikutnya
+                  </Link>
+                ) : (
+                  "Berikutnya"
+                )}
+              </Button>
+            </nav>
+          ) : null}
         </div>
       </section>
 
