@@ -8,15 +8,14 @@ import {
 } from "@/components/rintara/job-filters";
 import { PublicShell } from "@/components/rintara/public-shell";
 import {
+  getPublicJobReferenceData,
   listPublishedJobs,
   type OpportunityFilter,
   type PublicJobCard,
-  type PublicJobCategoryFilter,
 } from "@/server/queries/jobs/public-jobs";
 
 export const metadata = { title: "Cari pekerjaan" };
 
-const categoryValues = ["all", "event", "cleaning", "admin"] as const;
 const opportunityValues = ["all", "first", "general"] as const;
 const pageSize = 10;
 
@@ -33,18 +32,19 @@ function parsePositiveInteger(value: string) {
 function parseFilters(searchParams: {
   q?: string | string[];
   category?: string | string[];
+  location?: string | string[];
+  minWage?: string | string[];
+  maxWage?: string | string[];
   opportunity?: string | string[];
 }): JobFilterValues {
-  const rawCategory = firstQueryValue(searchParams.category);
   const rawOpportunity = firstQueryValue(searchParams.opportunity);
 
   return {
     search: firstQueryValue(searchParams.q).trim().slice(0, 120),
-    category: categoryValues.includes(
-      rawCategory as JobFilterValues["category"],
-    )
-      ? (rawCategory as JobFilterValues["category"])
-      : "all",
+    categoryId: firstQueryValue(searchParams.category) || "all",
+    areaId: firstQueryValue(searchParams.location) || "all",
+    minimumWage: firstQueryValue(searchParams.minWage).replace(/\D/g, "").slice(0, 12),
+    maximumWage: firstQueryValue(searchParams.maxWage).replace(/\D/g, "").slice(0, 12),
     opportunity: opportunityValues.includes(
       rawOpportunity as JobFilterValues["opportunity"],
     )
@@ -104,6 +104,9 @@ export default async function JobsPage({
   searchParams: Promise<{
     q?: string | string[];
     category?: string | string[];
+    location?: string | string[];
+    minWage?: string | string[];
+    maxWage?: string | string[];
     opportunity?: string | string[];
     page?: string | string[];
   }>;
@@ -111,15 +114,21 @@ export default async function JobsPage({
   const resolvedSearchParams = await searchParams;
   const filters = parseFilters(resolvedSearchParams);
   const page = parsePage(resolvedSearchParams.page);
-  const jobPage = await listPublishedJobs({
-    search: filters.search,
-    category: filters.category as PublicJobCategoryFilter,
-    opportunity: filters.opportunity as OpportunityFilter,
-    page,
-    pageSize,
-  });
+  const [referenceData, jobPage] = await Promise.all([
+    getPublicJobReferenceData(),
+    listPublishedJobs({
+      search: filters.search,
+      categoryId: filters.categoryId === "all" ? undefined : filters.categoryId,
+      areaId: filters.areaId === "all" ? undefined : filters.areaId,
+      minimumWage: parsePositiveInteger(filters.minimumWage),
+      maximumWage: parsePositiveInteger(filters.maximumWage),
+      opportunity: filters.opportunity as OpportunityFilter,
+      page,
+      pageSize,
+    }),
+  ]);
   const filteredJobs = jobPage.items.map(toJobCardView);
-  const filterKey = `${filters.search}:${filters.category}:${filters.opportunity}`;
+  const filterKey = `${filters.search}:${filters.categoryId}:${filters.areaId}:${filters.minimumWage}:${filters.maximumWage}:${filters.opportunity}`;
 
   return (
     <PublicShell>
@@ -165,7 +174,12 @@ export default async function JobsPage({
         <AmbientBackdrop variant="page" className="opacity-40" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="relative z-10 -mt-20 sm:-mt-24">
-            <JobFilters key={filterKey} initialValues={filters} />
+            <JobFilters
+              key={filterKey}
+              initialValues={filters}
+              categories={referenceData.categories}
+              areas={referenceData.areas}
+            />
           </div>
 
           <div className="mt-12 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
