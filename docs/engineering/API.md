@@ -254,11 +254,11 @@ Access: active employer. Returns only owned jobs.
 
 ## 6. Application Queries and Commands
 
-### `submitApplication(input)`
+### `submitApplication(jobId, input)`
 
 Access: active worker.
 
-Input: `jobId`, bounded note.
+Input: `jobId` path/action argument plus bounded note.
 
 Behavior validates current job state, visibility, deadline, uniqueness, and category eligibility. It derives `workerId` and stores the eligibility snapshot.
 
@@ -269,6 +269,8 @@ Errors include `JOB_NOT_AVAILABLE`, `APPLICATION_ALREADY_EXISTS`, and `FIRST_OPP
 Access: owning worker.
 
 Allowed only from `submitted`.
+
+Errors include `APPLICATION_NOT_FOUND` and `APPLICATION_NOT_WITHDRAWABLE`.
 
 ### `listMyApplications(page)`
 
