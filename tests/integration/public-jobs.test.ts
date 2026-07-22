@@ -279,6 +279,11 @@ databaseTest(
       expect(allVisible.items.map((job) => job.id)).not.toContain(
         deadlinePassedJobId,
       );
+      const serializedList = JSON.stringify(allVisible.items);
+      expect(serializedList).not.toContain("fullAddress");
+      expect(serializedList).not.toContain("arrivalInstructions");
+      expect(serializedList).not.toContain("Jalan Rahasia Publik");
+      expect(serializedList).not.toContain("Kode pintu rahasia");
 
       const detail = await getPublishedJob(visibleGeneralJobId, database);
       const serializedDetail = JSON.stringify(detail);

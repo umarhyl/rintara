@@ -63,6 +63,12 @@ describe("database schema invariants", () => {
     expect(projectionFields).not.toContain("hiddenReason");
   });
 
+  test("public job queries never reference private job details", async () => {
+    const source = await Bun.file("server/queries/jobs/public-jobs.ts").text();
+
+    expect(source).not.toMatch(/jobPrivateDetails|job_private_details/);
+  });
+
   test("generated migration contains critical PostgreSQL constraints", () => {
     const migrationDirectory = join(process.cwd(), "drizzle");
     const migrationFiles = readdirSync(migrationDirectory)

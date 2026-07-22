@@ -4,13 +4,11 @@ import { expect, test, mock } from "bun:test";
 mock.module("server-only", () => {
   return {};
 });
-import { eq, getTableColumns } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { getIntegrationDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
-import { publicJobCardProjection } from "@/server/queries/public-job-projection";
 
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
 
@@ -142,11 +140,10 @@ databaseTest(
         return { db: database };
       });
       const { requireJobOwner, requireAgreementParty } = await import("@/server/auth/authorization");
+      const { getEmployerJob } = await import("@/server/queries/jobs/get-employer-job");
 
-      // 1. Verify database-backed ownership authorization
-      await expect(requireJobOwner(employer1Context, jobId).catch(e => { console.error("JobOwner Error:", e); throw e; })).resolves.toBeDefined();
+      await expect(requireJobOwner(employer1Context, jobId)).resolves.toBeDefined();
       
-      // Test cross-employer access
       await expect(requireJobOwner(employer2Context, jobId)).rejects.toMatchObject({
         code: "NOT_FOUND",
       });
@@ -154,11 +151,9 @@ databaseTest(
         code: "FORBIDDEN",
       });
 
-      // 2. Verify agreement party authorization
       await expect(requireAgreementParty(employer1Context, agreementId)).resolves.toBeDefined();
       await expect(requireAgreementParty(worker1Context, agreementId)).resolves.toBeDefined();
       
-      // Test unrelated Employer/Worker private-address (agreement) access
       await expect(requireAgreementParty(employer2Context, agreementId)).rejects.toMatchObject({
         code: "NOT_FOUND",
       });
@@ -166,26 +161,16 @@ databaseTest(
         code: "NOT_FOUND",
       });
 
-      // 3. Verify public queries never join private job details
-      const projectionColumns = Object.keys(publicJobCardProjection);
-      const privateDetailsColumns = Object.keys(getTableColumns(schema.jobPrivateDetails));
-      
-      for (const col of privateDetailsColumns) {
-        if (col === "jobId" || col === "createdAt" || col === "updatedAt") continue;
-        expect(projectionColumns).not.toContain(col);
-      }
-
-      const publicJobs = await database
-        .select(publicJobCardProjection)
-        .from(schema.jobs)
-        .leftJoin(schema.employerProfiles, eq(schema.jobs.employerId, schema.employerProfiles.userId))
-        .leftJoin(schema.areas, eq(schema.jobs.areaId, schema.areas.id))
-        .leftJoin(schema.categories, eq(schema.jobs.categoryId, schema.categories.id))
-        .where(eq(schema.jobs.id, jobId));
-      
-      expect(publicJobs[0]).toBeDefined();
-      expect(publicJobs[0]).not.toHaveProperty("fullAddress");
-      expect(publicJobs[0]).not.toHaveProperty("arrivalInstructions");
+      await expect(getEmployerJob(jobId, employer1Id)).resolves.toMatchObject({
+        fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
+        arrivalInstructions: "Ketuk 3 kali",
+      });
+      await expect(getEmployerJob(jobId, employer2Id)).rejects.toMatchObject({
+        code: "JOB_NOT_FOUND",
+      });
+      await expect(getEmployerJob(jobId, worker2Id)).rejects.toMatchObject({
+        code: "JOB_NOT_FOUND",
+      });
 
     } finally {
       await client.end({ timeout: 5 });
