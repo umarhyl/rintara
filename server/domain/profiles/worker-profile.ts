@@ -51,7 +51,7 @@ export async function updateWorkerProfileInDatabase(
     if (!area) {
       throw new ApplicationError(
         "VALIDATION_FAILED",
-        "Wilayah yang dipilih tidak tersedia.",
+        "Wilayah yang dipilih tidak tersedia. Muat ulang dan pilih area lain.",
       );
     }
 
@@ -70,7 +70,7 @@ export async function updateWorkerProfileInDatabase(
       if (activeCategories.length !== input.categoryInterestIds.length) {
         throw new ApplicationError(
           "VALIDATION_FAILED",
-          "Satu atau beberapa kategori minat tidak tersedia.",
+          "Satu atau beberapa kategori minat tidak tersedia. Muat ulang lalu pilih kembali.",
         );
       }
     }

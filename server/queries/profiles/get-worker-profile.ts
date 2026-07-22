@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { requireActiveUser } from "@/server/auth/identity";
 import { assertActiveUser, assertRole } from "@/server/auth/policies";
@@ -10,6 +10,7 @@ import * as schema from "@/server/db/schema";
 import {
   areas,
   categories,
+  workProofs,
   workerInterests,
   workerProfiles,
 } from "@/server/db/schema";
@@ -29,6 +30,7 @@ export type WorkerProfileData = {
     name: string;
     isActive: boolean;
   }[];
+  verifiedCategoryIds: string[];
 };
 
 export async function queryWorkerProfile(
@@ -54,18 +56,34 @@ export async function queryWorkerProfile(
     throw new ApplicationError("NOT_FOUND", "Profil pekerja tidak ditemukan.");
   }
 
-  const categoryInterests = await database
-    .select({
-      id: categories.id,
-      name: categories.name,
-      isActive: categories.isActive,
-    })
-    .from(workerInterests)
-    .innerJoin(categories, eq(workerInterests.categoryId, categories.id))
-    .where(eq(workerInterests.workerId, actor.userId))
-    .orderBy(asc(categories.name), asc(categories.id));
+  const [categoryInterests, verifiedCategories] = await Promise.all([
+    database
+      .select({
+        id: categories.id,
+        name: categories.name,
+        isActive: categories.isActive,
+      })
+      .from(workerInterests)
+      .innerJoin(categories, eq(workerInterests.categoryId, categories.id))
+      .where(eq(workerInterests.workerId, actor.userId))
+      .orderBy(asc(categories.name), asc(categories.id)),
+    database
+      .selectDistinct({ categoryId: workProofs.categoryId })
+      .from(workProofs)
+      .where(
+        and(
+          eq(workProofs.workerId, actor.userId),
+          eq(workProofs.verificationStatus, "verified"),
+        ),
+      )
+      .orderBy(asc(workProofs.categoryId)),
+  ]);
 
-  return { ...profile, categoryInterests };
+  return {
+    ...profile,
+    categoryInterests,
+    verifiedCategoryIds: verifiedCategories.map(({ categoryId }) => categoryId),
+  };
 }
 
 export async function getMyProfile() {

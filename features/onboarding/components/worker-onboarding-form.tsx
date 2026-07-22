@@ -2,7 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { ArrowRight, CircleAlert, MapPin } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  CircleAlert,
+  MapPin,
+} from "lucide-react";
 import { submitWorkerOnboarding } from "@/app/auth/onboarding-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,28 +24,59 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { MAX_WORKER_CATEGORY_INTERESTS } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
+import { updateWorkerProfile } from "@/server/domain/profiles/actions";
 
 type ReferenceOption = {
   id: string;
   name: string;
 };
 
-export function WorkerOnboardingForm({
+type InitialWorkerProfile = {
+  displayName: string;
+  areaId: string;
+  areaName: string;
+  bio: string | null;
+  availabilityNote: string | null;
+  categoryInterestIds: string[];
+  verifiedCategoryIds: string[];
+};
+
+type FieldErrors = Record<string, string[] | undefined>;
+
+export function WorkerProfileForm({
   areas,
   categories,
   nextPath,
+  initialProfile,
 }: {
   areas: ReferenceOption[];
   categories: ReferenceOption[];
   nextPath?: string;
+  initialProfile?: InitialWorkerProfile;
 }) {
   const router = useRouter();
   const submittingRef = useRef(false);
-  const [areaId, setAreaId] = useState("");
-  const [categoryInterestIds, setCategoryInterestIds] = useState<string[]>([]);
+  const activeCategoryIds = new Set(categories.map(({ id }) => id));
+  const areaIsActive = initialProfile
+    ? areas.some(({ id }) => id === initialProfile.areaId)
+    : true;
+  const unavailableInterestCount =
+    initialProfile?.categoryInterestIds.filter(
+      (categoryId) => !activeCategoryIds.has(categoryId),
+    ).length ?? 0;
+  const [areaId, setAreaId] = useState(
+    initialProfile && areaIsActive ? initialProfile.areaId : "",
+  );
+  const [categoryInterestIds, setCategoryInterestIds] = useState<string[]>(
+    initialProfile?.categoryInterestIds.filter((categoryId) =>
+      activeCategoryIds.has(categoryId),
+    ) ?? [],
+  );
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [areaError, setAreaError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   function toggleCategory(categoryId: string, checked: boolean) {
     setCategoryInterestIds((current) => {
@@ -52,12 +88,18 @@ export function WorkerOnboardingForm({
 
       return current.filter((id) => id !== categoryId);
     });
+    setFieldErrors((current) => ({
+      ...current,
+      categoryInterestIds: undefined,
+    }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccess(false);
     setAreaError(null);
+    setFieldErrors({});
 
     if (!areaId) {
       const message = "Pilih area domisili untuk melanjutkan.";
@@ -77,21 +119,34 @@ export function WorkerOnboardingForm({
     let completed = false;
 
     try {
-      const result = await submitWorkerOnboarding({
+      const input = {
         displayName: String(formData.get("displayName") ?? ""),
         areaId,
         bio: String(formData.get("bio") ?? ""),
         availabilityNote: String(formData.get("availabilityNote") ?? ""),
         categoryInterestIds,
-      });
+      };
+      if (initialProfile) {
+        const result = await updateWorkerProfile(input);
+        if (!result.ok) {
+          setError(result.message);
+          setFieldErrors(result.fieldErrors ?? {});
+          setAreaError(result.fieldErrors?.areaId?.[0] ?? null);
+          return;
+        }
 
-      if (!result.ok) {
-        setError(result.message);
-        return;
+        setSuccess(true);
+        router.refresh();
+      } else {
+        const result = await submitWorkerOnboarding(input);
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+
+        router.replace(nextPath ?? "/worker/dashboard");
+        completed = true;
       }
-
-      router.replace(nextPath ?? "/worker/dashboard");
-      completed = true;
     } catch {
       setError(
         "Koneksi terputus saat menyimpan profil. Periksa jaringan lalu coba lagi.",
@@ -116,12 +171,35 @@ export function WorkerOnboardingForm({
         </Alert>
       ) : null}
 
-      {noAreaAvailable ? (
+      {success ? (
+        <Alert className="border-success/30 bg-success-soft text-foreground">
+          <CheckCircle2 className="text-success" aria-hidden="true" />
+          <AlertTitle>Profil diperbarui</AlertTitle>
+          <AlertDescription>Perubahan profilmu sudah tersimpan.</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {noAreaAvailable || !areaIsActive ? (
         <Alert>
           <MapPin aria-hidden="true" />
-          <AlertTitle>Area belum tersedia</AlertTitle>
+          <AlertTitle>
+            {noAreaAvailable ? "Area belum tersedia" : "Pilih area baru"}
+          </AlertTitle>
           <AlertDescription>
-            Pilihan area sedang disiapkan. Muat ulang halaman ini beberapa saat lagi.
+            {noAreaAvailable
+              ? "Pilihan area sedang disiapkan. Muat ulang halaman ini beberapa saat lagi."
+              : `${initialProfile?.areaName} tidak lagi tersedia untuk pembaruan profil.`}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {unavailableInterestCount > 0 ? (
+        <Alert>
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle>Kategori minat berubah</AlertTitle>
+          <AlertDescription>
+            {unavailableInterestCount} kategori lama tidak lagi tersedia dan akan
+            dihapus saat profil disimpan.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -136,10 +214,20 @@ export function WorkerOnboardingForm({
             minLength={2}
             maxLength={120}
             placeholder="Nama yang ingin ditampilkan"
+            defaultValue={initialProfile?.displayName}
             className="h-12"
             disabled={isPending}
             required
+            aria-invalid={fieldErrors.displayName?.length ? true : undefined}
+            aria-describedby={
+              fieldErrors.displayName?.length ? "worker-display-name-error" : undefined
+            }
           />
+          {fieldErrors.displayName?.[0] ? (
+            <p id="worker-display-name-error" className="text-sm text-destructive">
+              {fieldErrors.displayName[0]}
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-2 sm:col-span-2">
@@ -149,6 +237,7 @@ export function WorkerOnboardingForm({
             onValueChange={(value) => {
               setAreaId(value);
               setAreaError(null);
+              setFieldErrors((current) => ({ ...current, areaId: undefined }));
             }}
             disabled={isPending || noAreaAvailable}
           >
@@ -182,9 +271,17 @@ export function WorkerOnboardingForm({
             name="bio"
             maxLength={1000}
             placeholder="Ceritakan cara kerjamu, hal yang sedang dipelajari, atau pengalaman yang relevan."
+            defaultValue={initialProfile?.bio ?? ""}
             className="min-h-24 resize-y"
             disabled={isPending}
+            aria-invalid={fieldErrors.bio?.length ? true : undefined}
+            aria-describedby={fieldErrors.bio?.length ? "worker-bio-error" : undefined}
           />
+          {fieldErrors.bio?.[0] ? (
+            <p id="worker-bio-error" className="text-sm text-destructive">
+              {fieldErrors.bio[0]}
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-2 sm:col-span-2">
@@ -197,9 +294,23 @@ export function WorkerOnboardingForm({
             name="availabilityNote"
             maxLength={500}
             placeholder="Misalnya: hari kerja setelah pukul 16.00 dan akhir pekan"
+            defaultValue={initialProfile?.availabilityNote ?? ""}
             className="h-12"
             disabled={isPending}
+            aria-invalid={
+              fieldErrors.availabilityNote?.length ? true : undefined
+            }
+            aria-describedby={
+              fieldErrors.availabilityNote?.length
+                ? "worker-availability-error"
+                : undefined
+            }
           />
+          {fieldErrors.availabilityNote?.[0] ? (
+            <p id="worker-availability-error" className="text-sm text-destructive">
+              {fieldErrors.availabilityNote[0]}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -212,7 +323,8 @@ export function WorkerOnboardingForm({
             id="category-interest-help"
             className="text-base leading-7 text-muted-foreground"
           >
-            Pilihan ini hanya menunjukkan minatmu, bukan bukti pengalaman atau penentu kelayakan Kesempatan Pertama.
+            Pilihan ini hanya menunjukkan minatmu. Status pengalaman untuk
+            Kesempatan Pertama dihitung per kategori dari Bukti Kerja.
           </p>
           {categories.length > 0 ? (
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
@@ -227,13 +339,16 @@ export function WorkerOnboardingForm({
               const checked = categoryInterestIds.includes(category.id);
               const reachedLimit =
                 categoryInterestIds.length >= MAX_WORKER_CATEGORY_INTERESTS;
+              const verified =
+                initialProfile?.verifiedCategoryIds.includes(category.id) ??
+                false;
 
               return (
                 <Label
                   key={category.id}
                   htmlFor={`category-${category.id}`}
                   className={cn(
-                    "flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 font-normal transition-[background-color,border-color,color] duration-300",
+                    "flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 font-normal transition-[background-color,border-color,color] duration-200",
                     checked
                       ? "border-primary/45 bg-primary/8 text-foreground"
                       : "border-border bg-card/60 text-muted-foreground hover:border-primary/25 hover:bg-muted/55 hover:text-foreground",
@@ -244,12 +359,28 @@ export function WorkerOnboardingForm({
                     id={`category-${category.id}`}
                     checked={checked}
                     disabled={reachedLimit && !checked}
-                    aria-describedby="category-interest-help"
+                    aria-describedby={
+                      fieldErrors.categoryInterestIds?.length
+                        ? "category-interest-help category-interest-error"
+                        : "category-interest-help"
+                    }
+                    aria-invalid={
+                      fieldErrors.categoryInterestIds?.length ? true : undefined
+                    }
                     onCheckedChange={(value) =>
                       toggleCategory(category.id, value === true)
                     }
                   />
-                  <span className="text-base leading-6">{category.name}</span>
+                  <span className="grid gap-0.5">
+                    <span className="text-base leading-6">{category.name}</span>
+                    {initialProfile ? (
+                      <span className="text-xs text-muted-foreground">
+                        {verified
+                          ? "Ada Bukti Kerja terverifikasi"
+                          : "Belum ada Bukti Kerja terverifikasi"}
+                      </span>
+                    ) : null}
+                  </span>
                 </Label>
               );
             })}
@@ -259,6 +390,14 @@ export function WorkerOnboardingForm({
             Belum ada kategori aktif. Kamu tetap dapat menyelesaikan profil dan memilih minat nanti.
           </p>
         )}
+        {fieldErrors.categoryInterestIds?.[0] ? (
+          <p
+            id="category-interest-error"
+            className="mt-2 text-sm text-destructive"
+          >
+            {fieldErrors.categoryInterestIds[0]}
+          </p>
+        ) : null}
       </fieldset>
 
       <Button
@@ -267,9 +406,15 @@ export function WorkerOnboardingForm({
         className="w-full rounded-full"
         disabled={isPending || noAreaAvailable}
       >
-        {isPending ? "Menyimpan profil…" : "Simpan dan lihat beranda"}
-        {!isPending ? <ArrowRight aria-hidden="true" /> : null}
+        {isPending
+          ? "Menyimpan profil…"
+          : initialProfile
+            ? "Simpan perubahan"
+            : "Simpan dan lihat beranda"}
+        {!isPending && !initialProfile ? <ArrowRight aria-hidden="true" /> : null}
       </Button>
     </form>
   );
 }
+
+export { WorkerProfileForm as WorkerOnboardingForm };

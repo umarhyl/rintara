@@ -188,7 +188,9 @@ Returns active pilot areas, categories, and safe Wage Guideline display data. In
 
 Access: active worker or employer.
 
-Returns the role-specific private profile DTO for the current user.
+Returns the role-specific private profile DTO for the current user. The Worker
+DTO includes category interests and category IDs backed by a currently verified
+Work Proof; these derived values are read-only.
 
 ### `updateWorkerProfile(input)`
 

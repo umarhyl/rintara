@@ -300,7 +300,15 @@ Present the current lifecycle step and only the allowed next action.
 - Code entry supports numeric keyboards, paste, clear error, and expiry guidance.
 - Never display the previous plaintext code after leaving the generation result.
 
-### 8.8 Rintara Passport
+### 8.8 Worker profile
+
+- Load the current worker's private profile; never display placeholder identity or contact data.
+- Use active city/regency and category reference options, with clear recovery when a saved option becomes unavailable.
+- Category interests are checkboxes and are explicitly labeled as self-declared.
+- Per-category experience status is read-only and comes only from verified Work Proof.
+- Preserve valid input on failure and expose pending, field-error, recoverable-error, and success states.
+
+### 8.9 Rintara Passport
 
 - Lead with verified work categories and chronological proof entries.
 - Each entry shows category, job title, general area, dates, and verification state.
@@ -308,7 +316,7 @@ Present the current lifecycle step and only the allowed next action.
 - Revoked proof is not counted as verified; the owner may see a neutral explanation.
 - Do not show an edit or upload-proof action.
 
-### 8.9 Opportunity Credits
+### 8.10 Opportunity Credits
 
 - Distinguish active credit count from lifetime First Opportunities.
 - State the maximum active balance of three.
@@ -317,7 +325,7 @@ Present the current lifecycle step and only the allowed next action.
 - Show exact boost end time after redemption.
 - Never use currency symbols or “withdraw” language.
 
-### 8.10 Reports and admin
+### 8.11 Reports and admin
 
 User report form uses defined reasons and factual guidance. It must not promise a specific resolution time unless an operational SLA exists.
 

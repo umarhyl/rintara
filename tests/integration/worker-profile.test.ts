@@ -245,6 +245,10 @@ databaseTest(
       });
 
       expect(
+        (await queryWorkerProfile(database, workerAContext)).verifiedCategoryIds,
+      ).toEqual([categoryAId]);
+
+      expect(
         await database.transaction((tx) =>
           isFirstOpportunityEligible(tx, workerA.userId, categoryAId),
         ),
@@ -281,6 +285,9 @@ databaseTest(
           categoryAId,
         ),
       ).toBe(true);
+      expect(
+        (await queryWorkerProfile(database, workerAContext)).verifiedCategoryIds,
+      ).toEqual([]);
 
       expect(await queryWorkerProfile(database, workerAContext)).toMatchObject({
         userId: workerA.userId,
