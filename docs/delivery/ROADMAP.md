@@ -36,7 +36,7 @@ No phase is complete because pages exist. Each exit criterion requires authoriza
 | --- | --- | --- |
 | Umar — Backend Engineer | PostgreSQL/Drizzle, migrations, domain commands, API contracts, Supabase Auth integration, authorization, backend tests, Vercel/Supabase operations | Security, data integrity, integration support, deployment and demo reliability |
 | Zaki — Frontend Engineer | App Router screens, forms, responsive UI, client interactions, loading/error/retry states | Accessibility, UI tests, public/private rendering checks, demo interface |
-| Catur — Product Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
+| Catur — Project Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
 
 Testing is shared: Umar owns domain, PostgreSQL integration, concurrency, and server authorization coverage; Zaki owns component, browser, responsive, and accessibility coverage; Catur owns acceptance scenarios and release evidence. Each owner reviews cross-boundary changes that affect their responsibility.
 
