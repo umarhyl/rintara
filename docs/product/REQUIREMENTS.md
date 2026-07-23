@@ -59,6 +59,21 @@ Acceptance criteria:
 - Completed-job, verified-opportunity, badge, and credit values are derived from system records.
 - The interface never accepts a client-supplied credit balance or verification count.
 
+### FR-019 — Marketplace configuration [P0]
+
+An active administrator MUST be able to manage the pilot areas, job categories,
+and Wage Guidelines required by marketplace operations.
+
+Acceptance criteria:
+
+- Only active administrators can create marketplace configuration records.
+- Only active administrators can deactivate and reactivate existing marketplace
+  configuration records.
+- Pilot areas can be activated for onboarding, job publishing, and discovery.
+- Categories can be activated for worker interests, jobs, and First Opportunity rules.
+- Wage Guidelines are configured per active pilot area, active category, and wage unit.
+- Wage Guideline values include minimum and recommended reference amounts.
+
 ### FR-020 — Job drafting and publishing [P0]
 
 An active employer MUST be able to create a draft and publish a job containing:
