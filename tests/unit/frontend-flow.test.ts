@@ -6,7 +6,7 @@ const requiredPages = [
   "app/page.tsx", "app/jobs/page.tsx", "app/jobs/[id]/page.tsx", "app/sign-in/page.tsx", "app/register/page.tsx",
   "app/onboarding/role/page.tsx", "app/onboarding/worker/page.tsx", "app/onboarding/employer/page.tsx",
   "app/worker/dashboard/page.tsx", "app/worker/profile/page.tsx", "app/worker/applications/page.tsx", "app/worker/agreements/[id]/page.tsx", "app/worker/work/[id]/page.tsx", "app/worker/passport/page.tsx", "app/worker/notifications/page.tsx",
-  "app/employer/dashboard/page.tsx", "app/employer/jobs/new/page.tsx", "app/employer/jobs/[id]/page.tsx", "app/employer/jobs/[id]/applicants/page.tsx", "app/employer/agreements/[id]/page.tsx", "app/employer/work/[id]/page.tsx", "app/employer/opportunity-credits/page.tsx", "app/employer/notifications/page.tsx",
+  "app/employer/dashboard/page.tsx", "app/employer/jobs/page.tsx", "app/employer/jobs/new/page.tsx", "app/employer/jobs/[id]/page.tsx", "app/employer/jobs/[id]/applicants/page.tsx", "app/employer/agreements/[id]/page.tsx", "app/employer/work/[id]/page.tsx", "app/employer/opportunity-credits/page.tsx", "app/employer/notifications/page.tsx",
   "app/admin/page.tsx", "app/admin/reports/page.tsx", "app/admin/jobs/page.tsx", "app/admin/users/page.tsx", "app/admin/wage-guidelines/page.tsx", "app/admin/audit-logs/page.tsx",
   "app/account/continue/page.tsx",
 ] as const;

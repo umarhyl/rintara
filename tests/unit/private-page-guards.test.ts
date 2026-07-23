@@ -7,6 +7,7 @@ const staticGuardedPages = [
   ["app/worker/applications/page.tsx", "worker", "/worker/applications"],
   ["app/worker/passport/page.tsx", "worker", "/worker/passport"],
   ["app/worker/notifications/page.tsx", "worker", "/worker/notifications"],
+  ["app/employer/jobs/page.tsx", "employer", "/employer/jobs"],
   ["app/admin/page.tsx", "admin", "/admin"],
   ["app/admin/reports/page.tsx", "admin", "/admin/reports"],
   ["app/admin/jobs/page.tsx", "admin", "/admin/jobs"],
@@ -29,12 +30,6 @@ const demoRecordGuardedPages = [
     "sesi-pekerjaan",
   ],
   [
-    "app/employer/jobs/[id]/page.tsx",
-    "employer",
-    "/employer/jobs/${encodeURIComponent(id)}",
-    "kru-acara-akhir-pekan",
-  ],
-  [
     "app/employer/agreements/[id]/page.tsx",
     "employer",
     "/employer/agreements/${encodeURIComponent(id)}",
@@ -49,6 +44,13 @@ const demoRecordGuardedPages = [
 ] as const;
 
 const backendRecordGuardedPages = [
+  [
+    "app/employer/jobs/[id]/page.tsx",
+    "employer",
+    "/employer/jobs/${encodeURIComponent(id)}",
+    "loadEmployerJob(id, account.userId)",
+    "JOB_NOT_FOUND",
+  ],
   [
     "app/employer/jobs/[id]/applicants/page.tsx",
     "employer",
@@ -163,8 +165,8 @@ describe("private page authorization boundaries", () => {
       const source = readFileSync(path, "utf8");
       const guardIndex = source.indexOf("await requireDashboardPageRole");
       const lookupIndex = source.indexOf(resourceLookup);
-      const notFoundIndex = source.indexOf("notFound();", lookupIndex);
-      const renderIndex = source.indexOf("return (", notFoundIndex);
+      const notFoundIndex = source.indexOf("notFound();");
+      const renderIndex = source.indexOf("return (", lookupIndex);
 
       expect(source).toContain(
         'import { requireDashboardPageRole } from "@/server/auth/page-access";',
@@ -177,8 +179,8 @@ describe("private page authorization boundaries", () => {
       expect(source).toContain(`error.code === "${notFoundCode}"`);
       expect(guardIndex).toBeGreaterThan(-1);
       expect(lookupIndex).toBeGreaterThan(guardIndex);
-      expect(notFoundIndex).toBeGreaterThan(lookupIndex);
-      expect(renderIndex).toBeGreaterThan(notFoundIndex);
+      expect(notFoundIndex).toBeGreaterThan(-1);
+      expect(renderIndex).toBeGreaterThan(lookupIndex);
     },
   );
 });

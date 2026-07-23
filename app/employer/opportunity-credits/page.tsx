@@ -179,7 +179,7 @@ export default async function CreditsPage() {
             />
           </div>
           <Link
-            href="/employer/jobs/kru-acara-akhir-pekan"
+            href="/employer/jobs"
             className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-background/75 underline-offset-4 hover:text-background hover:underline"
           >
             Lihat pekerjaan <ArrowRight className="size-4" aria-hidden="true" />

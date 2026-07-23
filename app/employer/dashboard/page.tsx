@@ -104,7 +104,7 @@ export default async function EmployerDashboardPage() {
               className="theme-static-light mt-8 h-12 rounded-full bg-white px-5 text-slate-950 shadow-none hover:bg-blue-50"
               asChild
             >
-              <Link href="/employer/jobs/kru-acara-akhir-pekan/applicants">
+              <Link href="/employer/jobs">
                 Tinjau pelamar <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
@@ -158,7 +158,7 @@ export default async function EmployerDashboardPage() {
           </ol>
 
           <Button variant="ghost" className="mt-8 h-11 w-full justify-between rounded-full px-3" asChild>
-            <Link href="/employer/jobs/kru-acara-akhir-pekan">
+            <Link href="/employer/jobs">
               Kelola pekerjaan <ArrowRight aria-hidden="true" />
             </Link>
           </Button>

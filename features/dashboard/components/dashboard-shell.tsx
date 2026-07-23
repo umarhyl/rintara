@@ -62,7 +62,7 @@ const roleConfig = {
     items: [
       { href: "/employer/dashboard", label: "Beranda", icon: Home },
       { href: "/employer/jobs/new", label: "Pasang kerja", icon: PlusCircle },
-      { href: "/employer/jobs/kru-acara-akhir-pekan", label: "Pekerjaan", icon: BriefcaseBusiness },
+      { href: "/employer/jobs", label: "Pekerjaan", icon: BriefcaseBusiness },
       { href: "/employer/opportunity-credits", label: "Kredit", icon: TicketCheck },
       { href: "/employer/notifications", label: "Notifikasi", icon: Bell },
     ],
@@ -116,7 +116,7 @@ function isNavigationItemActive(role: Role, href: string, pathname: string) {
     return pathname.startsWith("/worker/agreements/") || pathname.startsWith("/worker/work/");
   }
 
-  if (role === "employer" && href === "/employer/jobs/kru-acara-akhir-pekan") {
+  if (role === "employer" && href === "/employer/jobs") {
     return pathname.startsWith("/employer/agreements/") || pathname.startsWith("/employer/work/");
   }
 

@@ -17,7 +17,7 @@ const items = [
     title: "Dua lamaran baru",
     body: "Kru Acara Akhir Pekan memiliki pelamar baru untuk ditinjau.",
     time: "1 jam lalu",
-    href: "/employer/jobs/kru-acara-akhir-pekan/applicants",
+    href: "/employer/jobs",
     unread: true,
   },
   {

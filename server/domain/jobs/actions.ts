@@ -5,7 +5,7 @@ import { ApplicationError } from "@/server/errors/application-error";
 import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
 import { jobs, jobPrivateDetails, wageGuidelines } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lte, or, isNull, gt } from "drizzle-orm";
 import { jobDraftSchema } from "./validation";
 import { assertJobTransition } from "../lifecycle";
 
@@ -154,15 +154,18 @@ export async function publishJob(jobId: string) {
       throw new ApplicationError("VALIDATION_FAILED", "Start time must be in the future.");
     }
 
-    // Check wage guidelines
+    const guidelineDate = job.startsAt.toISOString().slice(0, 10);
     const [guideline] = await tx.select()
       .from(wageGuidelines)
       .where(and(
         eq(wageGuidelines.categoryId, job.categoryId),
         eq(wageGuidelines.areaId, job.areaId),
-        eq(wageGuidelines.isActive, true)
+        eq(wageGuidelines.unit, job.wageUnit),
+        eq(wageGuidelines.isActive, true),
+        lte(wageGuidelines.effectiveFrom, guidelineDate),
+        or(isNull(wageGuidelines.effectiveTo), gt(wageGuidelines.effectiveTo, guidelineDate))!
       ))
-      .orderBy(desc(wageGuidelines.createdAt))
+      .orderBy(desc(wageGuidelines.effectiveFrom), desc(wageGuidelines.createdAt))
       .limit(1);
 
     let wageStatus: "compliant" | "below" | "unavailable" = "unavailable";
@@ -203,6 +206,7 @@ export async function publishJob(jobId: string) {
 
   revalidatePath(`/employer/jobs/${jobId}`);
   revalidatePath("/employer/jobs");
+  revalidatePath("/employer/dashboard");
   revalidatePath("/jobs"); // Revalidate public discovery
   return { ok: true };
 }
@@ -250,6 +254,7 @@ export async function cancelJob(jobId: string) {
 
   revalidatePath(`/employer/jobs/${jobId}`);
   revalidatePath("/employer/jobs");
+  revalidatePath("/employer/dashboard");
   revalidatePath("/jobs"); 
   return { ok: true };
 }

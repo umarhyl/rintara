@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 const employerPages = [
   "app/employer/dashboard/page.tsx",
+  "app/employer/jobs/page.tsx",
   "app/employer/jobs/new/page.tsx",
   "app/employer/jobs/[id]/page.tsx",
   "app/employer/jobs/[id]/applicants/page.tsx",
