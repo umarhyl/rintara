@@ -208,6 +208,58 @@ Input: display name, employer type, area ID, and bounded description.
 
 Derived fields such as badge, completed-job count, and credit count are not accepted.
 
+## 4.5 Admin Marketplace Configuration
+
+### `createCategory(input)`
+
+Access: active admin.
+
+Input: category name, slug, risk level, First Opportunity availability, and
+active flag. A category with `restricted` risk cannot allow First Opportunity.
+
+### `setCategoryActive(input)`
+
+Access: active admin.
+
+Input: category ID and target active flag. The command records an audit entry
+and refreshes marketplace configuration, employer job creation, and discovery
+views.
+
+### `createPilotArea(input)`
+
+Access: active admin.
+
+Input: area name, unique code, and active flag. MVP pilot areas are stored as
+`city_regency` records so onboarding, job publishing, and discovery use one
+consistent area source.
+
+### `setPilotAreaActive(input)`
+
+Access: active admin.
+
+Input: pilot area ID and target active flag. Only MVP `city_regency` pilot areas
+can be changed through this command.
+
+### `createWageGuideline(input)`
+
+Access: active admin.
+
+Input: active pilot area, active category, wage unit, minimum reference amount,
+recommended reference amount, source label, optional source URL, effective date
+range, simulation flag, and active flag.
+
+Server behavior records an audit entry and revalidates admin configuration,
+employer job creation, and public discovery views.
+
+### `setWageGuidelineActive(input)`
+
+Access: active admin.
+
+Input: Wage Guideline ID and target active flag. This is the supported MVP edit
+path for existing guidelines; changing wage amounts requires creating a new
+guideline version with its own effective dates instead of mutating the old
+record.
+
 ## 5. Job Queries and Commands
 
 ### `createJobDraft(input)`
