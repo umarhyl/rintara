@@ -135,6 +135,10 @@ Milestone 2 evidence:
 
 **Date:** July 24
 
+**Backend status:** The acceptance and agreement backend slice was completed on
+July 25, 2026. Milestone completion still requires presentation integration and
+release evidence.
+
 Deliverables:
 
 - transactional `acceptApplication`;
@@ -150,6 +154,17 @@ Exit criteria:
 - Forced failure rolls back job, applications, agreement, notification, and audit writes.
 - Both parties can confirm in either order.
 - Full address is visible only to the parties after acceptance.
+
+Milestone 3 backend evidence:
+
+- PostgreSQL integration tests cover concurrent acceptance, forced rollback,
+  both confirmation orders, repeated and concurrent confirmation, and exactly
+  one scheduled work session.
+- Authorized agreement reads return the immutable accepted snapshot only to
+  either party or admin; unrelated and inactive accounts are rejected safely.
+- Public projections, agreement notifications, and audit metadata exclude the
+  private address.
+- Agreement activation, notifications, and audit writes share one transaction.
 
 ### Milestone 4 — Attendance, completion, and Passport
 

@@ -213,6 +213,7 @@ Rules:
 - Only the two parties and authorized admin can view the complete snapshot.
 - Full address becomes visible to the accepted worker only after acceptance.
 - Confirmation does not change agreement terms.
+- Retrying an existing confirmation returns the current state without another work session, notification, or audit write.
 - A cancelled agreement cannot be reactivated.
 
 ## 9. Attendance Rules

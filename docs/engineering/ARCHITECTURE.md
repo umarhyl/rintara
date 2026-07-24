@@ -187,6 +187,14 @@ The following operations require database transactions:
 - create one agreement snapshot;
 - write notifications and audit record.
 
+### `confirmAgreement`
+
+- lock the agreement through the caller's party relationship;
+- return the stored state without writes when that party already confirmed;
+- set only the caller's confirmation timestamp;
+- on the second confirmation, activate the agreement and create the unique scheduled work session;
+- write safe notifications and audit metadata in the same transaction.
+
 ### `verifyCompletion`
 
 - protect agreement/session/job from duplicate completion;
