@@ -12,6 +12,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { getIntegrationDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
+import { ApplicationError } from "@/server/errors/application-error";
 
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
 
@@ -319,34 +320,48 @@ databaseTest(
         });
       });
 
-      type ActiveContext = {
+      type TestContext = {
         userId: string;
-        role: "worker" | "employer";
-        accountStatus: "active";
+        role: "worker" | "employer" | "admin";
+        accountStatus: "active" | "suspended";
         requestId: string;
       };
-      const employerContext: ActiveContext = {
+      const employerContext: TestContext = {
         userId: employerId,
         role: "employer",
         accountStatus: "active",
         requestId: "accept-test-req",
       };
-      const workerContext: ActiveContext = {
+      const workerContext: TestContext = {
         userId: workerAId,
         role: "worker",
         accountStatus: "active",
         requestId: "accept-test-worker-req",
       };
-      const otherEmployerContext: ActiveContext = {
+      const otherEmployerContext: TestContext = {
         userId: otherEmployerId,
         role: "employer",
         accountStatus: "active",
         requestId: "accept-test-other-req",
       };
-      let activeContext = employerContext;
+      let activeContext: TestContext | null = employerContext;
 
       mock.module("@/server/auth/identity", () => ({
-        requireActiveUser: async () => activeContext,
+        requireActiveUser: async () => {
+          if (!activeContext) {
+            throw new ApplicationError(
+              "UNAUTHENTICATED",
+              "Authentication is required.",
+            );
+          }
+          if (activeContext.accountStatus !== "active") {
+            throw new ApplicationError(
+              "ACCOUNT_INACTIVE",
+              "This account cannot perform protected operations.",
+            );
+          }
+          return activeContext;
+        },
       }));
       mock.module("@/server/db/client", () => ({ db: database }));
 
@@ -359,6 +374,21 @@ databaseTest(
       const { listPublishedJobs } = await import(
         "@/server/queries/jobs/public-jobs"
       );
+      const readConfirmationSideEffects = async (agreementId: string) => {
+        const notificationRows = await database
+          .select()
+          .from(schema.notifications)
+          .where(eq(schema.notifications.entityId, agreementId));
+        const auditRows = await database
+          .select()
+          .from(schema.auditLogs)
+          .where(eq(schema.auditLogs.entityId, agreementId));
+
+        return {
+          notifications: notificationRows,
+          audits: auditRows,
+        };
+      };
 
       await expect(acceptApplication(applicationAId)).resolves.toMatchObject({
         jobId,
@@ -421,6 +451,65 @@ databaseTest(
       const publicJobs = await listPublishedJobs({}, database);
       expect(JSON.stringify(publicJobs)).not.toContain("Jalan Privat Acceptance 1");
 
+      activeContext = {
+        ...workerContext,
+        userId: workerBId,
+        requestId: "confirm-unrelated-worker",
+      };
+      await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
+
+      activeContext = otherEmployerContext;
+      await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
+        code: "NOT_FOUND",
+      });
+
+      activeContext = {
+        userId: randomUUID(),
+        role: "admin",
+        accountStatus: "active",
+        requestId: "confirm-admin",
+      };
+      await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+
+      activeContext = { ...employerContext, accountStatus: "suspended" };
+      await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
+        code: "ACCOUNT_INACTIVE",
+      });
+
+      activeContext = null;
+      await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
+        code: "UNAUTHENTICATED",
+      });
+
+      activeContext = employerContext;
+      await expect(confirmAgreement("not-an-agreement-id")).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+      });
+
+      await database
+        .update(schema.agreements)
+        .set({
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancellationReason: "Cancelled fixture.",
+        })
+        .where(eq(schema.agreements.id, existingRollbackAgreementId));
+      activeContext = {
+        ...workerContext,
+        userId: workerBId,
+        requestId: "confirm-cancelled",
+      };
+      await expect(
+        confirmAgreement(existingRollbackAgreementId),
+      ).rejects.toMatchObject({
+        code: "INVALID_STATE_TRANSITION",
+      });
+
+      activeContext = employerContext;
       const employerConfirmation = await confirmAgreement(agreement.id);
       expect(employerConfirmation).toMatchObject({
         agreementId: agreement.id,
@@ -429,8 +518,35 @@ databaseTest(
       });
       expect(employerConfirmation.employerConfirmedAt).not.toBeNull();
 
+      const employerConfirmationEffects =
+        await readConfirmationSideEffects(agreement.id);
+      expect(employerConfirmationEffects.notifications).toHaveLength(3);
+      expect(employerConfirmationEffects.notifications).toContainEqual(
+        expect.objectContaining({
+          recipientId: workerAId,
+          type: "agreement_confirmation_requested",
+        }),
+      );
+      expect(employerConfirmationEffects.audits).toMatchObject([
+        {
+          actorId: employerId,
+          action: "confirm_agreement",
+          metadata: { party: "employer", activated: false },
+        },
+      ]);
+
       const employerRetry = await confirmAgreement(agreement.id);
       expect(employerRetry).toEqual(employerConfirmation);
+      const employerRetryEffects =
+        await readConfirmationSideEffects(agreement.id);
+      expect(
+        employerRetryEffects.notifications.map(({ id }) => id),
+      ).toEqual(
+        employerConfirmationEffects.notifications.map(({ id }) => id),
+      );
+      expect(employerRetryEffects.audits.map(({ id }) => id)).toEqual(
+        employerConfirmationEffects.audits.map(({ id }) => id),
+      );
 
       const pendingSessions = await database
         .select()
@@ -461,6 +577,30 @@ databaseTest(
       expect(activeSessions).toHaveLength(1);
       expect(activeSessions[0]?.status).toBe("scheduled");
 
+      const activationEffects = await readConfirmationSideEffects(agreement.id);
+      expect(activationEffects.notifications).toHaveLength(5);
+      const activationNotifications = activationEffects.notifications.filter(
+        ({ type }) => type === "agreement_activated",
+      );
+      expect(activationNotifications).toHaveLength(2);
+      expect(
+        activationNotifications.map(({ recipientId }) => recipientId).sort(),
+      ).toEqual([employerId, workerAId].sort());
+      expect(activationEffects.audits).toHaveLength(2);
+      expect(activationEffects.audits).toContainEqual(
+        expect.objectContaining({
+          actorId: workerAId,
+          action: "confirm_agreement",
+          metadata: { party: "worker", activated: true },
+        }),
+      );
+      expect(JSON.stringify(activationEffects)).not.toContain(
+        "Jalan Privat Acceptance 1",
+      );
+      expect(JSON.stringify(activationEffects)).not.toContain(
+        "Masuk dari pagar samping.",
+      );
+
       const workerRetry = await confirmAgreement(agreement.id);
       expect(workerRetry).toEqual(workerConfirmation);
       activeContext = employerContext;
@@ -472,6 +612,15 @@ databaseTest(
         .where(eq(schema.workSessions.agreementId, agreement.id));
       expect(sessionsAfterRetry.map((session) => session.id)).toEqual(
         activeSessions.map((session) => session.id),
+      );
+      const effectsAfterRetry = await readConfirmationSideEffects(agreement.id);
+      expect(
+        effectsAfterRetry.notifications.map(({ id }) => id).sort(),
+      ).toEqual(
+        activationEffects.notifications.map(({ id }) => id).sort(),
+      );
+      expect(effectsAfterRetry.audits.map(({ id }) => id).sort()).toEqual(
+        activationEffects.audits.map(({ id }) => id).sort(),
       );
 
       activeContext = workerContext;
@@ -554,25 +703,42 @@ databaseTest(
         userId: concurrentAgreement.workerId,
         requestId: "confirm-worker-first",
       };
-      await expect(
+      const workerFirstConfirmations = await Promise.all([
         confirmAgreement(concurrentAgreement.id),
-      ).resolves.toMatchObject({
+        confirmAgreement(concurrentAgreement.id),
+      ]);
+      expect(workerFirstConfirmations[0]).toEqual(workerFirstConfirmations[1]);
+      expect(workerFirstConfirmations[0]).toMatchObject({
         status: "pending_confirmation",
         employerConfirmedAt: null,
       });
+      const workerFirstPendingSessions = await database
+        .select()
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, concurrentAgreement.id));
+      expect(workerFirstPendingSessions).toHaveLength(0);
 
       activeContext = employerContext;
-      await expect(
+      const concurrentConfirmations = await Promise.all([
         confirmAgreement(concurrentAgreement.id),
-      ).resolves.toMatchObject({
-        status: "active",
-      });
+        confirmAgreement(concurrentAgreement.id),
+      ]);
+      expect(concurrentConfirmations[0]).toEqual(concurrentConfirmations[1]);
+      expect(concurrentConfirmations[0]).toMatchObject({ status: "active" });
       const workerFirstSessions = await database
         .select()
         .from(schema.workSessions)
         .where(eq(schema.workSessions.agreementId, concurrentAgreement.id));
       expect(workerFirstSessions).toHaveLength(1);
       expect(workerFirstSessions[0]?.status).toBe("scheduled");
+      const workerFirstEffects = await readConfirmationSideEffects(
+        concurrentAgreement.id,
+      );
+      expect(workerFirstEffects.notifications).toHaveLength(5);
+      expect(workerFirstEffects.audits).toHaveLength(2);
+      expect(JSON.stringify(workerFirstEffects)).not.toContain(
+        "Jalan Privat Concurrent 1",
+      );
     } finally {
       await client.end({ timeout: 5 });
     }

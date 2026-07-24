@@ -5,7 +5,12 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
-import { agreements, workSessions } from "@/server/db/schema";
+import {
+  agreements,
+  auditLogs,
+  notifications,
+  workSessions,
+} from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
 import { assertMiniAgreementTransition } from "@/server/domain/lifecycle";
 
@@ -60,6 +65,8 @@ export async function confirmAgreement(
     const [agreement] = await tx
       .select({
         id: agreements.id,
+        workerId: agreements.workerId,
+        employerId: agreements.employerId,
         status: agreements.status,
         workerConfirmedAt: agreements.workerConfirmedAt,
         employerConfirmedAt: agreements.employerConfirmedAt,
@@ -126,6 +133,43 @@ export async function confirmAgreement(
         updatedAt: now,
       });
     }
+
+    await tx.insert(notifications).values(
+      activates
+        ? [agreement.workerId, agreement.employerId].map((recipientId) => ({
+            recipientId,
+            type: "agreement_activated",
+            title: "Mini Agreement aktif",
+            body: "Kedua pihak telah mengonfirmasi. Pekerjaan siap dilanjutkan sesuai jadwal.",
+            entityType: "agreement",
+            entityId: agreement.id,
+            createdAt: now,
+          }))
+        : [
+            {
+              recipientId:
+                actor.role === "worker"
+                  ? agreement.employerId
+                  : agreement.workerId,
+              type: "agreement_confirmation_requested",
+              title: "Konfirmasi Mini Agreement",
+              body: "Pihak lain telah mengonfirmasi Mini Agreement. Konfirmasimu masih diperlukan.",
+              entityType: "agreement",
+              entityId: agreement.id,
+              createdAt: now,
+            },
+          ],
+    );
+
+    await tx.insert(auditLogs).values({
+      actorId: actor.userId,
+      action: "confirm_agreement",
+      entityType: "agreement",
+      entityId: agreement.id,
+      requestId: actor.requestId,
+      metadata: { party: actor.role, activated: activates },
+      createdAt: now,
+    });
 
     return { changed: true, result: toResult(updatedAgreement) };
   });
