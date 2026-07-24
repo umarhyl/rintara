@@ -244,9 +244,9 @@ export async function createWageGuidelineAction(
     minimumAmount: formData.get("minimumAmount"),
     recommendedAmount: formData.get("recommendedAmount"),
     sourceLabel: formData.get("sourceLabel"),
-    sourceUrl: formData.get("sourceUrl"),
+    sourceUrl: formData.get("sourceUrl") ?? "",
     effectiveFrom: formData.get("effectiveFrom"),
-    effectiveTo: formData.get("effectiveTo"),
+    effectiveTo: formData.get("effectiveTo") ?? "",
     isSimulated: checked(formData, "isSimulated"),
     isActive: checked(formData, "isActive"),
   });

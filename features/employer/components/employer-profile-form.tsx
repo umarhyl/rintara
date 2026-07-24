@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { CircleAlert, MapPin, CheckCircle2 } from "lucide-react";
 import { updateEmployerProfile } from "@/server/domain/profiles/actions";
-import { EmployerProfileData } from "@/server/queries/profiles/get-employer-profile";
+import type { EmployerProfileData } from "@/server/queries/profiles/get-employer-profile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,8 @@ type AreaOption = {
   name: string;
 };
 
+type FieldErrors = Record<string, string[] | undefined>;
+
 export function EmployerProfileForm({
   areas,
   profile,
@@ -32,14 +34,13 @@ export function EmployerProfileForm({
 }) {
   const router = useRouter();
   const submittingRef = useRef(false);
-  
-  const [areaId, setAreaId] = useState(profile.areaId);
+  const areaIsActive = areas.some(({ id }) => id === profile.areaId);
+  const [areaId, setAreaId] = useState(areaIsActive ? profile.areaId : "");
   const [employerType, setEmployerType] = useState(profile.employerType);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,12 +114,16 @@ export function EmployerProfileForm({
         </Alert>
       ) : null}
 
-      {noAreaAvailable ? (
+      {noAreaAvailable || !areaIsActive ? (
         <Alert>
           <MapPin aria-hidden="true" />
-          <AlertTitle>Area belum tersedia</AlertTitle>
+          <AlertTitle>
+            {noAreaAvailable ? "Area belum tersedia" : "Pilih area baru"}
+          </AlertTitle>
           <AlertDescription>
-            Pilihan area sedang disiapkan. Muat ulang halaman ini beberapa saat lagi.
+            {noAreaAvailable
+              ? "Pilihan area sedang disiapkan. Muat ulang halaman ini beberapa saat lagi."
+              : `${profile.areaName} tidak lagi tersedia untuk pembaruan profil.`}
           </AlertDescription>
         </Alert>
       ) : null}
