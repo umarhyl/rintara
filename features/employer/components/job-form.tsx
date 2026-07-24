@@ -47,6 +47,8 @@ type WageGuidelineReference = {
   minimumAmount: number;
   recommendedAmount: number;
   unit: string;
+  sourceLabel: string;
+  isSimulated: boolean;
   effectiveFrom: string;
   effectiveTo: string | null;
 };
@@ -383,6 +385,27 @@ export function JobForm({
             <Field label="Waktu pembayaran" id="paymentTiming" error={errors.paymentTiming}>
               <Input name="paymentTiming" value={formData.paymentTiming} onChange={handleTextChange} placeholder="Setelah selesai" className="h-11" />
             </Field>
+
+            {activeGuideline ? (
+              <div className="sm:col-span-2">
+                <Alert>
+                  <Info aria-hidden="true" />
+                  <AlertTitle>Panduan Upah yang berlaku</AlertTitle>
+                  <AlertDescription>
+                    Referensi minimum Rp{" "}
+                    {activeGuideline.minimumAmount.toLocaleString("id-ID")} dan
+                    rekomendasi Rp{" "}
+                    {activeGuideline.recommendedAmount.toLocaleString("id-ID")}{" "}
+                    per {activeGuideline.unit}. Sumber:{" "}
+                    {activeGuideline.sourceLabel}
+                    {activeGuideline.isSimulated
+                      ? " · data simulasi, bukan ketentuan upah resmi"
+                      : ""}
+                    .
+                  </AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
 
             {wageWarning && (
               <div className="sm:col-span-2">

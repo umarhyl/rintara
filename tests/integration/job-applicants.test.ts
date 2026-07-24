@@ -1,11 +1,14 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import { expect, mock, test } from "bun:test";
 
 mock.module("server-only", () => ({}));
 
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
+import type { RequestContext } from "@/server/auth/types";
 import { getIntegrationDatabaseUrl } from "@/server/db/environment";
 import * as schema from "@/server/db/schema";
 
@@ -32,6 +35,7 @@ databaseTest(
       const otherCategoryId = randomUUID();
       const employerId = randomUUID();
       const otherEmployerId = randomUUID();
+      const adminId = randomUUID();
       const workerAId = randomUUID();
       const workerBId = randomUUID();
       const jobId = randomUUID();
@@ -85,6 +89,11 @@ databaseTest(
             id: otherEmployerId,
             authSubject: `applicant-other-employer-${fixtureId}`,
             role: "employer",
+          },
+          {
+            id: adminId,
+            authSubject: `applicant-admin-${fixtureId}`,
+            role: "admin",
           },
           {
             id: workerAId,
@@ -201,6 +210,7 @@ databaseTest(
             workerId: workerAId,
             note: "Saya siap membantu sesuai jadwal.",
             firstOpportunityEligibleAtSubmission: true,
+            submittedAt: new Date("2030-03-01T09:00:00.000Z"),
           },
           {
             id: applicationBId,
@@ -208,6 +218,7 @@ databaseTest(
             workerId: workerBId,
             note: "Saya pernah mengerjakan kategori ini.",
             firstOpportunityEligibleAtSubmission: true,
+            submittedAt: new Date("2030-03-01T10:00:00.000Z"),
           },
           {
             id: proofApplicationAId,
@@ -350,7 +361,23 @@ databaseTest(
         "@/server/queries/applications/job-applicants"
       );
 
-      const result = await listJobApplicants(jobId, employerId, database);
+      const context = (
+        userId: string,
+        role: RequestContext["role"],
+        accountStatus: RequestContext["accountStatus"] = "active",
+      ): RequestContext => ({
+        requestId: "job-applicants-test",
+        userId,
+        role,
+        accountStatus,
+      });
+
+      const result = await listJobApplicants(
+        jobId,
+        {},
+        context(employerId, "employer"),
+        database,
+      );
 
       expect(result.job.title).toBe("Pekerjaan Dengan Pelamar");
       expect(result.applicants).toHaveLength(2);
@@ -367,34 +394,188 @@ databaseTest(
         "Kategori Saat Ini",
       ]);
       expect(workerA?.completedJobs).toBe(1);
-      expect(workerA?.proofEntries.map((proof) => proof.jobTitle)).toEqual([
-        "Bukti Kategori Lain",
-      ]);
+      expect(workerA).not.toHaveProperty("proofEntries");
       expect(workerA?.isEligibleForJobCategoryNow).toBe(true);
       expect(workerB?.completedJobs).toBe(1);
       expect(workerB?.isEligibleForJobCategoryNow).toBe(false);
+      expect(result.nextCursor).toBeNull();
+
+      const firstPage = await listJobApplicants(
+        jobId,
+        { limit: 1 },
+        context(employerId, "employer"),
+        database,
+      );
+      const secondPage = await listJobApplicants(
+        jobId,
+        { cursor: firstPage.nextCursor!, limit: 1 },
+        context(employerId, "employer"),
+        database,
+      );
+      expect(firstPage.nextCursor).not.toBeNull();
+      expect([
+        ...firstPage.applicants.map(({ id }) => id),
+        ...secondPage.applicants.map(({ id }) => id),
+      ]).toEqual([applicationAId, applicationBId]);
+      expect(secondPage.nextCursor).toBeNull();
+
+      await expect(
+        listJobApplicants(
+          jobId,
+          { cursor: "not-a-cursor" },
+          context(employerId, "employer"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        listJobApplicants(
+          jobId,
+          {
+            cursor: Buffer.from(
+              JSON.stringify([
+                "submitted",
+                "2030-03-01T09:00:00Z",
+                applicationAId,
+              ]),
+              "utf8",
+            ).toString("base64url"),
+          },
+          context(employerId, "employer"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
 
       const serialized = JSON.stringify(result);
       expect(serialized).not.toContain("Alamat privat tidak boleh bocor");
       expect(serialized).not.toContain("Instruksi privat tidak boleh bocor");
       expect(serialized).not.toContain("Alamat snapshot privat");
       expect(serialized).not.toContain("Bukti Dicabut");
+      expect(serialized).not.toContain("Bukti Kategori Lain");
 
       await expect(
-        listJobApplicants(jobId, otherEmployerId, database),
+        listJobApplicants(
+          jobId,
+          {},
+          context(otherEmployerId, "employer"),
+          database,
+        ),
       ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
+      const adminResult = await listJobApplicants(
+        jobId,
+        {},
+        context(adminId, "admin"),
+        database,
+      );
+      expect(adminResult.applicants).toHaveLength(2);
       await expect(
-        getApplicantPassport(jobId, applicationAId, otherEmployerId, database),
-      ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
+        listJobApplicants(
+          jobId,
+          {},
+          context(workerAId, "worker"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        listJobApplicants(
+          jobId,
+          {},
+          context(employerId, "employer", "suspended"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
+
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          {},
+          context(otherEmployerId, "employer"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          {},
+          context(workerBId, "worker"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          {},
+          context(workerAId, "worker", "suspended"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
 
       const passport = await getApplicantPassport(
         jobId,
         applicationAId,
-        employerId,
+        {},
+        context(employerId, "employer"),
         database,
       );
       expect(passport.applicant.id).toBe(applicationAId);
-      expect(passport.applicant.proofEntries).toHaveLength(1);
+      expect(passport.proofEntries).toHaveLength(1);
+      expect(passport.proofEntries[0]?.jobTitle).toBe("Bukti Kategori Lain");
+      expect(passport.nextCursor).toBeNull();
+
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          { cursor: "not-a-cursor" },
+          context(employerId, "employer"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+
+      const workerPassport = await getApplicantPassport(
+        jobId,
+        applicationAId,
+        {},
+        context(workerAId, "worker"),
+        database,
+      );
+      expect(workerPassport.applicant.id).toBe(applicationAId);
+
+      const adminPassport = await getApplicantPassport(
+        jobId,
+        applicationAId,
+        {},
+        context(adminId, "admin"),
+        database,
+      );
+      expect(adminPassport.applicant.id).toBe(applicationAId);
+
+      await database
+        .update(schema.applications)
+        .set({ status: "rejected", decidedAt: new Date() })
+        .where(eq(schema.applications.id, applicationAId));
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          {},
+          context(employerId, "employer"),
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        getApplicantPassport(
+          jobId,
+          applicationAId,
+          {},
+          context(workerAId, "worker"),
+          database,
+        ),
+      ).resolves.toMatchObject({
+        applicant: { id: applicationAId },
+      });
     } finally {
       await client.end({ timeout: 5 });
     }

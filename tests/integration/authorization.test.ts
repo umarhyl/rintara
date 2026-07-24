@@ -135,12 +135,20 @@ databaseTest(
       const employer2Context = { userId: employer2Id, role: "employer" as const, displayName: "E2", accountStatus: "active" as const, requestId: "test-req" };
       const worker1Context = { userId: worker1Id, role: "worker" as const, displayName: "W1", accountStatus: "active" as const, requestId: "test-req" };
       const worker2Context = { userId: worker2Id, role: "worker" as const, displayName: "W2", accountStatus: "active" as const, requestId: "test-req" };
+      const adminContext = {
+        userId: randomUUID(),
+        role: "admin" as const,
+        accountStatus: "active" as const,
+        requestId: "test-req",
+      };
 
       mock.module("@/server/db/client", () => {
         return { db: database };
       });
       const { requireJobOwner, requireAgreementParty } = await import("@/server/auth/authorization");
-      const { getEmployerJob } = await import("@/server/queries/jobs/get-employer-job");
+      const { getEmployerJob, getEmployerJobDetail } = await import(
+        "@/server/queries/jobs/get-employer-job"
+      );
 
       await expect(requireJobOwner(employer1Context, jobId)).resolves.toBeDefined();
       
@@ -161,16 +169,39 @@ databaseTest(
         code: "NOT_FOUND",
       });
 
-      await expect(getEmployerJob(jobId, employer1Id)).resolves.toMatchObject({
+      await expect(
+        getEmployerJob(jobId, employer1Context, database),
+      ).resolves.toMatchObject({
         fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
         arrivalInstructions: "Ketuk 3 kali",
       });
-      await expect(getEmployerJob(jobId, employer2Id)).rejects.toMatchObject({
-        code: "JOB_NOT_FOUND",
+      await expect(
+        getEmployerJob(jobId, employer2Context, database),
+      ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
+      await expect(
+        getEmployerJob(jobId, worker2Context, database),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        getEmployerJob(
+          jobId,
+          { ...employer1Context, accountStatus: "suspended" },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
+      await expect(
+        getEmployerJob(jobId, adminContext, database),
+      ).resolves.toMatchObject({
+        fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
       });
-      await expect(getEmployerJob(jobId, worker2Id)).rejects.toMatchObject({
-        code: "JOB_NOT_FOUND",
+      await expect(
+        getEmployerJobDetail(jobId, employer1Context, database),
+      ).resolves.toMatchObject({
+        id: jobId,
+        fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
       });
+      await expect(
+        getEmployerJobDetail(jobId, employer2Context, database),
+      ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
 
     } finally {
       await client.end({ timeout: 5 });

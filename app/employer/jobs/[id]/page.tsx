@@ -71,9 +71,9 @@ function taskItems(taskScope: string) {
     .filter(Boolean);
 }
 
-async function loadEmployerJob(jobId: string, employerId: string) {
+async function loadEmployerJob(jobId: string) {
   try {
-    return await getEmployerJobDetail(jobId, employerId);
+    return await getEmployerJobDetail(jobId);
   } catch (error) {
     if (error instanceof ApplicationError && error.code === "JOB_NOT_FOUND") {
       notFound();
@@ -88,11 +88,11 @@ export default async function EmployerJobPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const account = await requireDashboardPageRole(
+  await requireDashboardPageRole(
     "employer",
     `/employer/jobs/${encodeURIComponent(id)}`,
   );
-  const job = await loadEmployerJob(id, account.userId);
+  const job = await loadEmployerJob(id);
   const tasks = taskItems(job.taskScope);
   const canCancel = job.status === "draft" || job.status === "published";
 
