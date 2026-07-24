@@ -13,6 +13,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/rintara/empty-state";
+import { AcceptApplicationButton } from "@/components/rintara/accept-application-button";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -268,6 +269,31 @@ export default async function ApplicantsPage({
                     Akses Paspor tersedia hanya dalam konteks lamaran pekerjaan
                     milikmu.
                   </p>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    {applicant.status === "submitted" ? (
+                      <AcceptApplicationButton
+                        applicationId={applicant.id}
+                        workerDisplayName={applicant.workerDisplayName}
+                        disabledReason={
+                          job.isFirstOpportunity &&
+                          !applicant.isEligibleForJobCategoryNow
+                            ? "Pekerja ini sudah tidak layak untuk kategori Kesempatan Pertama."
+                            : undefined
+                        }
+                      />
+                    ) : applicant.status === "accepted" ? (
+                      applicant.agreementId ? (
+                        <Button asChild className="h-11">
+                          <Link
+                            href={`/employer/agreements/${applicant.agreementId}`}
+                          >
+                            Lihat Mini Agreement
+                          </Link>
+                        </Button>
+                      ) : null
+                    ) : null}
+                  </div>
                 </section>
               </div>
             </article>
