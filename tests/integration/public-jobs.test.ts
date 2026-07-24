@@ -41,17 +41,24 @@ databaseTest(
       const categoryBId = randomUUID();
       const employerId = randomUUID();
       const hiddenById = randomUUID();
-      const visibleGeneralJobId = randomUUID();
+      const unboostedJobIds = [randomUUID(), randomUUID()].sort();
+      const visibleGeneralJobId = unboostedJobIds[0]!;
+      const visibleTieJobId = unboostedJobIds[1]!;
       const visibleFirstJobId = randomUUID();
       const hiddenJobId = randomUUID();
       const draftJobId = randomUUID();
       const deadlinePassedJobId = randomUUID();
+      const creditId = randomUUID();
 
       const futureStart = new Date("2030-01-10T08:00:00.000Z");
       const futureDeadline = new Date("2030-01-09T08:00:00.000Z");
       const pastDeadline = new Date("2020-01-09T08:00:00.000Z");
       const olderPublishedAt = new Date("2030-01-01T08:00:00.000Z");
       const newerPublishedAt = new Date("2030-01-02T08:00:00.000Z");
+      const boostStartsAt = new Date(Date.now() - 60 * 60 * 1000);
+      const boostEndsAt = new Date(
+        boostStartsAt.getTime() + 24 * 60 * 60 * 1000,
+      );
 
       await database.transaction(async (tx) => {
         await tx.insert(schema.areas).values([
@@ -146,6 +153,19 @@ databaseTest(
           },
           {
             ...baseJob,
+            id: visibleTieJobId,
+            categoryId: categoryAId,
+            areaId: areaAId,
+            title: `Bantu Logistik ${fixtureId}`,
+            description: `Membantu menata logistik tanpa akses private. Fixture ${fixtureId}.`,
+            taskScope: "Menata logistik",
+            publicLocationLabel: `Area Umum A ${fixtureId}`,
+            wageAmount: BigInt(190_000),
+            isFirstOpportunity: false,
+            publishedAt: newerPublishedAt,
+          },
+          {
+            ...baseJob,
             id: hiddenJobId,
             categoryId: categoryAId,
             areaId: areaAId,
@@ -205,6 +225,21 @@ databaseTest(
             arrivalInstructions: "Instruksi rahasia",
           },
         ]);
+        await tx.insert(schema.opportunityCredits).values({
+          id: creditId,
+          employerId,
+          sourceJobId: visibleGeneralJobId,
+          status: "redeemed",
+          earnedAt: new Date(boostStartsAt.getTime() - 24 * 60 * 60 * 1000),
+          redeemedAt: boostStartsAt,
+          targetJobId: visibleFirstJobId,
+        });
+        await tx.insert(schema.jobBoosts).values({
+          creditId,
+          jobId: visibleFirstJobId,
+          startsAt: boostStartsAt,
+          endsAt: boostEndsAt,
+        });
       });
 
       const referenceData = await getPublicJobReferenceData(database);
@@ -218,20 +253,67 @@ databaseTest(
       });
 
       const firstPage = await listPublishedJobs(
-        { search: fixtureId, pageSize: 1 },
+        { search: fixtureId, limit: 1 },
         database,
       );
       expect(firstPage.items).toHaveLength(1);
-      expect(firstPage.items[0]!.id).toBe(visibleGeneralJobId);
-      expect(firstPage.hasNextPage).toBe(true);
+      expect(firstPage.items[0]).toMatchObject({
+        id: visibleFirstJobId,
+        activeBoost: true,
+      });
+      expect(firstPage.nextCursor).toEqual(expect.any(String));
+      expect(firstPage.nextCursor).not.toContain(visibleFirstJobId);
 
       const secondPage = await listPublishedJobs(
-        { search: fixtureId, page: 2, pageSize: 1 },
+        {
+          search: fixtureId,
+          cursor: firstPage.nextCursor!,
+          limit: 1,
+        },
         database,
       );
       expect(secondPage.items).toHaveLength(1);
-      expect(secondPage.items[0]!.id).toBe(visibleFirstJobId);
-      expect(secondPage.hasPreviousPage).toBe(true);
+      expect(secondPage.items[0]).toMatchObject({
+        id: visibleGeneralJobId,
+        activeBoost: false,
+      });
+      expect(secondPage.nextCursor).toEqual(expect.any(String));
+
+      const thirdPage = await listPublishedJobs(
+        {
+          search: fixtureId,
+          cursor: secondPage.nextCursor!,
+          limit: 1,
+        },
+        database,
+      );
+      expect(thirdPage.items.map((job) => job.id)).toEqual([visibleTieJobId]);
+      expect(thirdPage.nextCursor).toBeNull();
+
+      for (const cursor of [
+        "not a cursor",
+        Buffer.from("{}", "utf8").toString("base64url"),
+      ]) {
+        await expect(
+          listPublishedJobs({ cursor }, database),
+        ).rejects.toMatchObject({
+          code: "VALIDATION_FAILED",
+          message: "Invalid pagination cursor.",
+        });
+      }
+
+      for (const input of [
+        { categoryId: "not-a-uuid" },
+        { areaId: "not-a-uuid" },
+        { minimumWage: Number.NaN },
+        { maximumWage: -1 },
+        { minimumWage: 200_000, maximumWage: 100_000 },
+      ]) {
+        await expect(listPublishedJobs(input, database)).rejects.toMatchObject({
+          code: "VALIDATION_FAILED",
+          message: "Invalid public job filter.",
+        });
+      }
 
       const categoryFiltered = await listPublishedJobs(
         { search: fixtureId, categoryId: categoryBId },
@@ -247,6 +329,7 @@ databaseTest(
       );
       expect(areaFiltered.items.map((job) => job.id)).toEqual([
         visibleGeneralJobId,
+        visibleTieJobId,
       ]);
 
       const wageFiltered = await listPublishedJobs(
@@ -284,6 +367,7 @@ databaseTest(
       expect(serializedList).not.toContain("arrivalInstructions");
       expect(serializedList).not.toContain("Jalan Rahasia Publik");
       expect(serializedList).not.toContain("Kode pintu rahasia");
+      expect(allVisible.items[0]).not.toHaveProperty("employerId");
 
       const detail = await getPublishedJob(visibleGeneralJobId, database);
       const serializedDetail = JSON.stringify(detail);
@@ -291,6 +375,7 @@ databaseTest(
       expect(serializedDetail).not.toContain("Kode pintu rahasia");
       expect(detail).not.toHaveProperty("fullAddress");
       expect(detail).not.toHaveProperty("arrivalInstructions");
+      expect(detail).not.toHaveProperty("employerId");
 
       await expect(getPublishedJob(hiddenJobId, database)).rejects.toMatchObject({
         code: "JOB_NOT_FOUND",

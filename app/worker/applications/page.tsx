@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import {
-  listWorkerApplications,
+  listMyApplications,
   type WorkerApplicationListItem,
 } from "@/server/queries/applications/worker-applications";
 
@@ -90,9 +90,17 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
   );
 }
 
-export default async function ApplicationsPage() {
-  const account = await requireDashboardPageRole("worker", "/worker/applications");
-  const applications = await listWorkerApplications(account.userId);
+export default async function ApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string | string[] }>;
+}) {
+  const { cursor } = await searchParams;
+  await requireDashboardPageRole("worker", "/worker/applications");
+  const applicationPage = await listMyApplications({
+    cursor: typeof cursor === "string" ? cursor : undefined,
+  });
+  const applications = applicationPage.items;
   const activeApplications = applications.filter(
     (application) =>
       application.status === "submitted" || application.status === "accepted",
@@ -126,19 +134,22 @@ export default async function ApplicationsPage() {
       <section className="grid overflow-hidden border-y border-border/75 bg-card/40 sm:grid-cols-3" aria-label="Ringkasan lamaran">
         <div className="px-1 py-5 sm:px-6">
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <FileText className="size-4 text-primary" aria-hidden="true" /> Lamaran aktif
+            <FileText className="size-4 text-primary" aria-hidden="true" /> Aktif
+            di halaman ini
           </p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{activeApplications.length}</p>
         </div>
         <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock3 className="size-4 text-primary" aria-hidden="true" /> Menunggu keputusan
+            <Clock3 className="size-4 text-primary" aria-hidden="true" /> Menunggu
+            di halaman ini
           </p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{submittedCount}</p>
         </div>
         <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Handshake className="size-4 text-success" aria-hidden="true" /> Siap disepakati
+            <Handshake className="size-4 text-success" aria-hidden="true" /> Diterima
+            di halaman ini
           </p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{acceptedCount}</p>
         </div>
@@ -182,6 +193,18 @@ export default async function ApplicationsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {applicationPage.nextCursor ? (
+        <nav aria-label="Navigasi daftar lamaran">
+          <Button variant="outline" asChild>
+            <Link
+              href={`/worker/applications?cursor=${encodeURIComponent(applicationPage.nextCursor)}`}
+            >
+              Lamaran berikutnya <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        </nav>
+      ) : null}
     </div>
   );
 }

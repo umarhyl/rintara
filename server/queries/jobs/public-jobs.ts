@@ -1,5 +1,6 @@
 import "server-only";
 
+import { Buffer } from "node:buffer";
 import {
   and,
   asc,
@@ -8,6 +9,7 @@ import {
   gt,
   gte,
   ilike,
+  lt,
   lte,
   or,
   sql,
@@ -29,18 +31,16 @@ import { publicJobCardProjection } from "@/server/queries/public-job-projection"
 type PublicJobsDatabase = PostgresJsDatabase<typeof schema>;
 
 export type OpportunityFilter = "all" | "first" | "general";
-export type PublicJobCategoryFilter = "all" | "event" | "cleaning" | "admin";
 
 export type PublicJobListInput = {
   search?: string;
-  category?: PublicJobCategoryFilter;
   categoryId?: string;
   areaId?: string;
   minimumWage?: number;
   maximumWage?: number;
   opportunity?: OpportunityFilter;
-  page?: number;
-  pageSize?: number;
+  cursor?: string;
+  limit?: number;
 };
 
 export type PublicReferenceData = {
@@ -82,17 +82,82 @@ type PublicJobCardRow = Omit<PublicJobCard, "wageAmount" | "publishedAt"> & {
   publishedAt: Date | null;
 };
 
-const DEFAULT_PAGE_SIZE = 10;
-const MAX_PAGE_SIZE = 50;
+type PublicJobCursor = {
+  activeBoost: boolean;
+  publishedAt: Date;
+  id: string;
+};
 
-function normalizePage(value: number | undefined) {
-  if (!Number.isInteger(value) || !value || value < 1) return 1;
-  return value;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 50;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeLimit(value: number | undefined) {
+  if (!Number.isInteger(value) || !value || value < 1) return DEFAULT_LIMIT;
+  return Math.min(value, MAX_LIMIT);
 }
 
-function normalizePageSize(value: number | undefined) {
-  if (!Number.isInteger(value) || !value || value < 1) return DEFAULT_PAGE_SIZE;
-  return Math.min(value, MAX_PAGE_SIZE);
+function invalidCursor(): never {
+  throw new ApplicationError(
+    "VALIDATION_FAILED",
+    "Invalid pagination cursor.",
+    { cursor: ["The pagination cursor is malformed."] },
+  );
+}
+
+function decodeCursor(value: string | undefined): PublicJobCursor | null {
+  if (!value) return null;
+
+  try {
+    if (value.length > 512 || !/^[A-Za-z0-9_-]+$/.test(value)) invalidCursor();
+
+    const decoded = Buffer.from(value, "base64url");
+    if (decoded.toString("base64url") !== value) invalidCursor();
+
+    const parsed: unknown = JSON.parse(decoded.toString("utf8"));
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !("b" in parsed) ||
+      !("p" in parsed) ||
+      !("i" in parsed) ||
+      (parsed.b !== 0 && parsed.b !== 1) ||
+      typeof parsed.p !== "string" ||
+      typeof parsed.i !== "string" ||
+      !UUID_PATTERN.test(parsed.i)
+    ) {
+      invalidCursor();
+    }
+
+    const publishedAt = new Date(parsed.p);
+    if (
+      Number.isNaN(publishedAt.getTime()) ||
+      publishedAt.toISOString() !== parsed.p
+    ) {
+      invalidCursor();
+    }
+
+    return {
+      activeBoost: parsed.b === 1,
+      publishedAt,
+      id: parsed.i,
+    };
+  } catch (error) {
+    if (error instanceof ApplicationError) throw error;
+    invalidCursor();
+  }
+}
+
+function encodeCursor(row: PublicJobCardRow) {
+  return Buffer.from(
+    JSON.stringify({
+      b: row.activeBoost ? 1 : 0,
+      p: row.publishedAt!.toISOString(),
+      i: row.id,
+    }),
+    "utf8",
+  ).toString("base64url");
 }
 
 function activeBoostExpression() {
@@ -106,11 +171,32 @@ function activeBoostExpression() {
   )`;
 }
 
-function categoryNameForFilter(category: PublicJobCategoryFilter | undefined) {
-  if (category === "event") return "Event Helper";
-  if (category === "cleaning") return "Light Cleaning";
-  if (category === "admin") return "Simple Administration";
-  return null;
+function validateFilterId(
+  value: string | undefined,
+  field: "categoryId" | "areaId",
+) {
+  if (value === undefined) return undefined;
+  if (UUID_PATTERN.test(value)) return value;
+
+  throw new ApplicationError(
+    "VALIDATION_FAILED",
+    "Invalid public job filter.",
+    { [field]: ["The filter must be a valid UUID."] },
+  );
+}
+
+function validateWageFilter(
+  value: number | undefined,
+  field: "minimumWage" | "maximumWage",
+) {
+  if (value === undefined) return undefined;
+  if (Number.isSafeInteger(value) && value > 0) return value;
+
+  throw new ApplicationError(
+    "VALIDATION_FAILED",
+    "Invalid public job filter.",
+    { [field]: ["The wage filter must be a positive integer."] },
+  );
 }
 
 function publicJobConditions(input: PublicJobListInput = {}) {
@@ -136,15 +222,38 @@ function publicJobConditions(input: PublicJobListInput = {}) {
     );
   }
 
-  const categoryName = categoryNameForFilter(input.category);
-  if (categoryName) conditions.push(eq(categories.name, categoryName));
-  if (input.categoryId) conditions.push(eq(jobs.categoryId, input.categoryId));
-  if (input.areaId) conditions.push(eq(jobs.areaId, input.areaId));
-  if (input.minimumWage !== undefined) {
-    conditions.push(gte(jobs.wageAmount, BigInt(input.minimumWage)));
+  const categoryId = validateFilterId(input.categoryId, "categoryId");
+  const areaId = validateFilterId(input.areaId, "areaId");
+  const minimumWage = validateWageFilter(input.minimumWage, "minimumWage");
+  const maximumWage = validateWageFilter(input.maximumWage, "maximumWage");
+  if (
+    input.opportunity !== undefined &&
+    !["all", "first", "general"].includes(input.opportunity)
+  ) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Invalid public job filter.",
+      { opportunity: ["Select a supported opportunity filter."] },
+    );
   }
-  if (input.maximumWage !== undefined) {
-    conditions.push(lte(jobs.wageAmount, BigInt(input.maximumWage)));
+  if (
+    minimumWage !== undefined &&
+    maximumWage !== undefined &&
+    minimumWage > maximumWage
+  ) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Invalid public job filter.",
+      { maximumWage: ["Maximum wage must be at least the minimum wage."] },
+    );
+  }
+  if (categoryId) conditions.push(eq(jobs.categoryId, categoryId));
+  if (areaId) conditions.push(eq(jobs.areaId, areaId));
+  if (minimumWage !== undefined) {
+    conditions.push(gte(jobs.wageAmount, BigInt(minimumWage)));
+  }
+  if (maximumWage !== undefined) {
+    conditions.push(lte(jobs.wageAmount, BigInt(maximumWage)));
   }
   if (input.opportunity === "first") {
     conditions.push(eq(jobs.isFirstOpportunity, true));
@@ -154,6 +263,29 @@ function publicJobConditions(input: PublicJobListInput = {}) {
   }
 
   return conditions;
+}
+
+function afterCursorCondition(
+  cursor: PublicJobCursor,
+  activeBoost: SQL<boolean>,
+) {
+  const afterPublishedAt = or(
+    lt(jobs.publishedAt, cursor.publishedAt),
+    and(
+      eq(jobs.publishedAt, cursor.publishedAt),
+      gt(jobs.id, cursor.id),
+    ),
+  )!;
+  const sameBoostState = cursor.activeBoost
+    ? sql<boolean>`${activeBoost}`
+    : sql<boolean>`not (${activeBoost})`;
+
+  return cursor.activeBoost
+    ? or(
+        sql<boolean>`not (${activeBoost})`,
+        and(sameBoostState, afterPublishedAt),
+      )!
+    : and(sameBoostState, afterPublishedAt)!;
 }
 
 function toPublicJobCard(row: PublicJobCardRow) {
@@ -187,9 +319,11 @@ export async function listPublishedJobs(
   input: PublicJobListInput = {},
   database: PublicJobsDatabase = db,
 ) {
-  const page = normalizePage(input.page);
-  const pageSize = normalizePageSize(input.pageSize);
+  const limit = normalizeLimit(input.limit);
+  const cursor = decodeCursor(input.cursor);
   const activeBoost = activeBoostExpression();
+  const conditions = publicJobConditions(input);
+  if (cursor) conditions.push(afterCursorCondition(cursor, activeBoost));
 
   const rows = await database
     .select({ ...publicJobCardProjection, activeBoost })
@@ -197,19 +331,14 @@ export async function listPublishedJobs(
     .innerJoin(categories, eq(jobs.categoryId, categories.id))
     .innerJoin(areas, eq(jobs.areaId, areas.id))
     .innerJoin(employerProfiles, eq(jobs.employerId, employerProfiles.userId))
-    .where(and(...publicJobConditions(input)))
+    .where(and(...conditions))
     .orderBy(sql`${activeBoost} desc`, desc(jobs.publishedAt), asc(jobs.id))
-    .limit(pageSize + 1)
-    .offset((page - 1) * pageSize);
+    .limit(limit + 1);
 
-  const hasNextPage = rows.length > pageSize;
-
+  const items = rows.slice(0, limit);
   return {
-    items: rows.slice(0, pageSize).map(toPublicJobCard),
-    page,
-    pageSize,
-    hasNextPage,
-    hasPreviousPage: page > 1,
+    items: items.map(toPublicJobCard),
+    nextCursor: rows.length > limit ? encodeCursor(items.at(-1)!) : null,
   };
 }
 
