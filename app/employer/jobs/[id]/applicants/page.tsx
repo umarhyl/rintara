@@ -1,13 +1,10 @@
 import {
-  BadgeCheck,
   BriefcaseBusiness,
-  CalendarCheck2,
   Clock3,
   FileCheck2,
   MapPin,
   RefreshCcw,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,11 +46,14 @@ function formatDate(date: Date) {
 
 export default async function ApplicantsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ cursor?: string | string[] }>;
 }) {
   const { id } = await params;
-  const account = await requireDashboardPageRole(
+  const { cursor } = await searchParams;
+  await requireDashboardPageRole(
     "employer",
     `/employer/jobs/${encodeURIComponent(id)}/applicants`,
   );
@@ -62,8 +62,11 @@ export default async function ApplicantsPage({
 
   try {
     [job, applicantResult] = await Promise.all([
-      getEmployerJob(id, account.userId),
-      listJobApplicants(id, account.userId),
+      getEmployerJob(id),
+      listJobApplicants(
+        id,
+        { cursor: typeof cursor === "string" ? cursor : undefined },
+      ),
     ]);
   } catch (error) {
     if (error instanceof ApplicationError && error.code === "JOB_NOT_FOUND") {
@@ -88,7 +91,9 @@ export default async function ApplicantsPage({
             <p className="text-3xl font-semibold tracking-[-0.04em]">
               {activeApplicantCount.toString().padStart(2, "0")}
             </p>
-            <p className="text-sm text-muted-foreground">pelamar aktif</p>
+            <p className="text-sm text-muted-foreground">
+              pelamar aktif di halaman ini
+            </p>
           </div>
         }
       />
@@ -230,58 +235,53 @@ export default async function ApplicantsPage({
                     )}
                   </div>
 
-                  {applicant.proofEntries.length > 0 ? (
-                    <ol className="mt-6 divide-y divide-border/70 border-y border-border/70">
-                      {applicant.proofEntries.map((proof) => (
-                        <li key={proof.id} className="grid gap-3 py-4 sm:grid-cols-[auto_1fr_auto] sm:items-start">
-                          <BadgeCheck className="mt-1 size-5 text-success" aria-hidden="true" />
-                          <div>
-                            <p className="font-semibold leading-6">
-                              {proof.jobTitle}
-                            </p>
-                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              {proof.categoryName} · {proof.areaLabel}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground sm:justify-end">
-                            <CalendarCheck2 className="size-4" aria-hidden="true" />
-                            {formatDate(proof.completedAt)}
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <div className="mt-6 rounded-2xl border border-dashed border-border bg-background/50 px-4 py-5">
-                      <p className="flex items-center gap-2 font-medium">
-                        <Sparkles className="size-4 text-primary" aria-hidden="true" />
-                        Belum ada Bukti Kerja
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Pelamar ini belum memiliki riwayat terverifikasi. Jika
-                        pekerjaan ini selesai, Bukti Kerja akan diterbitkan dari
-                        alur Rintara.
-                      </p>
+                  <dl className="mt-6 grid grid-cols-2 overflow-hidden rounded-2xl border border-border/70 bg-background/65 text-center">
+                    <div className="px-3 py-4">
+                      <dt className="text-xs text-muted-foreground">
+                        Bukti Kerja
+                      </dt>
+                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
+                        {applicant.completedJobs}
+                      </dd>
                     </div>
-                  )}
+                    <div className="border-l border-border/70 px-3 py-4">
+                      <dt className="text-xs text-muted-foreground">
+                        Kategori terverifikasi
+                      </dt>
+                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
+                        {applicant.verifiedCategoryCount}
+                      </dd>
+                    </div>
+                  </dl>
 
                   <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock3 className="size-4 text-primary" aria-hidden="true" />
-                    Akses Paspor tersedia hanya dalam konteks lamaran pekerjaan
-                    milikmu.
+                    {applicant.status === "submitted"
+                      ? "Paspor tersedia selama lamaran ini sedang kamu tinjau."
+                      : "Akses Paspor ditutup setelah proses peninjauan berakhir."}
                   </p>
 
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     {applicant.status === "submitted" ? (
-                      <AcceptApplicationButton
-                        applicationId={applicant.id}
-                        workerDisplayName={applicant.workerDisplayName}
-                        disabledReason={
-                          job.isFirstOpportunity &&
-                          !applicant.isEligibleForJobCategoryNow
-                            ? "Pekerja ini sudah tidak layak untuk kategori Kesempatan Pertama."
-                            : undefined
-                        }
-                      />
+                      <>
+                        <Button variant="outline" asChild className="h-11">
+                          <Link
+                            href={`/employer/jobs/${job.id}/applicants/${applicant.id}/passport`}
+                          >
+                            Lihat Paspor Rintara
+                          </Link>
+                        </Button>
+                        <AcceptApplicationButton
+                          applicationId={applicant.id}
+                          workerDisplayName={applicant.workerDisplayName}
+                          disabledReason={
+                            job.isFirstOpportunity &&
+                            !applicant.isEligibleForJobCategoryNow
+                              ? "Pekerja ini sudah tidak layak untuk kategori Kesempatan Pertama."
+                              : undefined
+                          }
+                        />
+                      </>
                     ) : applicant.status === "accepted" ? (
                       applicant.agreementId ? (
                         <Button asChild className="h-11">
@@ -300,6 +300,18 @@ export default async function ApplicantsPage({
           ))}
         </section>
       )}
+
+      {applicantResult.nextCursor ? (
+        <nav aria-label="Navigasi daftar pelamar">
+          <Button variant="outline" asChild>
+            <Link
+              href={`/employer/jobs/${job.id}/applicants?cursor=${encodeURIComponent(applicantResult.nextCursor)}`}
+            >
+              Pelamar berikutnya
+            </Link>
+          </Button>
+        </nav>
+      ) : null}
 
       <Alert className="border-primary/20 bg-primary/5">
         <RefreshCcw className="text-primary" aria-hidden="true" />

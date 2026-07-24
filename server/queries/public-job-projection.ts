@@ -21,6 +21,5 @@ export const publicJobCardProjection = {
   applicationDeadline: jobs.applicationDeadline,
   isFirstOpportunity: jobs.isFirstOpportunity,
   publishedAt: jobs.publishedAt,
-  employerId: jobs.employerId,
   employerDisplayName: employerProfiles.displayName,
 } as const;

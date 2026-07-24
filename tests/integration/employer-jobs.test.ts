@@ -25,7 +25,7 @@ databaseTest(
     expect(process.env.RINTARA_ENV).toBe("test");
 
     const client = postgres(getIntegrationDatabaseUrl(), {
-      max: 1,
+      max: 2,
       prepare: false,
       ssl: process.env.TEST_DATABASE_SSL === "disable" ? false : "require",
     });
@@ -132,6 +132,21 @@ databaseTest(
         isFirstOpportunity: false,
       };
 
+      await expect(createJobDraft({
+        ...validDraftData,
+        startsAt: undefined,
+      })).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+        details: { startsAt: expect.any(Array) },
+      });
+      await expect(createJobDraft({
+        ...validDraftData,
+        applicationDeadline: undefined,
+      })).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+        details: { applicationDeadline: expect.any(Array) },
+      });
+
       const newDraft = await createJobDraft(validDraftData);
       expect(newDraft).toHaveProperty("jobId");
 
@@ -167,6 +182,44 @@ databaseTest(
       const [postPublishJob] = await database.select().from(schema.jobs).where(eq(schema.jobs.id, newDraft.jobId));
       expect(postPublishJob.status).toBe("published");
       expect(postPublishJob.publishedAt).not.toBeNull();
+      expect(postPublishJob.riskLevel).toBe("low");
+
+      const concurrentDraft = await createJobDraft(validDraftData);
+      const concurrentPublishResults = await Promise.allSettled([
+        publishJob(concurrentDraft.jobId),
+        publishJob(concurrentDraft.jobId),
+      ]);
+      expect(
+        concurrentPublishResults.filter((result) => result.status === "fulfilled"),
+      ).toHaveLength(1);
+      const rejectedPublish = concurrentPublishResults.find(
+        (result) => result.status === "rejected",
+      );
+      expect(rejectedPublish).toMatchObject({
+        status: "rejected",
+        reason: { code: "JOB_NOT_DRAFT" },
+      });
+      const concurrentPublishAudits = await database
+        .select()
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.entityId, concurrentDraft.jobId));
+      expect(
+        concurrentPublishAudits.filter((row) => row.action === "publish_job"),
+      ).toHaveLength(1);
+
+      const firstOpportunityDraft = await createJobDraft({
+        ...validDraftData,
+        isFirstOpportunity: true,
+        riskLevel: "restricted",
+      });
+      await expect(publishJob(firstOpportunityDraft.jobId)).resolves.toEqual({ ok: true });
+      const [publishedFirstOpportunity] = await database
+        .select()
+        .from(schema.jobs)
+        .where(eq(schema.jobs.id, firstOpportunityDraft.jobId));
+      expect(publishedFirstOpportunity.status).toBe("published");
+      expect(publishedFirstOpportunity.wageStatus).toBe("compliant");
+      expect(publishedFirstOpportunity.riskLevel).toBe("low");
 
       // Updating a published job draft should fail
       await expect(updateJobDraft(newDraft.jobId, validDraftData)).rejects.toMatchObject({
@@ -185,11 +238,20 @@ databaseTest(
         code: "WAGE_BELOW_GUIDELINE"
       });
 
+      const draftWithoutGuideline = await createJobDraft({
+        ...validDraftData,
+        wageUnit: "hour",
+        isFirstOpportunity: true,
+      });
+      await expect(publishJob(draftWithoutGuideline.jobId)).rejects.toMatchObject({
+        code: "WAGE_GUIDELINE_UNAVAILABLE",
+      });
+
       // Fix wage, but use restricted category
       await updateJobDraft(draft2.jobId, {
         ...validDraftData,
         categoryId: categoryHighRiskId,
-        riskLevel: "restricted",
+        riskLevel: "low",
         wageAmount: 60000,
         isFirstOpportunity: true, // Restricted categories cannot be First Opportunity
       });
@@ -198,6 +260,33 @@ databaseTest(
       await expect(publishJob(draft2.jobId)).rejects.toMatchObject({
         code: "CATEGORY_NOT_ALLOWED"
       });
+
+      const draftWithInactiveCategory = await createJobDraft(validDraftData);
+      await database
+        .update(schema.categories)
+        .set({ isActive: false })
+        .where(eq(schema.categories.id, categoryLowRiskId));
+      await expect(publishJob(draftWithInactiveCategory.jobId)).rejects.toMatchObject({
+        code: "CATEGORY_NOT_ALLOWED",
+      });
+      await database
+        .update(schema.categories)
+        .set({ isActive: true })
+        .where(eq(schema.categories.id, categoryLowRiskId));
+
+      const draftWithInactiveArea = await createJobDraft(validDraftData);
+      await database
+        .update(schema.areas)
+        .set({ isActive: false })
+        .where(eq(schema.areas.id, areaId));
+      await expect(publishJob(draftWithInactiveArea.jobId)).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+        details: { areaId: expect.any(Array) },
+      });
+      await database
+        .update(schema.areas)
+        .set({ isActive: true })
+        .where(eq(schema.areas.id, areaId));
 
       // 5. Test Cancellation
       const draft3 = await createJobDraft(validDraftData);
@@ -256,13 +345,133 @@ databaseTest(
         .select()
         .from(schema.auditLogs)
         .where(eq(schema.auditLogs.entityId, newDraft.jobId));
-      expect(auditRows).toHaveLength(1);
-      expect(auditRows[0]!.action).toBe("cancel_job");
-      expect(auditRows[0]!.metadata).toMatchObject({
+      expect(auditRows).toHaveLength(2);
+      expect(auditRows.find((row) => row.action === "publish_job")?.metadata).toMatchObject({
+        previousStatus: "draft",
+        newStatus: "published",
+        wageStatus: "compliant",
+      });
+      expect(auditRows.find((row) => row.action === "cancel_job")?.metadata).toMatchObject({
         previousStatus: "published",
         rejectedApplicationCount: 2,
       });
-      
+
+      const firstOwnedPageJobId = randomUUID();
+      const secondOwnedPageJobId = randomUUID();
+      const otherEmployerJobId = randomUUID();
+      await database.insert(schema.jobs).values([
+        {
+          id: firstOwnedPageJobId,
+          employerId: employer1Id,
+          categoryId: categoryLowRiskId,
+          areaId,
+          title: "Newest owned pagination job",
+          description: validDraftData.description,
+          taskScope: validDraftData.taskScope,
+          publicLocationLabel: validDraftData.publicLocationLabel,
+          startsAt: validDraftData.startsAt,
+          estimatedMinutes: validDraftData.estimatedMinutes,
+          wageAmount: BigInt(validDraftData.wageAmount),
+          wageUnit: validDraftData.wageUnit,
+          paymentMethod: validDraftData.paymentMethod,
+          paymentTiming: validDraftData.paymentTiming,
+          riskLevel: "low",
+          applicationDeadline: new Date(validDraftData.applicationDeadline),
+          createdAt: new Date("2030-01-03T00:00:00.000Z"),
+        },
+        {
+          id: secondOwnedPageJobId,
+          employerId: employer1Id,
+          categoryId: categoryLowRiskId,
+          areaId,
+          title: "Second owned pagination job",
+          description: validDraftData.description,
+          taskScope: validDraftData.taskScope,
+          publicLocationLabel: validDraftData.publicLocationLabel,
+          startsAt: validDraftData.startsAt,
+          estimatedMinutes: validDraftData.estimatedMinutes,
+          wageAmount: BigInt(validDraftData.wageAmount),
+          wageUnit: validDraftData.wageUnit,
+          paymentMethod: validDraftData.paymentMethod,
+          paymentTiming: validDraftData.paymentTiming,
+          riskLevel: "low",
+          applicationDeadline: new Date(validDraftData.applicationDeadline),
+          createdAt: new Date("2030-01-02T00:00:00.000Z"),
+        },
+        {
+          id: otherEmployerJobId,
+          employerId: employer2Id,
+          categoryId: categoryLowRiskId,
+          areaId,
+          title: "Other employer pagination job",
+          description: validDraftData.description,
+          taskScope: validDraftData.taskScope,
+          publicLocationLabel: validDraftData.publicLocationLabel,
+          startsAt: validDraftData.startsAt,
+          estimatedMinutes: validDraftData.estimatedMinutes,
+          wageAmount: BigInt(validDraftData.wageAmount),
+          wageUnit: validDraftData.wageUnit,
+          paymentMethod: validDraftData.paymentMethod,
+          paymentTiming: validDraftData.paymentTiming,
+          riskLevel: "low",
+          applicationDeadline: new Date(validDraftData.applicationDeadline),
+          createdAt: new Date("2030-01-04T00:00:00.000Z"),
+        },
+      ]);
+
+      const { listMyEmployerJobs } = await import(
+        "@/server/queries/jobs/get-employer-job"
+      );
+      const firstPage = await listMyEmployerJobs(
+        { limit: 1 },
+        employer1Context,
+        database,
+      );
+      expect(firstPage.items.map(({ id }) => id)).toEqual([
+        firstOwnedPageJobId,
+      ]);
+      expect(firstPage.nextCursor).toEqual(expect.any(String));
+      expect(firstPage.nextCursor).not.toContain(firstOwnedPageJobId);
+
+      const secondPage = await listMyEmployerJobs(
+        { cursor: firstPage.nextCursor!, limit: 1 },
+        employer1Context,
+        database,
+      );
+      expect(secondPage.items.map(({ id }) => id)).toEqual([
+        secondOwnedPageJobId,
+      ]);
+      expect(secondPage.items.some(({ id }) => id === otherEmployerJobId)).toBe(
+        false,
+      );
+
+      await expect(
+        listMyEmployerJobs(
+          { cursor: "not-a-cursor" },
+          employer1Context,
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        listMyEmployerJobs(
+          {},
+          {
+            ...employer1Context,
+            role: "worker",
+          },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        listMyEmployerJobs(
+          {},
+          {
+            ...employer1Context,
+            accountStatus: "suspended",
+          },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
     } finally {
       await client.end({ timeout: 5 });
     }

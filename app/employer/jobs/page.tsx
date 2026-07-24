@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/rintara/status-badge";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import {
-  listEmployerJobs,
+  listMyEmployerJobs,
   type EmployerJobListItem,
 } from "@/server/queries/jobs/get-employer-job";
 
@@ -112,9 +112,17 @@ function JobCard({ job }: { job: EmployerJobListItem }) {
   );
 }
 
-export default async function EmployerJobsPage() {
-  const account = await requireDashboardPageRole("employer", "/employer/jobs");
-  const jobs = await listEmployerJobs(account.userId);
+export default async function EmployerJobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string | string[] }>;
+}) {
+  const { cursor } = await searchParams;
+  await requireDashboardPageRole("employer", "/employer/jobs");
+  const jobPage = await listMyEmployerJobs({
+    cursor: typeof cursor === "string" ? cursor : undefined,
+  });
+  const jobs = jobPage.items;
   const activeCount = jobs.filter(
     (job) => job.status === "published" || job.status === "filled",
   ).length;
@@ -141,19 +149,19 @@ export default async function EmployerJobsPage() {
         aria-label="Ringkasan pekerjaan"
       >
         <div className="px-1 py-5 sm:px-6">
-          <p className="text-sm text-muted-foreground">Total pekerjaan</p>
+          <p className="text-sm text-muted-foreground">Di halaman ini</p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
             {jobs.length}
           </p>
         </div>
         <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="text-sm text-muted-foreground">Aktif</p>
+          <p className="text-sm text-muted-foreground">Aktif di halaman</p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
             {activeCount}
           </p>
         </div>
         <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="text-sm text-muted-foreground">Draft</p>
+          <p className="text-sm text-muted-foreground">Draft di halaman</p>
           <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
             {draftCount}
           </p>
@@ -174,6 +182,18 @@ export default async function EmployerJobsPage() {
           actionHref="/employer/jobs/new"
         />
       )}
+
+      {jobPage.nextCursor ? (
+        <nav aria-label="Navigasi daftar pekerjaan">
+          <Button variant="outline" asChild>
+            <Link
+              href={`/employer/jobs?cursor=${encodeURIComponent(jobPage.nextCursor)}`}
+            >
+              Pekerjaan berikutnya <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        </nav>
+      ) : null}
     </div>
   );
 }

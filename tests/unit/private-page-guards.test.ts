@@ -8,6 +8,11 @@ const staticGuardedPages = [
   ["app/worker/passport/page.tsx", "worker", "/worker/passport"],
   ["app/worker/notifications/page.tsx", "worker", "/worker/notifications"],
   ["app/employer/jobs/page.tsx", "employer", "/employer/jobs"],
+  [
+    "app/employer/settings/profile/page.tsx",
+    "employer",
+    "/employer/settings/profile",
+  ],
   ["app/admin/page.tsx", "admin", "/admin"],
   ["app/admin/reports/page.tsx", "admin", "/admin/reports"],
   ["app/admin/jobs/page.tsx", "admin", "/admin/jobs"],
@@ -48,15 +53,22 @@ const backendRecordGuardedPages = [
     "app/employer/jobs/[id]/page.tsx",
     "employer",
     "/employer/jobs/${encodeURIComponent(id)}",
-    "loadEmployerJob(id, account.userId)",
+    "loadEmployerJob(id)",
     "JOB_NOT_FOUND",
   ],
   [
     "app/employer/jobs/[id]/applicants/page.tsx",
     "employer",
     "/employer/jobs/${encodeURIComponent(id)}/applicants",
-    "getEmployerJob(id, account.userId)",
+    "getEmployerJob(id)",
     "JOB_NOT_FOUND",
+  ],
+  [
+    "app/employer/jobs/[id]/applicants/[applicationId]/passport/page.tsx",
+    "employer",
+    "${returnPath}/${encodeURIComponent(applicationId)}/passport",
+    "getApplicantPassport(id, applicationId, {",
+    "NOT_FOUND",
   ],
 ] as const;
 

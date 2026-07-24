@@ -27,6 +27,8 @@ export async function getJobReferenceData() {
       minimumAmount: wageGuidelines.minimumAmount,
       recommendedAmount: wageGuidelines.recommendedAmount,
       unit: wageGuidelines.unit,
+      sourceLabel: wageGuidelines.sourceLabel,
+      isSimulated: wageGuidelines.isSimulated,
       effectiveFrom: wageGuidelines.effectiveFrom,
       effectiveTo: wageGuidelines.effectiveTo,
     })

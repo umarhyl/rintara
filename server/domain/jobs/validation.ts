@@ -10,12 +10,16 @@ export const jobDraftSchema = z.object({
   publicLocationLabel: z.string().min(3, "Location label required").max(60),
   fullAddress: z.string().min(10, "Full address required for accepted worker").max(300),
   
-  startsAt: z.coerce.date().refine((date) => date > new Date(), {
+  startsAt: z.coerce.date("Start time is required").refine((date) => date > new Date(), {
     message: "Start time must be in the future",
-  }).optional(),
+  }),
   estimatedMinutes: z.number().int().min(15).max(10080),
   
-  applicationDeadline: z.coerce.date().optional(),
+  applicationDeadline: z.coerce
+    .date("Application deadline is required")
+    .refine((date) => date > new Date(), {
+      message: "Application deadline must be in the future",
+    }),
   
   toolsProvided: z.string().max(200).optional(),
   toolsRequired: z.string().max(200).optional(),
@@ -27,12 +31,7 @@ export const jobDraftSchema = z.object({
   
   isFirstOpportunity: z.boolean().default(false),
   riskLevel: z.enum(riskLevelEnum.enumValues),
-}).refine((data) => {
-  if (data.applicationDeadline && data.startsAt) {
-    return data.applicationDeadline < data.startsAt;
-  }
-  return true;
-}, {
+}).refine((data) => data.applicationDeadline < data.startsAt, {
   message: "Application deadline must be before the start time",
   path: ["applicationDeadline"],
 });

@@ -1,10 +1,13 @@
+import Link from "next/link";
 import {
+  ArrowRight,
   BookOpenCheck,
   CheckCircle2,
   CircleDashed,
   MapPinned,
   Tags,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import {
@@ -32,9 +35,51 @@ function unitLabel(unit: "hour" | "day" | "job") {
   return "pekerjaan";
 }
 
-export default async function WageGuidelinesPage() {
+type ConfigCursors = {
+  areaCursor?: string;
+  categoryCursor?: string;
+  wageGuidelineCursor?: string;
+};
+
+function nextPageHref(
+  cursors: ConfigCursors,
+  key: keyof ConfigCursors,
+  nextCursor: string,
+) {
+  const query = new URLSearchParams();
+  const nextCursors = { ...cursors, [key]: nextCursor };
+
+  for (const [name, value] of Object.entries(nextCursors)) {
+    if (value) query.set(name, value);
+  }
+
+  return `/admin/wage-guidelines?${query.toString()}`;
+}
+
+export default async function WageGuidelinesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    areaCursor?: string | string[];
+    categoryCursor?: string | string[];
+    wageGuidelineCursor?: string | string[];
+  }>;
+}) {
   await requireDashboardPageRole("admin", "/admin/wage-guidelines");
-  const config = await getAdminMarketplaceConfig();
+  const params = await searchParams;
+  const cursors: ConfigCursors = {
+    areaCursor:
+      typeof params.areaCursor === "string" ? params.areaCursor : undefined,
+    categoryCursor:
+      typeof params.categoryCursor === "string"
+        ? params.categoryCursor
+        : undefined,
+    wageGuidelineCursor:
+      typeof params.wageGuidelineCursor === "string"
+        ? params.wageGuidelineCursor
+        : undefined,
+  };
+  const config = await getAdminMarketplaceConfig(cursors);
 
   const activeAreas = config.areas.filter((area) => area.isActive);
   const activeCategories = config.categories.filter(
@@ -56,19 +101,19 @@ export default async function WageGuidelinesPage() {
               <p className="text-2xl font-semibold tracking-[-0.04em]">
                 {activeCategories.length}
               </p>
-              <p className="text-xs text-muted-foreground">kategori aktif</p>
+              <p className="text-xs text-muted-foreground">aktif di halaman</p>
             </div>
             <div className="border-l border-border px-4 py-3">
               <p className="text-2xl font-semibold tracking-[-0.04em]">
                 {activeAreas.length}
               </p>
-              <p className="text-xs text-muted-foreground">area pilot</p>
+              <p className="text-xs text-muted-foreground">aktif di halaman</p>
             </div>
             <div className="border-l border-border px-4 py-3">
               <p className="text-2xl font-semibold tracking-[-0.04em]">
                 {activeGuidelines.length}
               </p>
-              <p className="text-xs text-muted-foreground">panduan aktif</p>
+              <p className="text-xs text-muted-foreground">aktif di halaman</p>
             </div>
           </div>
         }
@@ -222,8 +267,8 @@ export default async function WageGuidelinesPage() {
         </div>
         <div className="px-5 py-6 sm:px-7">
           <WageGuidelineConfigForm
-            areas={config.areas}
-            categories={config.categories}
+            areas={config.activeAreaOptions}
+            categories={config.activeCategoryOptions}
           />
         </div>
       </section>
@@ -248,7 +293,7 @@ export default async function WageGuidelinesPage() {
           <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
             <h3 className="font-semibold">Kategori</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
-              {config.categories.slice(0, 8).map((category) => (
+              {config.categories.map((category) => (
                 <div key={category.id} className="grid gap-2 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-medium">{category.name}</p>
@@ -268,12 +313,31 @@ export default async function WageGuidelinesPage() {
                 </div>
               ))}
             </div>
+            {config.categoryNextCursor ? (
+              <nav
+                aria-label="Navigasi kategori"
+                className="mt-4 flex justify-end"
+              >
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={nextPageHref(
+                      cursors,
+                      "categoryCursor",
+                      config.categoryNextCursor,
+                    )}
+                  >
+                    Kategori berikutnya
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </nav>
+            ) : null}
           </article>
 
           <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
             <h3 className="font-semibold">Pilot area</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
-              {config.areas.slice(0, 8).map((area) => (
+              {config.areas.map((area) => (
                 <div key={area.id} className="grid gap-2 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-medium">{area.name}</p>
@@ -290,12 +354,31 @@ export default async function WageGuidelinesPage() {
                 </div>
               ))}
             </div>
+            {config.areaNextCursor ? (
+              <nav
+                aria-label="Navigasi area pilot"
+                className="mt-4 flex justify-end"
+              >
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={nextPageHref(
+                      cursors,
+                      "areaCursor",
+                      config.areaNextCursor,
+                    )}
+                  >
+                    Area berikutnya
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </nav>
+            ) : null}
           </article>
 
           <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
             <h3 className="font-semibold">Panduan Upah</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
-              {config.wageGuidelines.slice(0, 8).map((guideline) => (
+              {config.wageGuidelines.map((guideline) => (
                 <div key={guideline.id} className="grid gap-2 py-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="font-medium">{guideline.categoryName}</p>
@@ -323,6 +406,25 @@ export default async function WageGuidelinesPage() {
                 </div>
               ))}
             </div>
+            {config.wageGuidelineNextCursor ? (
+              <nav
+                aria-label="Navigasi Panduan Upah"
+                className="mt-4 flex justify-end"
+              >
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={nextPageHref(
+                      cursors,
+                      "wageGuidelineCursor",
+                      config.wageGuidelineNextCursor,
+                    )}
+                  >
+                    Panduan berikutnya
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </nav>
+            ) : null}
           </article>
         </div>
       </section>

@@ -99,13 +99,18 @@ Foundation evidence:
 
 **Dates:** July 21–23
 
+**Status:** Completed on July 24, 2026 for the repository-controlled marketplace
+vertical slice. Transactional acceptance and agreement remain tracked by
+Milestone 3.
+
 Deliverables:
 
 - worker and employer profiles;
 - admin-managed pilot areas, categories, and Wage Guidelines;
 - job draft, review, publish, and cancel;
 - public discovery, filters, pagination, and detail;
-- application submit, withdraw, worker list, and employer applicant list;
+- application submit, withdraw, worker application list, and employer applicant
+  list;
 - authorized applicant Passport view;
 - named query and command contracts from `docs/engineering/API.md`.
 
@@ -115,6 +120,16 @@ Exit criteria:
 - Public users cannot access a full address.
 - Worker eligibility is evaluated per category.
 - Duplicate, late, ineligible, and cross-role applications are rejected safely.
+
+Milestone 2 evidence:
+
+- PostgreSQL integration tests cover worker/employer profiles, admin
+  configuration, compliant general and First Opportunity publishing,
+  application rules, applicant Passport access, and public-address redaction.
+- Public jobs, employer jobs, worker applications, applicant lists, Passport
+  history, and admin configuration use bounded deterministic cursors.
+- Unit tests, PostgreSQL integration tests, typecheck, lint, schema check, and
+  production build pass for the completed repository state.
 
 ### Milestone 3 — Acceptance and agreement
 

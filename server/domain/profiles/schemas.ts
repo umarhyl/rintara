@@ -42,4 +42,20 @@ export const workerOnboardingProfileSchema = workerProfileSchema
   .extend({ categoryInterestIds: categoryInterestIdsSchema.optional() })
   .strip();
 
+export const employerProfileSchema = z
+  .object({
+    displayName: z
+      .string()
+      .trim()
+      .min(2, "Nama usaha terlalu pendek.")
+      .max(120, "Nama usaha terlalu panjang."),
+    employerType: z.enum(["individual", "business", "community"], {
+      error: "Pilih jenis pemberi kerja yang valid.",
+    }),
+    areaId: z.string().uuid("Pilih area kegiatan yang valid."),
+    description: optionalProfileText(1000, "Deskripsi terlalu panjang."),
+  })
+  .strict();
+
 export type WorkerProfileInput = z.infer<typeof workerProfileSchema>;
+export type EmployerProfileInput = z.infer<typeof employerProfileSchema>;

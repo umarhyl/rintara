@@ -6,7 +6,9 @@ import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
 import {
   applications,
+  areas,
   auditLogs,
+  categories,
   jobs,
   jobPrivateDetails,
   notifications,
@@ -66,8 +68,7 @@ export async function createJobDraft(input: unknown) {
       hiddenAt: new Date(),
       hiddenBy: context.userId,
       hiddenReason: "draft",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any).returning({ id: jobs.id });
+    }).returning({ id: jobs.id });
 
     await tx.insert(jobPrivateDetails).values({
       jobId: newJob.id,
@@ -151,10 +152,12 @@ export async function publishJob(jobId: string) {
   }
 
   await db.transaction(async (tx) => {
+    const now = new Date();
     const [job] = await tx.select()
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
 
     if (!job) {
       throw new ApplicationError("JOB_NOT_FOUND", "Job not found or not owned by you.");
@@ -164,12 +167,39 @@ export async function publishJob(jobId: string) {
       throw new ApplicationError("JOB_NOT_DRAFT", "Job is not in draft state.");
     }
 
-    // Check deadlines
     if (job.applicationDeadline >= job.startsAt) {
       throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be before start time.");
     }
-    if (job.startsAt <= new Date()) {
+    if (job.applicationDeadline <= now) {
+      throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be in the future.");
+    }
+    if (job.startsAt <= now) {
       throw new ApplicationError("VALIDATION_FAILED", "Start time must be in the future.");
+    }
+
+    const [reference] = await tx
+      .select({
+        categoryRiskLevel: categories.riskLevel,
+        categoryFirstOpportunityAllowed: categories.firstOpportunityAllowed,
+        categoryIsActive: categories.isActive,
+        areaLevel: areas.level,
+        areaIsActive: areas.isActive,
+      })
+      .from(categories)
+      .innerJoin(areas, eq(areas.id, job.areaId))
+      .where(eq(categories.id, job.categoryId))
+      .limit(1)
+      .for("share");
+
+    if (!reference?.categoryIsActive) {
+      throw new ApplicationError("CATEGORY_NOT_ALLOWED", "The selected category is not available.");
+    }
+    if (!reference.areaIsActive || reference.areaLevel !== "city_regency") {
+      throw new ApplicationError(
+        "VALIDATION_FAILED",
+        "The selected area is not an active city or regency.",
+        { areaId: ["Select an active city or regency."] },
+      );
     }
 
     const guidelineDate = job.startsAt.toISOString().slice(0, 10);
@@ -184,7 +214,8 @@ export async function publishJob(jobId: string) {
         or(isNull(wageGuidelines.effectiveTo), gt(wageGuidelines.effectiveTo, guidelineDate))!
       ))
       .orderBy(desc(wageGuidelines.effectiveFrom), desc(wageGuidelines.createdAt))
-      .limit(1);
+      .limit(1)
+      .for("share");
 
     let wageStatus: "compliant" | "below" | "unavailable" = "unavailable";
     
@@ -196,12 +227,17 @@ export async function publishJob(jobId: string) {
       }
     }
 
-    // First Opportunity Rule
     if (job.isFirstOpportunity) {
-      if (job.riskLevel !== "low") {
-        throw new ApplicationError("CATEGORY_NOT_ALLOWED", "First Opportunity jobs must be low risk.");
+      if (
+        !reference.categoryFirstOpportunityAllowed ||
+        reference.categoryRiskLevel !== "low"
+      ) {
+        throw new ApplicationError("CATEGORY_NOT_ALLOWED", "This category does not allow First Opportunity jobs.");
       }
-      if (wageStatus !== "compliant") {
+      if (wageStatus === "unavailable") {
+        throw new ApplicationError("WAGE_GUIDELINE_UNAVAILABLE", "No active wage guideline is available for this job.");
+      }
+      if (wageStatus === "below") {
         throw new ApplicationError("WAGE_BELOW_GUIDELINE", "First Opportunity jobs must meet minimum wage guidelines.");
       }
     }
@@ -216,10 +252,26 @@ export async function publishJob(jobId: string) {
         hiddenBy: null,
         hiddenReason: null,
         wageStatus,
-        publishedAt: new Date(),
-        updatedAt: new Date(),
+        riskLevel: reference.categoryRiskLevel,
+        publishedAt: now,
+        updatedAt: now,
       })
       .where(eq(jobs.id, jobId));
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "publish_job",
+      entityType: "job",
+      entityId: jobId,
+      requestId: context.requestId,
+      metadata: {
+        previousStatus: job.status,
+        newStatus: "published",
+        wageStatus,
+        isFirstOpportunity: job.isFirstOpportunity,
+      },
+      createdAt: now,
+    });
   });
 
   revalidatePath(`/employer/jobs/${jobId}`);

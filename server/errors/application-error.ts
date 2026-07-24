@@ -17,6 +17,7 @@ export type ApplicationErrorCode =
   | "CONCURRENT_ACCEPTANCE_CONFLICT"
   | "FIRST_OPPORTUNITY_INELIGIBLE"
   | "CATEGORY_NOT_ALLOWED"
+  | "WAGE_GUIDELINE_UNAVAILABLE"
   | "WAGE_BELOW_GUIDELINE";
 
 export class ApplicationError extends Error {

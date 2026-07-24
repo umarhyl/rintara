@@ -1,25 +1,20 @@
 "use server";
 
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import {
   ApplicationError,
   type ApplicationErrorCode,
 } from "@/server/errors/application-error";
-import { workerProfileSchema } from "./schemas";
-
-const employerProfileSchema = z.object({
-  displayName: z.string().min(2, "Nama usaha terlalu pendek.").max(120, "Nama usaha terlalu panjang."),
-  employerType: z.enum(["individual", "business", "community"], {
-    error: "Pilih jenis pemberi kerja yang valid.",
-  }),
-  areaId: z.string().uuid("Pilih area kegiatan."),
-  description: z.string().max(1000, "Deskripsi terlalu panjang.").nullable(),
-});
+import { employerProfileSchema, workerProfileSchema } from "./schemas";
 
 export type UpdateEmployerProfileResult =
   | { ok: true }
-  | { ok: false; message: string; fieldErrors?: Record<string, string[]> };
+  | {
+      ok: false;
+      code: ApplicationErrorCode;
+      message: string;
+      fieldErrors?: Record<string, string[] | undefined>;
+    };
 
 export type UpdateWorkerProfileResult =
   | { ok: true }
@@ -82,40 +77,30 @@ export async function updateWorkerProfile(
 }
 
 export async function updateEmployerProfile(
-  input: unknown
+  input: unknown,
 ): Promise<UpdateEmployerProfileResult> {
+  const parsed = employerProfileSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: "Periksa kembali isian profil.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
   try {
     const { requireActiveUser } = await import("@/server/auth/identity");
-    const context = await requireActiveUser();
-    if (context.role !== "employer") {
-      throw new ApplicationError("FORBIDDEN", "Only employers can update this profile.");
-    }
-
-    const parseResult = employerProfileSchema.safeParse(input);
-    if (!parseResult.success) {
-      return {
-        ok: false,
-        message: "Periksa kembali isian profil.",
-        fieldErrors: parseResult.error.flatten().fieldErrors,
-      };
-    }
-
-    const data = parseResult.data;
-    
     const { db } = await import("@/server/db/client");
-    const { employerProfiles } = await import("@/server/db/schema");
-    const { eq } = await import("drizzle-orm");
+    const { updateEmployerProfileInDatabase } = await import(
+      "./employer-profile"
+    );
 
-    await db
-      .update(employerProfiles)
-      .set({
-        displayName: data.displayName,
-        employerType: data.employerType,
-        areaId: data.areaId,
-        description: data.description || null,
-        updatedAt: new Date(),
-      })
-      .where(eq(employerProfiles.userId, context.userId));
+    await updateEmployerProfileInDatabase(
+      db,
+      await requireActiveUser(),
+      parsed.data,
+    );
 
     revalidatePath("/employer/settings/profile");
     revalidatePath("/employer/dashboard");
@@ -123,16 +108,24 @@ export async function updateEmployerProfile(
     return { ok: true };
   } catch (error) {
     if (error instanceof ApplicationError) {
-      if (error.code === "UNAUTHENTICATED") {
-        return { ok: false, message: "Sesi berakhir. Masuk kembali untuk menyimpan." };
-      }
-      if (error.code === "ACCOUNT_INACTIVE") {
-        return { ok: false, message: "Akun dibatasi. Tidak dapat menyimpan." };
-      }
-      return { ok: false, message: error.message };
+      const message =
+        error.code === "UNAUTHENTICATED"
+          ? "Sesi kamu telah berakhir. Masuk kembali untuk melanjutkan."
+          : error.code === "ACCOUNT_INACTIVE"
+            ? "Akun ini sedang dibatasi dan belum dapat menyimpan profil."
+            : error.code === "FORBIDDEN"
+              ? "Profil pemberi kerja tidak dapat diubah oleh akun ini."
+              : error.code === "VALIDATION_FAILED" ||
+                  error.code === "NOT_FOUND"
+                ? error.message
+                : "Profil belum dapat disimpan. Silakan coba lagi.";
+
+      return { ok: false, code: error.code, message };
     }
+
     return {
       ok: false,
+      code: "INTERNAL_ERROR",
       message: "Profil belum dapat disimpan. Periksa jaringan lalu coba lagi.",
     };
   }
