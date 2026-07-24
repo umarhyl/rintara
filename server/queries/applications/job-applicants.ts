@@ -6,6 +6,7 @@ import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 import {
   applications,
+  agreements,
   areas,
   categories,
   jobs,
@@ -39,6 +40,7 @@ export type JobApplicantListItem = {
   availabilityNote: string | null;
   note: string;
   status: ApplicantStatus;
+  agreementId: string | null;
   submittedAt: Date;
   firstOpportunityEligibleAtSubmission: boolean;
   isEligibleForJobCategoryNow: boolean;
@@ -87,6 +89,7 @@ function emptyPassportSummary(row: ApplicantBaseRow): JobApplicantListItem {
     availabilityNote: row.availabilityNote,
     note: row.note,
     status: row.status,
+    agreementId: row.agreementId,
     submittedAt: row.submittedAt,
     firstOpportunityEligibleAtSubmission:
       row.firstOpportunityEligibleAtSubmission,
@@ -135,6 +138,7 @@ export async function listJobApplicants(
       availabilityNote: workerProfiles.availabilityNote,
       note: applications.note,
       status: applications.status,
+      agreementId: agreements.id,
       submittedAt: applications.submittedAt,
       firstOpportunityEligibleAtSubmission:
         applications.firstOpportunityEligibleAtSubmission,
@@ -144,6 +148,7 @@ export async function listJobApplicants(
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
     .innerJoin(workerProfiles, eq(applications.workerId, workerProfiles.userId))
     .innerJoin(areas, eq(workerProfiles.areaId, areas.id))
+    .leftJoin(agreements, eq(agreements.applicationId, applications.id))
     .where(and(eq(applications.jobId, job.id), eq(jobs.employerId, employerId)))
     .orderBy(asc(applications.status), asc(applications.submittedAt), asc(applications.id));
 
