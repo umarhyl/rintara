@@ -40,6 +40,8 @@ databaseTest(
       const categoryHighRiskId = randomUUID();
       const employer1Id = randomUUID();
       const employer2Id = randomUUID();
+      const worker1Id = randomUUID();
+      const worker2Id = randomUUID();
 
       await database.transaction(async (tx) => {
         await tx.insert(schema.areas).values({
@@ -67,10 +69,16 @@ databaseTest(
         await tx.insert(schema.users).values([
           { id: employer1Id, authSubject: `emp1-${fixtureId}`, role: "employer" },
           { id: employer2Id, authSubject: `emp2-${fixtureId}`, role: "employer" },
+          { id: worker1Id, authSubject: `worker1-${fixtureId}`, role: "worker" },
+          { id: worker2Id, authSubject: `worker2-${fixtureId}`, role: "worker" },
         ]);
         await tx.insert(schema.employerProfiles).values([
           { userId: employer1Id, displayName: "Employer 1", employerType: "individual", areaId },
           { userId: employer2Id, displayName: "Employer 2", employerType: "individual", areaId },
+        ]);
+        await tx.insert(schema.workerProfiles).values([
+          { userId: worker1Id, displayName: "Worker 1", areaId },
+          { userId: worker2Id, displayName: "Worker 2", areaId },
         ]);
         
         // Insert some wage guidelines to test against
@@ -193,11 +201,67 @@ databaseTest(
 
       // 5. Test Cancellation
       const draft3 = await createJobDraft(validDraftData);
-      const cancelledDraft = await cancelJob(draft3.jobId);
+      const cancelledDraft = await cancelJob(draft3.jobId, {
+        reason: "Employer cancelled this draft before publication.",
+      });
       expect(cancelledDraft.ok).toBe(true);
 
-      const cancelledPublished = await cancelJob(newDraft.jobId);
+      await database.insert(schema.applications).values([
+        {
+          jobId: newDraft.jobId,
+          workerId: worker1Id,
+          note: "I am available for this published job.",
+          firstOpportunityEligibleAtSubmission: true,
+        },
+        {
+          jobId: newDraft.jobId,
+          workerId: worker2Id,
+          note: "I can also help with this published job.",
+          firstOpportunityEligibleAtSubmission: true,
+        },
+      ]);
+
+      const cancelledPublished = await cancelJob(newDraft.jobId, {
+        reason: "Employer schedule changed and the work can no longer happen.",
+      });
       expect(cancelledPublished.ok).toBe(true);
+
+      const [cancelledJob] = await database
+        .select()
+        .from(schema.jobs)
+        .where(eq(schema.jobs.id, newDraft.jobId));
+      expect(cancelledJob.status).toBe("cancelled");
+      expect(cancelledJob.cancelledAt).not.toBeNull();
+      expect(cancelledJob.cancellationReason).toBe(
+        "Employer schedule changed and the work can no longer happen.",
+      );
+
+      const rejectedApplications = await database
+        .select()
+        .from(schema.applications)
+        .where(eq(schema.applications.jobId, newDraft.jobId));
+      expect(rejectedApplications).toHaveLength(2);
+      expect(rejectedApplications.every((application) => application.status === "rejected")).toBe(true);
+
+      const cancellationNotifications = await database
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.entityId, newDraft.jobId));
+      expect(cancellationNotifications).toHaveLength(2);
+      expect(JSON.stringify(cancellationNotifications)).not.toContain(
+        validDraftData.fullAddress,
+      );
+
+      const auditRows = await database
+        .select()
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.entityId, newDraft.jobId));
+      expect(auditRows).toHaveLength(1);
+      expect(auditRows[0]!.action).toBe("cancel_job");
+      expect(auditRows[0]!.metadata).toMatchObject({
+        previousStatus: "published",
+        rejectedApplicationCount: 2,
+      });
       
     } finally {
       await client.end({ timeout: 5 });

@@ -190,6 +190,7 @@ Prevent overlapping active guidelines for the same area, category, and unit thro
 | `published_at` | timestamptz nullable | Set once on publish |
 | `completed_at` | timestamptz nullable | Set on verified completion |
 | `cancelled_at` | timestamptz nullable | Set on cancellation |
+| `cancellation_reason` | text nullable | Required when cancelled |
 | `hidden_at` | timestamptz nullable | Admin moderation timestamp |
 | `hidden_by` | uuid nullable | FK `users.id` |
 | `hidden_reason` | text nullable | Required while hidden |

@@ -4,10 +4,28 @@ import { revalidatePath } from "next/cache";
 import { ApplicationError } from "@/server/errors/application-error";
 import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
-import { jobs, jobPrivateDetails, wageGuidelines } from "@/server/db/schema";
+import {
+  applications,
+  auditLogs,
+  jobs,
+  jobPrivateDetails,
+  notifications,
+  wageGuidelines,
+} from "@/server/db/schema";
 import { eq, and, desc, lte, or, isNull, gt } from "drizzle-orm";
+import { z } from "zod";
 import { jobDraftSchema } from "./validation";
 import { assertJobTransition } from "../lifecycle";
+
+const cancelJobSchema = z
+  .object({
+    reason: z
+      .string()
+      .trim()
+      .min(10, "Tulis alasan pembatalan minimal 10 karakter.")
+      .max(500, "Alasan pembatalan maksimal 500 karakter."),
+  })
+  .strict();
 
 export async function createJobDraft(input: unknown) {
   const context = await requireActiveUser();
@@ -211,14 +229,26 @@ export async function publishJob(jobId: string) {
   return { ok: true };
 }
 
-export async function cancelJob(jobId: string) {
+export async function cancelJob(jobId: string, input: unknown) {
   const context = await requireActiveUser();
   if (context.role !== "employer") {
     throw new ApplicationError("FORBIDDEN", "Only employers can cancel jobs.");
   }
 
+  const parseResult = cancelJobSchema.safeParse(input);
+  if (!parseResult.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Invalid cancellation input.",
+      parseResult.error.flatten().fieldErrors,
+    );
+  }
+
+  const { reason } = parseResult.data;
+  const now = new Date();
+
   await db.transaction(async (tx) => {
-    const [job] = await tx.select({ status: jobs.status })
+    const [job] = await tx.select({ status: jobs.status, title: jobs.title })
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
       .limit(1);
@@ -232,24 +262,58 @@ export async function cancelJob(jobId: string) {
     await tx.update(jobs)
       .set({
         status: "cancelled",
-        cancelledAt: new Date(),
-        updatedAt: new Date(),
+        cancelledAt: now,
+        cancellationReason: reason,
+        updatedAt: now,
       })
       .where(eq(jobs.id, jobId));
 
-    // Note: Cancelling an unfilled published job should reject remaining submitted applications
+    let rejectedApplicationCount = 0;
+
     if (job.status === "published") {
-      const { applications } = await import("@/server/db/schema/jobs");
-      await tx.update(applications)
+      const rejectedApplications = await tx.update(applications)
         .set({
           status: "rejected",
-          decidedAt: new Date(),
+          decidedAt: now,
         })
         .where(and(
           eq(applications.jobId, jobId),
           eq(applications.status, "submitted")
-        ));
+        ))
+        .returning({
+          id: applications.id,
+          workerId: applications.workerId,
+        });
+
+      rejectedApplicationCount = rejectedApplications.length;
+
+      if (rejectedApplications.length > 0) {
+        await tx.insert(notifications).values(
+          rejectedApplications.map((application) => ({
+            recipientId: application.workerId,
+            type: "job_cancelled",
+            title: "Pekerjaan dibatalkan",
+            body: `Pekerjaan "${job.title}" dibatalkan oleh pemberi kerja. Lamaran aktifmu ditutup tanpa menghapus riwayat.`,
+            entityType: "job",
+            entityId: jobId,
+            createdAt: now,
+          })),
+        );
+      }
     }
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "cancel_job",
+      entityType: "job",
+      entityId: jobId,
+      requestId: context.requestId,
+      metadata: {
+        previousStatus: job.status,
+        rejectedApplicationCount,
+      },
+      createdAt: now,
+    });
   });
 
   revalidatePath(`/employer/jobs/${jobId}`);
