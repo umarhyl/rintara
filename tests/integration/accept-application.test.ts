@@ -353,6 +353,9 @@ databaseTest(
       const { acceptApplication } = await import(
         "@/server/domain/applications/actions"
       );
+      const { confirmAgreement } = await import(
+        "@/server/domain/agreements/actions"
+      );
       const { listPublishedJobs } = await import(
         "@/server/queries/jobs/public-jobs"
       );
@@ -417,6 +420,59 @@ databaseTest(
 
       const publicJobs = await listPublishedJobs({}, database);
       expect(JSON.stringify(publicJobs)).not.toContain("Jalan Privat Acceptance 1");
+
+      const employerConfirmation = await confirmAgreement(agreement.id);
+      expect(employerConfirmation).toMatchObject({
+        agreementId: agreement.id,
+        status: "pending_confirmation",
+        workerConfirmedAt: null,
+      });
+      expect(employerConfirmation.employerConfirmedAt).not.toBeNull();
+
+      const employerRetry = await confirmAgreement(agreement.id);
+      expect(employerRetry).toEqual(employerConfirmation);
+
+      const pendingSessions = await database
+        .select()
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, agreement.id));
+      expect(pendingSessions).toHaveLength(0);
+
+      activeContext = workerContext;
+      const workerConfirmation = await confirmAgreement(agreement.id);
+      expect(workerConfirmation).toMatchObject({
+        agreementId: agreement.id,
+        status: "active",
+        employerConfirmedAt: employerConfirmation.employerConfirmedAt,
+      });
+      expect(workerConfirmation.workerConfirmedAt).not.toBeNull();
+
+      const [activeAgreement] = await database
+        .select()
+        .from(schema.agreements)
+        .where(eq(schema.agreements.id, agreement.id))
+        .limit(1);
+      const activeSessions = await database
+        .select()
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, agreement.id));
+      expect(activeAgreement.status).toBe("active");
+      expect(activeAgreement.termsSnapshot).toEqual(agreement.termsSnapshot);
+      expect(activeSessions).toHaveLength(1);
+      expect(activeSessions[0]?.status).toBe("scheduled");
+
+      const workerRetry = await confirmAgreement(agreement.id);
+      expect(workerRetry).toEqual(workerConfirmation);
+      activeContext = employerContext;
+      const employerRetryAfterActivation = await confirmAgreement(agreement.id);
+      expect(employerRetryAfterActivation).toEqual(workerConfirmation);
+      const sessionsAfterRetry = await database
+        .select()
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, agreement.id));
+      expect(sessionsAfterRetry.map((session) => session.id)).toEqual(
+        activeSessions.map((session) => session.id),
+      );
 
       activeContext = workerContext;
       await expect(acceptApplication(applicationBId)).rejects.toMatchObject({
@@ -491,6 +547,32 @@ databaseTest(
           (application) => application.status === "rejected",
         ),
       ).toHaveLength(1);
+
+      const [concurrentAgreement] = concurrentAgreements;
+      activeContext = {
+        ...workerContext,
+        userId: concurrentAgreement.workerId,
+        requestId: "confirm-worker-first",
+      };
+      await expect(
+        confirmAgreement(concurrentAgreement.id),
+      ).resolves.toMatchObject({
+        status: "pending_confirmation",
+        employerConfirmedAt: null,
+      });
+
+      activeContext = employerContext;
+      await expect(
+        confirmAgreement(concurrentAgreement.id),
+      ).resolves.toMatchObject({
+        status: "active",
+      });
+      const workerFirstSessions = await database
+        .select()
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, concurrentAgreement.id));
+      expect(workerFirstSessions).toHaveLength(1);
+      expect(workerFirstSessions[0]?.status).toBe("scheduled");
     } finally {
       await client.end({ timeout: 5 });
     }
