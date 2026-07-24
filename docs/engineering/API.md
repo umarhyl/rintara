@@ -411,11 +411,74 @@ Access: worker party, employer party, or authorized admin.
 
 Returns the complete immutable terms snapshot, party confirmation states, lifecycle state, and allowed next actions. Full address appears only here and in other explicitly authorized agreement views.
 
+```ts
+type AgreementView = {
+  id: string;
+  applicationId: string;
+  snapshot: {
+    version: number;
+    jobId: string;
+    workerId: string;
+    employerId: string;
+    // Complete accepted terms from the immutable agreement snapshot.
+    title: string;
+    categoryId: string;
+    categoryName: string;
+    taskScope: string;
+    generalArea: string;
+    fullAddress: string;
+    arrivalInstructions: string | null;
+    startsAt: string;
+    estimatedMinutes: number;
+    wageAmount: string;
+    wageUnit: "hour" | "day" | "job";
+    paymentMethod: string;
+    paymentTiming: string;
+    toolsProvided: string | null;
+    toolsRequired: string | null;
+    cancellationWording: string;
+    isFirstOpportunity: boolean;
+    wageStatus: "compliant" | "below" | "unavailable";
+  };
+  confirmations: {
+    workerConfirmedAt: string | null;
+    employerConfirmedAt: string | null;
+  };
+  status: "pending_confirmation" | "active" | "completed" | "cancelled";
+  cancellation: { cancelledAt: string; reason: string } | null;
+  allowedActions: { confirm: boolean };
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
+The query reads accepted terms from `agreements.terms_snapshot`; it does not
+reconstruct them from mutable job or profile records. Inaccessible identifiers
+return safe `NOT_FOUND` behavior.
+
 ### `confirmAgreement(agreementId)`
 
 Access: either active party.
 
 Behavior sets only the caller's confirmation timestamp. It is idempotent for the same caller. When both timestamps exist, it transitions the agreement to `active` and ensures one scheduled work session exists.
+
+```ts
+type ConfirmAgreementResult = {
+  agreementId: string;
+  status: "pending_confirmation" | "active" | "completed" | "cancelled";
+  workerConfirmedAt: string | null;
+  employerConfirmedAt: string | null;
+};
+```
+
+The command locks the agreement row and performs confirmation, activation,
+scheduled-session creation, safe notifications, and the append-only
+`confirm_agreement` audit in one transaction. The activation audit is recorded
+by `metadata.activated = true`. A retry by an already-confirmed caller returns
+the stored state without another write, notification, audit, or work session.
+
+Errors include `VALIDATION_FAILED`, `UNAUTHENTICATED`, `ACCOUNT_INACTIVE`,
+`FORBIDDEN`, `NOT_FOUND`, and `INVALID_STATE_TRANSITION`.
 
 ### `generateCheckInCode(agreementId)`
 

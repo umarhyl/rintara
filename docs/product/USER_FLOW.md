@@ -201,12 +201,13 @@ Alternative paths:
 2. Agreement shows parties, task scope, full address, schedule, wage, payment timing/method, tools, cancellation wording, and First Opportunity label.
 3. Each party independently selects **I agree to these terms**.
 4. Rintara records each confirmation time.
-5. When both have confirmed, agreement becomes active and the work step becomes available.
+5. After the first confirmation, the other party receives a safe confirmation request.
+6. When both have confirmed, agreement becomes active, both parties are notified, and the work step becomes available.
 
 Rules and recovery:
 
 - Confirmation order does not matter.
-- Repeated confirmation is safe and does not duplicate records.
+- Repeated or concurrent confirmation is safe and does not duplicate the work session, notification, or audit record.
 - If terms are wrong, do not provide an edit button; direct the party to the cancellation/report route.
 - Only the parties and authorized admin can open the full agreement.
 

@@ -374,6 +374,9 @@ databaseTest(
       const { listPublishedJobs } = await import(
         "@/server/queries/jobs/public-jobs"
       );
+      const { getAgreement } = await import(
+        "@/server/queries/agreements/get-agreement"
+      );
       const readConfirmationSideEffects = async (agreementId: string) => {
         const notificationRows = await database
           .select()
@@ -484,6 +487,9 @@ databaseTest(
       await expect(confirmAgreement(agreement.id)).rejects.toMatchObject({
         code: "UNAUTHENTICATED",
       });
+      await expect(getAgreement(agreement.id)).rejects.toMatchObject({
+        code: "UNAUTHENTICATED",
+      });
 
       activeContext = employerContext;
       await expect(confirmAgreement("not-an-agreement-id")).rejects.toMatchObject({
@@ -540,12 +546,12 @@ databaseTest(
       const employerRetryEffects =
         await readConfirmationSideEffects(agreement.id);
       expect(
-        employerRetryEffects.notifications.map(({ id }) => id),
+        employerRetryEffects.notifications.map(({ id }) => id).sort(),
       ).toEqual(
-        employerConfirmationEffects.notifications.map(({ id }) => id),
+        employerConfirmationEffects.notifications.map(({ id }) => id).sort(),
       );
-      expect(employerRetryEffects.audits.map(({ id }) => id)).toEqual(
-        employerConfirmationEffects.audits.map(({ id }) => id),
+      expect(employerRetryEffects.audits.map(({ id }) => id).sort()).toEqual(
+        employerConfirmationEffects.audits.map(({ id }) => id).sort(),
       );
 
       const pendingSessions = await database
@@ -710,6 +716,7 @@ databaseTest(
       expect(workerFirstConfirmations[0]).toEqual(workerFirstConfirmations[1]);
       expect(workerFirstConfirmations[0]).toMatchObject({
         status: "pending_confirmation",
+        workerConfirmedAt: expect.any(String),
         employerConfirmedAt: null,
       });
       const workerFirstPendingSessions = await database
