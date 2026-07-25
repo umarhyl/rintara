@@ -135,9 +135,10 @@ Milestone 2 evidence:
 
 **Date:** July 24
 
-**Backend status:** The acceptance and agreement backend slice was completed on
-July 25, 2026. Milestone completion still requires presentation integration and
-release evidence.
+**Status:** Completed on July 25, 2026.
+
+The acceptance and agreement slice is complete across backend, App Router UI,
+authorization, presentation integration, and release evidence.
 
 Deliverables:
 
@@ -155,7 +156,7 @@ Exit criteria:
 - Both parties can confirm in either order.
 - Full address is visible only to the parties after acceptance.
 
-Milestone 3 backend evidence:
+Milestone 3 evidence:
 
 - PostgreSQL integration tests cover concurrent acceptance, forced rollback,
   both confirmation orders, repeated and concurrent confirmation, and exactly
@@ -165,6 +166,16 @@ Milestone 3 backend evidence:
 - Public projections, agreement notifications, and audit metadata exclude the
   private address.
 - Agreement activation, notifications, and audit writes share one transaction.
+- Employer applicant review calls `acceptApplication`, requires explicit
+  confirmation, blocks duplicate submit while pending, and routes to the
+  pending Mini Agreement on success.
+- Worker and employer agreement pages call `getAgreement`, render immutable
+  accepted terms including the authorized full address, show both party
+  confirmation states, and call `confirmAgreement` for the allowed party action.
+- Worker applications and role-specific notification feeds include authorized
+  entry points to Mini Agreement destinations.
+- `bun typecheck`, `bun lint`, `bun test`, and production `bun run build` passed
+  for the completed Milestone 3 state.
 
 ### Milestone 4 — Attendance, completion, and Passport
 

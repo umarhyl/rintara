@@ -312,8 +312,8 @@ These product/data decisions remain open and require explicit team approval:
 - [ ] Public production URL is accessible.
 - [ ] Registration, sign-in, sign-out, role onboarding, and account-status checks work.
 - [ ] Employer can publish a transparent job and worker can discover and apply to it.
-- [ ] Employer can accept exactly one worker under concurrent requests.
-- [ ] Both parties can confirm the Mini Agreement.
+- [x] Employer can accept exactly one worker under concurrent requests.
+- [x] Both parties can confirm the Mini Agreement.
 - [ ] Check-in, check-out, and completion verification work.
 - [ ] Completion creates exactly one Work Proof.
 - [ ] Passport eligibility changes independently per category.
