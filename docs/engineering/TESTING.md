@@ -129,7 +129,9 @@ Force a failure after an intermediate write and assert the transaction leaves th
 
 ### Agreement activation
 
-Confirm each party in both orders and concurrently. Assert one active agreement and one scheduled work session.
+Confirm each party in both orders and concurrently. Assert one active agreement,
+one scheduled work session, and no duplicate notification or audit side effects
+after retries.
 
 ### Completion transaction
 

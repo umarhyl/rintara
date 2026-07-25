@@ -44,8 +44,8 @@ type Role = "worker" | "employer" | "admin";
 const roleConfig = {
   worker: {
     label: "Pekerja",
-    name: "Ayu Pratama",
-    initials: "AP",
+    name: "Pekerja Rintara",
+    initials: "PR",
     items: [
       { href: "/worker/dashboard", label: "Beranda", icon: Home },
       { href: "/jobs", label: "Cari kerja", icon: BriefcaseBusiness },
@@ -57,12 +57,12 @@ const roleConfig = {
   },
   employer: {
     label: "Pemberi kerja",
-    name: "Sinar Event Studio",
-    initials: "SE",
+    name: "Pemberi Kerja Rintara",
+    initials: "PK",
     items: [
       { href: "/employer/dashboard", label: "Beranda", icon: Home },
       { href: "/employer/jobs/new", label: "Pasang kerja", icon: PlusCircle },
-      { href: "/employer/jobs/kru-acara-akhir-pekan", label: "Pekerjaan", icon: BriefcaseBusiness },
+      { href: "/employer/jobs", label: "Pekerjaan", icon: BriefcaseBusiness },
       { href: "/employer/opportunity-credits", label: "Kredit", icon: TicketCheck },
       { href: "/employer/notifications", label: "Notifikasi", icon: Bell },
     ],
@@ -116,7 +116,7 @@ function isNavigationItemActive(role: Role, href: string, pathname: string) {
     return pathname.startsWith("/worker/agreements/") || pathname.startsWith("/worker/work/");
   }
 
-  if (role === "employer" && href === "/employer/jobs/kru-acara-akhir-pekan") {
+  if (role === "employer" && href === "/employer/jobs") {
     return pathname.startsWith("/employer/agreements/") || pathname.startsWith("/employer/work/");
   }
 

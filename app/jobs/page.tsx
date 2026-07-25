@@ -1,4 +1,5 @@
-import { ArrowDown, SlidersHorizontal } from "lucide-react";
+import Link from "next/link";
+import { ArrowDown, ArrowRight, SlidersHorizontal } from "lucide-react";
 import { AmbientBackdrop } from "@/components/rintara/ambient-backdrop";
 import { EmptyState } from "@/components/rintara/empty-state";
 import { JobCard } from "@/components/rintara/job-card";
@@ -7,6 +8,7 @@ import {
   type JobFilterValues,
 } from "@/components/rintara/job-filters";
 import { PublicShell } from "@/components/rintara/public-shell";
+import { Button } from "@/components/ui/button";
 import {
   getPublicJobReferenceData,
   listPublishedJobs,
@@ -17,7 +19,6 @@ import {
 export const metadata = { title: "Cari pekerjaan" };
 
 const opportunityValues = ["all", "first", "general"] as const;
-const pageSize = 10;
 
 function firstQueryValue(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
@@ -53,8 +54,20 @@ function parseFilters(searchParams: {
   };
 }
 
-function parsePage(value: string | string[] | undefined) {
-  return parsePositiveInteger(firstQueryValue(value)) ?? 1;
+function jobsHref(filters: JobFilterValues, cursor: string) {
+  const query = new URLSearchParams();
+
+  if (filters.search) query.set("q", filters.search);
+  if (filters.categoryId !== "all") query.set("category", filters.categoryId);
+  if (filters.areaId !== "all") query.set("location", filters.areaId);
+  if (filters.minimumWage) query.set("minWage", filters.minimumWage);
+  if (filters.maximumWage) query.set("maxWage", filters.maximumWage);
+  if (filters.opportunity !== "all") {
+    query.set("opportunity", filters.opportunity);
+  }
+  query.set("cursor", cursor);
+
+  return `/jobs?${query.toString()}`;
 }
 
 function formatWage(amount: number, unit: PublicJobCard["wageUnit"]) {
@@ -108,12 +121,11 @@ export default async function JobsPage({
     minWage?: string | string[];
     maxWage?: string | string[];
     opportunity?: string | string[];
-    page?: string | string[];
+    cursor?: string | string[];
   }>;
 }) {
   const resolvedSearchParams = await searchParams;
   const filters = parseFilters(resolvedSearchParams);
-  const page = parsePage(resolvedSearchParams.page);
   const [referenceData, jobPage] = await Promise.all([
     getPublicJobReferenceData(),
     listPublishedJobs({
@@ -123,12 +135,16 @@ export default async function JobsPage({
       minimumWage: parsePositiveInteger(filters.minimumWage),
       maximumWage: parsePositiveInteger(filters.maximumWage),
       opportunity: filters.opportunity as OpportunityFilter,
-      page,
-      pageSize,
+      cursor: firstQueryValue(resolvedSearchParams.cursor) || undefined,
     }),
   ]);
   const filteredJobs = jobPage.items.map(toJobCardView);
   const filterKey = `${filters.search}:${filters.categoryId}:${filters.areaId}:${filters.minimumWage}:${filters.maximumWage}:${filters.opportunity}`;
+  const areaLabel =
+    filters.areaId === "all"
+      ? "Semua area"
+      : referenceData.areas.find((area) => area.id === filters.areaId)?.name ??
+        "Area tidak tersedia";
 
   return (
     <PublicShell>
@@ -157,9 +173,11 @@ export default async function JobsPage({
                 {jobPage.items.length}
               </p>
               <p className="pb-1 text-base leading-7 text-muted-foreground">
-                pekerjaan tampil
+                pekerjaan pada hasil ini
                 <br />
-                halaman {jobPage.page}
+                {jobPage.nextCursor
+                  ? "masih ada hasil berikutnya"
+                  : "hasil terakhir"}
               </p>
               <ArrowDown
                 className="mb-1 ml-auto size-5 text-primary"
@@ -185,10 +203,10 @@ export default async function JobsPage({
           <div className="mt-12 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div aria-live="polite">
               <p className="text-sm text-muted-foreground">
-                Ditemukan di Bandung
+                {areaLabel}
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
-                {filteredJobs.length} pekerjaan terbuka
+                {filteredJobs.length} pekerjaan ditampilkan
               </h2>
             </div>
             <span className="flex min-h-11 w-fit items-center gap-2 rounded-full px-3 text-sm text-muted-foreground">
@@ -217,6 +235,20 @@ export default async function JobsPage({
               />
             </div>
           )}
+
+          {jobPage.nextCursor ? (
+            <nav
+              aria-label="Pagination pekerjaan"
+              className="mt-10 flex justify-center"
+            >
+              <Button variant="outline" asChild>
+                <Link href={jobsHref(filters, jobPage.nextCursor)}>
+                  Lihat pekerjaan berikutnya
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            </nav>
+          ) : null}
         </div>
       </section>
 

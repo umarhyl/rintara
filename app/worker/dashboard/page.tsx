@@ -82,7 +82,7 @@ export default async function WorkerDashboardPage() {
     "worker",
     "/worker/dashboard",
   );
-  const jobPage = await listPublishedJobs({ pageSize: 4 });
+  const jobPage = await listPublishedJobs({ limit: 4 });
   const jobs = jobPage.items.map(toJobCardView);
 
   return (

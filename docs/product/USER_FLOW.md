@@ -74,6 +74,11 @@ Recovery and rules:
 - User does not see a “first-time worker” checkbox; eligibility is calculated by category.
 - If an area or category becomes unavailable before submission, retain the entered profile data, show a safe error, and let the worker choose again.
 - While the profile is being saved, prevent a second submission and keep a transport failure recoverable on the same screen.
+- A returning worker edits only their own server-loaded profile and chooses from
+  currently active areas and categories. Unavailable previous selections require
+  a visible replacement or removal before saving.
+- Category interests remain self-declared. Any per-category verified-experience
+  label is derived from Work Proof and cannot be edited in the profile form.
 
 ### 4.2 New employer
 
@@ -85,6 +90,8 @@ Recovery and rules:
 
 If the selected area becomes unavailable or saving is interrupted, keep the
 entered values on screen, explain the recoverable problem, and allow retry.
+A returning employer must replace an inactive saved area before profile changes
+can be stored.
 
 ### 4.3 Returning or inactive account
 
@@ -99,6 +106,20 @@ Shared authentication presentation:
 - Authentication errors remain on the sign-in screen with safe recovery copy; provider messages are not exposed.
 - Switching light or dark appearance does not reset entered fields or change the active authentication route.
 - When authentication starts from a protected public action, sign-in, registration, and onboarding preserve the validated internal destination and return the completed user there.
+
+### 4.4 Admin configures the marketplace
+
+1. Active admin opens **Kategori, area, dan Panduan Upah**.
+2. Admin creates or activates the pilot city/regency and category.
+3. Admin creates a Wage Guideline version for one active area, category, and
+   wage unit, including source and simulation labeling.
+4. Admin may deactivate or reactivate an existing record; each change is
+   audited.
+5. The next employer job form and public discovery read the updated active
+   configuration.
+
+Configuration lists use independent bounded cursors so advancing one list does
+not reset the other two.
 
 ## 5. Employer Creates and Publishes a Job
 
@@ -128,13 +149,19 @@ Alternative paths:
 ## 6. Worker Discovers and Applies to a Job
 
 1. Worker opens job discovery.
-2. Worker optionally filters by category, general area, wage range, and First Opportunity.
+2. Worker optionally searches or filters by category, general area, wage range,
+   and First Opportunity.
 3. Job cards show title, category, area, wage, schedule, First Opportunity label, and boost label when active.
 4. Worker opens a job detail.
 5. Rintara shows full public terms, employer summary, Wage Guideline status, and application deadline; the full address remains hidden.
 6. For a First Opportunity job, the server checks the worker's category proof.
 7. Eligible worker selects **Apply**, writes a short note, reviews the fixed wage, and submits.
 8. Worker sees the submitted status in **My applications**.
+
+Discovery, **My applications**, employer jobs, and applicant lists expose
+forward navigation only when another bounded cursor page exists. The next link
+preserves active filters, labels counts as page-local, and never displays the
+opaque cursor as user-facing content.
 
 Alternative paths:
 
@@ -151,7 +178,8 @@ Alternative paths:
 1. Employer opens one of their published jobs.
 2. Employer selects **Review applicants**.
 3. Applicant cards show display name, general area, application note, category eligibility, and verified proof summary.
-4. Employer may open the applicant's authorized Passport view.
+4. While the application remains `submitted`, employer may open the applicant's
+   separately paginated authorized Passport view.
 5. Employer selects **Accept worker** and reviews the fixed terms.
 6. Confirmation explains that one worker will be accepted, other submitted applications will be rejected, and terms will become an agreement snapshot.
 7. Employer confirms.
@@ -163,6 +191,8 @@ Alternative paths:
 - Worker gained relevant proof after applying: acceptance is blocked with a clear eligibility explanation.
 - Another acceptance request wins first: show the job as already filled and refresh applicant statuses.
 - Employer opens another employer's applicant URL: respond with not found/forbidden behavior without leaking applicant data.
+- Employer revisits Passport after the application leaves `submitted`: close
+  applicant-review access and return safe not-found behavior.
 - Database operation fails: no applicant is partially accepted and the employer can retry.
 
 ## 8. Mini Agreement Confirmation
@@ -171,12 +201,13 @@ Alternative paths:
 2. Agreement shows parties, task scope, full address, schedule, wage, payment timing/method, tools, cancellation wording, and First Opportunity label.
 3. Each party independently selects **I agree to these terms**.
 4. Rintara records each confirmation time.
-5. When both have confirmed, agreement becomes active and the work step becomes available.
+5. After the first confirmation, the other party receives a safe confirmation request.
+6. When both have confirmed, agreement becomes active, both parties are notified, and the work step becomes available.
 
 Rules and recovery:
 
 - Confirmation order does not matter.
-- Repeated confirmation is safe and does not duplicate records.
+- Repeated or concurrent confirmation is safe and does not duplicate the work session, notification, or audit record.
 - If terms are wrong, do not provide an edit button; direct the party to the cancellation/report route.
 - Only the parties and authorized admin can open the full agreement.
 

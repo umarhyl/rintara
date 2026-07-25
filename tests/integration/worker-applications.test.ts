@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 import { expect, mock, test } from "bun:test";
 
@@ -46,6 +47,7 @@ databaseTest(
       const previousJobId = randomUUID();
       const previousApplicationId = randomUUID();
       const previousAgreementId = randomUUID();
+      const paginatedApplicationId = randomUUID();
 
       const futureStart = new Date("2030-02-10T08:00:00.000Z");
       const futureDeadline = new Date("2030-02-09T08:00:00.000Z");
@@ -242,7 +244,7 @@ databaseTest(
       const { submitApplication, withdrawApplication } = await import(
         "@/server/domain/applications/actions"
       );
-      const { listWorkerApplications } = await import(
+      const { listMyApplications } = await import(
         "@/server/queries/applications/worker-applications"
       );
 
@@ -251,10 +253,64 @@ databaseTest(
       });
       expect(application.status).toBe("submitted");
 
-      const workerApplications = await listWorkerApplications(workerId, database);
-      expect(workerApplications).toHaveLength(1);
-      expect(workerApplications[0]!.id).toBe(application.applicationId);
-      expect(workerApplications[0]!.jobTitle).toBe("Pekerjaan Lamaran Normal");
+      await database.insert(schema.applications).values({
+        id: paginatedApplicationId,
+        jobId: firstOpportunityJobId,
+        workerId,
+        note: "Lamaran kedua untuk memverifikasi cursor pagination.",
+        firstOpportunityEligibleAtSubmission: true,
+        submittedAt: new Date("2020-01-01T08:00:00.000Z"),
+      });
+
+      const firstPage = await listMyApplications(
+        { limit: 1 },
+        undefined,
+        database,
+      );
+      expect(firstPage.items).toHaveLength(1);
+      expect(firstPage.items[0]!.id).toBe(application.applicationId);
+      expect(firstPage.items[0]!.jobTitle).toBe("Pekerjaan Lamaran Normal");
+      expect(firstPage.nextCursor).not.toBeNull();
+
+      const secondPage = await listMyApplications(
+        { cursor: firstPage.nextCursor!, limit: 1 },
+        undefined,
+        database,
+      );
+      expect(secondPage.items.map(({ id }) => id)).toEqual([
+        paginatedApplicationId,
+      ]);
+      expect(secondPage.nextCursor).toBeNull();
+
+      await expect(
+        listMyApplications(
+          { cursor: "not-a-cursor" },
+          workerContext,
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        listMyApplications(
+          {
+            cursor: Buffer.from(
+              JSON.stringify(["2020-01-01T08:00:00.000Z", "not-a-uuid"]),
+              "utf8",
+            ).toString("base64url"),
+          },
+          workerContext,
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        listMyApplications({}, employerContext, database),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        listMyApplications(
+          {},
+          { ...workerContext, accountStatus: "suspended" },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
 
       await expect(
         submitApplication(normalJobId, {

@@ -41,10 +41,22 @@ type JobDraftInput = {
   isFirstOpportunity: boolean;
 };
 
+type WageGuidelineReference = {
+  areaId: string;
+  categoryId: string;
+  minimumAmount: number;
+  recommendedAmount: number;
+  unit: string;
+  sourceLabel: string;
+  isSimulated: boolean;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+};
+
 type ReferenceData = {
   areas: { id: string; name: string }[];
   categories: { id: string; name: string; riskLevel: string; firstOpportunityAllowed: boolean }[];
-  wageGuidelines: { areaId: string; categoryId: string; minimumAmount: number; recommendedAmount: number; unit: string }[];
+  wageGuidelines: WageGuidelineReference[];
 };
 
 function FormSection({
@@ -148,16 +160,26 @@ export function JobForm({
 
   const selectedCategory = useMemo(() => referenceData.categories.find(c => c.id === formData.categoryId), [formData.categoryId, referenceData.categories]);
   const activeGuideline = useMemo(() => {
+    const guidelineDate = formData.startsAt
+      ? new Date(formData.startsAt).toISOString().slice(0, 10)
+      : null;
+
     return referenceData.wageGuidelines.find(
-      wg => wg.categoryId === formData.categoryId && wg.areaId === formData.areaId
+      (wg) =>
+        wg.categoryId === formData.categoryId &&
+        wg.areaId === formData.areaId &&
+        wg.unit === formData.wageUnit &&
+        (!guidelineDate ||
+          (wg.effectiveFrom <= guidelineDate &&
+            (!wg.effectiveTo || wg.effectiveTo > guidelineDate))),
     );
-  }, [formData.categoryId, formData.areaId, referenceData.wageGuidelines]);
+  }, [formData.categoryId, formData.areaId, formData.wageUnit, formData.startsAt, referenceData.wageGuidelines]);
 
   let wageWarning = "";
-  if (!activeGuideline && formData.categoryId && formData.areaId) {
-    wageWarning = "Kategori ini belum memiliki panduan upah aktif di area tersebut. Kesempatan Pertama belum dapat diterbitkan sampai referensi tersedia.";
+  if (!activeGuideline && formData.categoryId && formData.areaId && formData.wageUnit) {
+    wageWarning = "Kategori ini belum memiliki panduan upah aktif untuk area, satuan upah, dan tanggal kerja tersebut. Kesempatan Pertama belum dapat diterbitkan sampai referensi tersedia.";
   } else if (activeGuideline && formData.wageAmount && Number(formData.wageAmount) < activeGuideline.minimumAmount) {
-    wageWarning = `Upah di bawah standar UMR (Minimum: Rp ${activeGuideline.minimumAmount.toLocaleString()}). Tidak bisa diterbitkan sebagai Kesempatan Pertama.`;
+    wageWarning = `Upah di bawah referensi minimum (Minimum: Rp ${activeGuideline.minimumAmount.toLocaleString("id-ID")}). Tidak bisa diterbitkan sebagai Kesempatan Pertama.`;
   }
 
   const prepareInput = () => {
@@ -364,6 +386,27 @@ export function JobForm({
               <Input name="paymentTiming" value={formData.paymentTiming} onChange={handleTextChange} placeholder="Setelah selesai" className="h-11" />
             </Field>
 
+            {activeGuideline ? (
+              <div className="sm:col-span-2">
+                <Alert>
+                  <Info aria-hidden="true" />
+                  <AlertTitle>Panduan Upah yang berlaku</AlertTitle>
+                  <AlertDescription>
+                    Referensi minimum Rp{" "}
+                    {activeGuideline.minimumAmount.toLocaleString("id-ID")} dan
+                    rekomendasi Rp{" "}
+                    {activeGuideline.recommendedAmount.toLocaleString("id-ID")}{" "}
+                    per {activeGuideline.unit}. Sumber:{" "}
+                    {activeGuideline.sourceLabel}
+                    {activeGuideline.isSimulated
+                      ? " · data simulasi, bukan ketentuan upah resmi"
+                      : ""}
+                    .
+                  </AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
+
             {wageWarning && (
               <div className="sm:col-span-2">
                 <Alert className="border-amber-300/70 bg-amber-50/80 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
@@ -381,12 +424,17 @@ export function JobForm({
                 id="isFirstOpportunity" 
                 checked={formData.isFirstOpportunity} 
                 onCheckedChange={(c) => setFormData(p => ({ ...p, isFirstOpportunity: !!c }))}
-                disabled={Boolean(!selectedCategory?.firstOpportunityAllowed || (activeGuideline && formData.wageAmount && Number(formData.wageAmount) < activeGuideline.minimumAmount))} 
+                disabled={Boolean(
+                  !selectedCategory?.firstOpportunityAllowed ||
+                    !activeGuideline ||
+                    (formData.wageAmount &&
+                      Number(formData.wageAmount) < activeGuideline.minimumAmount),
+                )}
               />
               <div>
                 <Label htmlFor="isFirstOpportunity">Jadikan Kesempatan Pertama</Label>
                 <p className="mt-1 max-w-2xl text-base leading-7 text-muted-foreground">
-                  Hanya bisa dicentang jika sesuai UMR dan kategori ini mendukung Kesempatan Pertama.
+                  Hanya bisa dicentang jika sesuai Panduan Upah dan kategori ini mendukung Kesempatan Pertama.
                 </p>
               </div>
             </div>

@@ -312,13 +312,13 @@ These product/data decisions remain open and require explicit team approval:
 - [ ] Public production URL is accessible.
 - [ ] Registration, sign-in, sign-out, role onboarding, and account-status checks work.
 - [ ] Employer can publish a transparent job and worker can discover and apply to it.
-- [ ] Employer can accept exactly one worker under concurrent requests.
-- [ ] Both parties can confirm the Mini Agreement.
-- [ ] Check-in, check-out, and completion verification work.
-- [ ] Completion creates exactly one Work Proof.
-- [ ] Passport eligibility changes independently per category.
-- [ ] A qualifying completion issues at most one credit and a credit creates one 24-hour boost.
-- [ ] Reports and minimum admin moderation work.
+- [x] Employer can accept exactly one worker under concurrent requests.
+- [x] Both parties can confirm the Mini Agreement.
+- [x] Check-in, check-out, and completion verification work.
+- [x] Completion creates exactly one Work Proof.
+- [x] Passport eligibility changes independently per category.
+- [x] A qualifying completion issues at most one credit and a credit creates one 24-hour boost.
+- [x] Reports and minimum admin moderation work.
 - [ ] Private addresses and cross-account resources are protected.
 - [ ] Required unit, integration, and authorization tests pass, and the release smoke checklist is rehearsed.
 - [ ] Mobile and desktop flows include loading, empty, validation, error, success, and retry states.

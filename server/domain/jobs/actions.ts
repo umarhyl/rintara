@@ -4,10 +4,30 @@ import { revalidatePath } from "next/cache";
 import { ApplicationError } from "@/server/errors/application-error";
 import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
-import { jobs, jobPrivateDetails, wageGuidelines } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import {
+  applications,
+  areas,
+  auditLogs,
+  categories,
+  jobs,
+  jobPrivateDetails,
+  notifications,
+  wageGuidelines,
+} from "@/server/db/schema";
+import { eq, and, desc, lte, or, isNull, gt } from "drizzle-orm";
+import { z } from "zod";
 import { jobDraftSchema } from "./validation";
 import { assertJobTransition } from "../lifecycle";
+
+const cancelJobSchema = z
+  .object({
+    reason: z
+      .string()
+      .trim()
+      .min(10, "Tulis alasan pembatalan minimal 10 karakter.")
+      .max(500, "Alasan pembatalan maksimal 500 karakter."),
+  })
+  .strict();
 
 export async function createJobDraft(input: unknown) {
   const context = await requireActiveUser();
@@ -48,8 +68,7 @@ export async function createJobDraft(input: unknown) {
       hiddenAt: new Date(),
       hiddenBy: context.userId,
       hiddenReason: "draft",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any).returning({ id: jobs.id });
+    }).returning({ id: jobs.id });
 
     await tx.insert(jobPrivateDetails).values({
       jobId: newJob.id,
@@ -133,10 +152,12 @@ export async function publishJob(jobId: string) {
   }
 
   await db.transaction(async (tx) => {
+    const now = new Date();
     const [job] = await tx.select()
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
 
     if (!job) {
       throw new ApplicationError("JOB_NOT_FOUND", "Job not found or not owned by you.");
@@ -146,24 +167,55 @@ export async function publishJob(jobId: string) {
       throw new ApplicationError("JOB_NOT_DRAFT", "Job is not in draft state.");
     }
 
-    // Check deadlines
     if (job.applicationDeadline >= job.startsAt) {
       throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be before start time.");
     }
-    if (job.startsAt <= new Date()) {
+    if (job.applicationDeadline <= now) {
+      throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be in the future.");
+    }
+    if (job.startsAt <= now) {
       throw new ApplicationError("VALIDATION_FAILED", "Start time must be in the future.");
     }
 
-    // Check wage guidelines
+    const [reference] = await tx
+      .select({
+        categoryRiskLevel: categories.riskLevel,
+        categoryFirstOpportunityAllowed: categories.firstOpportunityAllowed,
+        categoryIsActive: categories.isActive,
+        areaLevel: areas.level,
+        areaIsActive: areas.isActive,
+      })
+      .from(categories)
+      .innerJoin(areas, eq(areas.id, job.areaId))
+      .where(eq(categories.id, job.categoryId))
+      .limit(1)
+      .for("share");
+
+    if (!reference?.categoryIsActive) {
+      throw new ApplicationError("CATEGORY_NOT_ALLOWED", "The selected category is not available.");
+    }
+    if (!reference.areaIsActive || reference.areaLevel !== "city_regency") {
+      throw new ApplicationError(
+        "VALIDATION_FAILED",
+        "The selected area is not an active city or regency.",
+        { areaId: ["Select an active city or regency."] },
+      );
+    }
+
+    const guidelineDate = job.startsAt.toISOString().slice(0, 10);
     const [guideline] = await tx.select()
       .from(wageGuidelines)
       .where(and(
         eq(wageGuidelines.categoryId, job.categoryId),
         eq(wageGuidelines.areaId, job.areaId),
-        eq(wageGuidelines.isActive, true)
+        eq(wageGuidelines.unit, job.wageUnit),
+        eq(wageGuidelines.isActive, true),
+        lte(wageGuidelines.effectiveFrom, guidelineDate),
+        or(isNull(wageGuidelines.effectiveTo), gt(wageGuidelines.effectiveTo, guidelineDate))!
       ))
-      .orderBy(desc(wageGuidelines.createdAt))
-      .limit(1);
+      .orderBy(desc(wageGuidelines.effectiveFrom), desc(wageGuidelines.createdAt))
+      .limit(1)
+      .for("share");
 
     let wageStatus: "compliant" | "below" | "unavailable" = "unavailable";
     
@@ -175,12 +227,17 @@ export async function publishJob(jobId: string) {
       }
     }
 
-    // First Opportunity Rule
     if (job.isFirstOpportunity) {
-      if (job.riskLevel !== "low") {
-        throw new ApplicationError("CATEGORY_NOT_ALLOWED", "First Opportunity jobs must be low risk.");
+      if (
+        !reference.categoryFirstOpportunityAllowed ||
+        reference.categoryRiskLevel !== "low"
+      ) {
+        throw new ApplicationError("CATEGORY_NOT_ALLOWED", "This category does not allow First Opportunity jobs.");
       }
-      if (wageStatus !== "compliant") {
+      if (wageStatus === "unavailable") {
+        throw new ApplicationError("WAGE_GUIDELINE_UNAVAILABLE", "No active wage guideline is available for this job.");
+      }
+      if (wageStatus === "below") {
         throw new ApplicationError("WAGE_BELOW_GUIDELINE", "First Opportunity jobs must meet minimum wage guidelines.");
       }
     }
@@ -195,26 +252,55 @@ export async function publishJob(jobId: string) {
         hiddenBy: null,
         hiddenReason: null,
         wageStatus,
-        publishedAt: new Date(),
-        updatedAt: new Date(),
+        riskLevel: reference.categoryRiskLevel,
+        publishedAt: now,
+        updatedAt: now,
       })
       .where(eq(jobs.id, jobId));
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "publish_job",
+      entityType: "job",
+      entityId: jobId,
+      requestId: context.requestId,
+      metadata: {
+        previousStatus: job.status,
+        newStatus: "published",
+        wageStatus,
+        isFirstOpportunity: job.isFirstOpportunity,
+      },
+      createdAt: now,
+    });
   });
 
   revalidatePath(`/employer/jobs/${jobId}`);
   revalidatePath("/employer/jobs");
+  revalidatePath("/employer/dashboard");
   revalidatePath("/jobs"); // Revalidate public discovery
   return { ok: true };
 }
 
-export async function cancelJob(jobId: string) {
+export async function cancelJob(jobId: string, input: unknown) {
   const context = await requireActiveUser();
   if (context.role !== "employer") {
     throw new ApplicationError("FORBIDDEN", "Only employers can cancel jobs.");
   }
 
+  const parseResult = cancelJobSchema.safeParse(input);
+  if (!parseResult.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Invalid cancellation input.",
+      parseResult.error.flatten().fieldErrors,
+    );
+  }
+
+  const { reason } = parseResult.data;
+  const now = new Date();
+
   await db.transaction(async (tx) => {
-    const [job] = await tx.select({ status: jobs.status })
+    const [job] = await tx.select({ status: jobs.status, title: jobs.title })
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
       .limit(1);
@@ -228,28 +314,63 @@ export async function cancelJob(jobId: string) {
     await tx.update(jobs)
       .set({
         status: "cancelled",
-        cancelledAt: new Date(),
-        updatedAt: new Date(),
+        cancelledAt: now,
+        cancellationReason: reason,
+        updatedAt: now,
       })
       .where(eq(jobs.id, jobId));
 
-    // Note: Cancelling an unfilled published job should reject remaining submitted applications
+    let rejectedApplicationCount = 0;
+
     if (job.status === "published") {
-      const { applications } = await import("@/server/db/schema/jobs");
-      await tx.update(applications)
+      const rejectedApplications = await tx.update(applications)
         .set({
           status: "rejected",
-          decidedAt: new Date(),
+          decidedAt: now,
         })
         .where(and(
           eq(applications.jobId, jobId),
           eq(applications.status, "submitted")
-        ));
+        ))
+        .returning({
+          id: applications.id,
+          workerId: applications.workerId,
+        });
+
+      rejectedApplicationCount = rejectedApplications.length;
+
+      if (rejectedApplications.length > 0) {
+        await tx.insert(notifications).values(
+          rejectedApplications.map((application) => ({
+            recipientId: application.workerId,
+            type: "job_cancelled",
+            title: "Pekerjaan dibatalkan",
+            body: `Pekerjaan "${job.title}" dibatalkan oleh pemberi kerja. Lamaran aktifmu ditutup tanpa menghapus riwayat.`,
+            entityType: "job",
+            entityId: jobId,
+            createdAt: now,
+          })),
+        );
+      }
     }
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "cancel_job",
+      entityType: "job",
+      entityId: jobId,
+      requestId: context.requestId,
+      metadata: {
+        previousStatus: job.status,
+        rejectedApplicationCount,
+      },
+      createdAt: now,
+    });
   });
 
   revalidatePath(`/employer/jobs/${jobId}`);
   revalidatePath("/employer/jobs");
+  revalidatePath("/employer/dashboard");
   revalidatePath("/jobs"); 
   return { ok: true };
 }

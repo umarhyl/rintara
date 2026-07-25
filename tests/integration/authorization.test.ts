@@ -135,12 +135,23 @@ databaseTest(
       const employer2Context = { userId: employer2Id, role: "employer" as const, displayName: "E2", accountStatus: "active" as const, requestId: "test-req" };
       const worker1Context = { userId: worker1Id, role: "worker" as const, displayName: "W1", accountStatus: "active" as const, requestId: "test-req" };
       const worker2Context = { userId: worker2Id, role: "worker" as const, displayName: "W2", accountStatus: "active" as const, requestId: "test-req" };
+      const adminContext = {
+        userId: randomUUID(),
+        role: "admin" as const,
+        accountStatus: "active" as const,
+        requestId: "test-req",
+      };
 
       mock.module("@/server/db/client", () => {
         return { db: database };
       });
       const { requireJobOwner, requireAgreementParty } = await import("@/server/auth/authorization");
-      const { getEmployerJob } = await import("@/server/queries/jobs/get-employer-job");
+      const { getEmployerJob, getEmployerJobDetail } = await import(
+        "@/server/queries/jobs/get-employer-job"
+      );
+      const { getAgreement } = await import(
+        "@/server/queries/agreements/get-agreement"
+      );
 
       await expect(requireJobOwner(employer1Context, jobId)).resolves.toBeDefined();
       
@@ -161,16 +172,113 @@ databaseTest(
         code: "NOT_FOUND",
       });
 
-      await expect(getEmployerJob(jobId, employer1Id)).resolves.toMatchObject({
+      await expect(
+        getEmployerJob(jobId, employer1Context, database),
+      ).resolves.toMatchObject({
         fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
         arrivalInstructions: "Ketuk 3 kali",
       });
-      await expect(getEmployerJob(jobId, employer2Id)).rejects.toMatchObject({
-        code: "JOB_NOT_FOUND",
+      await expect(
+        getEmployerJob(jobId, employer2Context, database),
+      ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
+      await expect(
+        getEmployerJob(jobId, worker2Context, database),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        getEmployerJob(
+          jobId,
+          { ...employer1Context, accountStatus: "suspended" },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
+      await expect(
+        getEmployerJob(jobId, adminContext, database),
+      ).resolves.toMatchObject({
+        fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
       });
-      await expect(getEmployerJob(jobId, worker2Id)).rejects.toMatchObject({
-        code: "JOB_NOT_FOUND",
+      await expect(
+        getEmployerJobDetail(jobId, employer1Context, database),
+      ).resolves.toMatchObject({
+        id: jobId,
+        fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
       });
+      await expect(
+        getEmployerJobDetail(jobId, employer2Context, database),
+      ).rejects.toMatchObject({ code: "JOB_NOT_FOUND" });
+
+      const workerAgreement = await getAgreement(
+        agreementId,
+        worker1Context,
+        database,
+      );
+      expect(workerAgreement).toMatchObject({
+        id: agreementId,
+        applicationId,
+        snapshot: {
+          version: 1,
+          jobId,
+          workerId: worker1Id,
+          employerId: employer1Id,
+          title: "Pekerjaan Otorisasi",
+          categoryId,
+          categoryName: "Kategori Otorisasi",
+          taskScope: "Menguji cross-account access.",
+          generalArea: "Kota Otorisasi",
+          fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
+          arrivalInstructions: "Ketuk 3 kali",
+          startsAt: "2030-01-03T08:00:00.000Z",
+          estimatedMinutes: 120,
+          wageAmount: "150000",
+          wageUnit: "job",
+          paymentMethod: "Transfer",
+          paymentTiming: "Setelah selesai",
+          toolsProvided: null,
+          toolsRequired: null,
+          cancellationWording: "...",
+          isFirstOpportunity: false,
+          wageStatus: "compliant",
+        },
+        confirmations: {
+          workerConfirmedAt: null,
+          employerConfirmedAt: null,
+        },
+        status: "pending_confirmation",
+        cancellation: null,
+        allowedActions: { confirm: true },
+      });
+      await expect(
+        getAgreement(agreementId, employer1Context, database),
+      ).resolves.toMatchObject({
+        snapshot: {
+          fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
+          arrivalInstructions: "Ketuk 3 kali",
+        },
+        allowedActions: { confirm: true },
+      });
+      await expect(
+        getAgreement(agreementId, adminContext, database),
+      ).resolves.toMatchObject({
+        snapshot: {
+          fullAddress: "Jalan Rahasia No. 1, Kota Otorisasi",
+        },
+        allowedActions: { confirm: false },
+      });
+      await expect(
+        getAgreement(agreementId, worker2Context, database),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        getAgreement(agreementId, employer2Context, database),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        getAgreement(
+          agreementId,
+          { ...worker1Context, accountStatus: "suspended" },
+          database,
+        ),
+      ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
+      await expect(
+        getAgreement("not-an-agreement-id", worker1Context, database),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
 
     } finally {
       await client.end({ timeout: 5 });

@@ -2,13 +2,16 @@ import { describe, expect, test } from "bun:test";
 
 const employerPages = [
   "app/employer/dashboard/page.tsx",
+  "app/employer/jobs/page.tsx",
   "app/employer/jobs/new/page.tsx",
   "app/employer/jobs/[id]/page.tsx",
   "app/employer/jobs/[id]/applicants/page.tsx",
+  "app/employer/jobs/[id]/applicants/[applicationId]/passport/page.tsx",
   "app/employer/agreements/[id]/page.tsx",
   "app/employer/work/[id]/page.tsx",
   "app/employer/opportunity-credits/page.tsx",
   "app/employer/notifications/page.tsx",
+  "app/employer/settings/profile/page.tsx",
 ] as const;
 
 describe("employer page access", () => {
@@ -33,4 +36,14 @@ describe("employer page access", () => {
       expect(renderIndex).toBeGreaterThan(guardIndex);
     });
   }
+
+  test("job edit awaits Next.js route params before authorization and loading", async () => {
+    const source = await Bun.file(
+      "app/employer/jobs/[id]/edit/page.tsx",
+    ).text();
+
+    expect(source).toContain("params: Promise<{ id: string }>");
+    expect(source).toContain("const { id } = await params;");
+    expect(source).not.toContain("params.id");
+  });
 });

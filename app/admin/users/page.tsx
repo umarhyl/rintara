@@ -4,15 +4,20 @@ import { StatusBadge } from "@/components/rintara/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
+import { adminListUsers } from "@/server/queries/admin/moderation";
 
-const users = [
-  { name: "Ayu Pratama", initials: "AP", role: "Pekerja", status: "Aktif" },
-  { name: "Sinar Event Studio", initials: "SE", role: "Pemberi kerja", status: "Aktif" },
-  { name: "Raka Pranata", initials: "RP", role: "Pekerja", status: "Ditangguhkan" },
-];
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default async function UsersPage() {
   await requireDashboardPageRole("admin", "/admin/users");
+  const users = await adminListUsers();
 
   return (
     <div className="grid gap-9">
@@ -28,7 +33,7 @@ export default async function UsersPage() {
           <Input aria-label="Cari pengguna" placeholder="Cari nama atau referensi akun" className="h-12 rounded-full bg-card/75 pl-11" />
         </div>
         <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">42</span> akun aktif
+          <span className="font-semibold text-foreground">{users.length}</span> akun
         </p>
       </section>
 
@@ -42,24 +47,27 @@ export default async function UsersPage() {
         </div>
 
         <div className="divide-y divide-border/70">
-          {users.map((user) => (
-            <article key={user.name} className="group grid gap-4 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
+          {users.map((user) => {
+            const displayName =
+              user.workerDisplayName || user.employerDisplayName || user.id;
+            return (
+            <article key={user.id} className="group grid gap-4 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
               <span className="grid size-11 place-items-center rounded-full border border-border bg-background/70 text-xs font-semibold text-primary" aria-hidden="true">
-                {user.initials}
+                {initials(displayName)}
               </span>
               <div className="min-w-0">
-                <h3 className="font-semibold leading-6">{user.name}</h3>
+                <h3 className="font-semibold leading-6">{displayName}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{user.role}</p>
               </div>
               <div>
-                <StatusBadge status={user.status === "Aktif" ? "success" : "danger"}>{user.status}</StatusBadge>
+                <StatusBadge status={user.status === "active" ? "success" : "danger"}>{user.status}</StatusBadge>
               </div>
               <Button variant="outline" type="button" className="w-full sm:w-auto">
                 Tinjau akun
                 <ArrowUpRight aria-hidden="true" />
               </Button>
             </article>
-          ))}
+          );})}
         </div>
       </section>
 

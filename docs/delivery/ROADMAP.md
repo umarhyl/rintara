@@ -36,7 +36,7 @@ No phase is complete because pages exist. Each exit criterion requires authoriza
 | --- | --- | --- |
 | Umar — Backend Engineer | PostgreSQL/Drizzle, migrations, domain commands, API contracts, Supabase Auth integration, authorization, backend tests, Vercel/Supabase operations | Security, data integrity, integration support, deployment and demo reliability |
 | Zaki — Frontend Engineer | App Router screens, forms, responsive UI, client interactions, loading/error/retry states | Accessibility, UI tests, public/private rendering checks, demo interface |
-| Catur — Product Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
+| Catur — Project Manager | Scope, requirements, terminology, acceptance decisions, pilot/Wage Guideline coordination | Acceptance testing, documentation consistency, demo script and release sign-off |
 
 Testing is shared: Umar owns domain, PostgreSQL integration, concurrency, and server authorization coverage; Zaki owns component, browser, responsive, and accessibility coverage; Catur owns acceptance scenarios and release evidence. Each owner reviews cross-boundary changes that affect their responsibility.
 
@@ -99,13 +99,18 @@ Foundation evidence:
 
 **Dates:** July 21–23
 
+**Status:** Completed on July 24, 2026 for the repository-controlled marketplace
+vertical slice. Transactional acceptance and agreement remain tracked by
+Milestone 3.
+
 Deliverables:
 
 - worker and employer profiles;
 - admin-managed pilot areas, categories, and Wage Guidelines;
 - job draft, review, publish, and cancel;
 - public discovery, filters, pagination, and detail;
-- application submit, withdraw, worker list, and employer applicant list;
+- application submit, withdraw, worker application list, and employer applicant
+  list;
 - authorized applicant Passport view;
 - named query and command contracts from `docs/engineering/API.md`.
 
@@ -116,9 +121,24 @@ Exit criteria:
 - Worker eligibility is evaluated per category.
 - Duplicate, late, ineligible, and cross-role applications are rejected safely.
 
+Milestone 2 evidence:
+
+- PostgreSQL integration tests cover worker/employer profiles, admin
+  configuration, compliant general and First Opportunity publishing,
+  application rules, applicant Passport access, and public-address redaction.
+- Public jobs, employer jobs, worker applications, applicant lists, Passport
+  history, and admin configuration use bounded deterministic cursors.
+- Unit tests, PostgreSQL integration tests, typecheck, lint, schema check, and
+  production build pass for the completed repository state.
+
 ### Milestone 3 — Acceptance and agreement
 
 **Date:** July 24
+
+**Status:** Completed on July 25, 2026.
+
+The acceptance and agreement slice is complete across backend, App Router UI,
+authorization, presentation integration, and release evidence.
 
 Deliverables:
 
@@ -136,9 +156,38 @@ Exit criteria:
 - Both parties can confirm in either order.
 - Full address is visible only to the parties after acceptance.
 
+Milestone 3 evidence:
+
+- PostgreSQL integration tests cover concurrent acceptance, forced rollback,
+  both confirmation orders, repeated and concurrent confirmation, and exactly
+  one scheduled work session.
+- Authorized agreement reads return the immutable accepted snapshot only to
+  either party or admin; unrelated and inactive accounts are rejected safely.
+- Public projections, agreement notifications, and audit metadata exclude the
+  private address.
+- Agreement activation, notifications, and audit writes share one transaction.
+- Employer applicant review calls `acceptApplication`, requires explicit
+  confirmation, blocks duplicate submit while pending, and routes to the
+  pending Mini Agreement on success.
+- Worker and employer agreement pages call `getAgreement`, render immutable
+  accepted terms including the authorized full address, show both party
+  confirmation states, and call `confirmAgreement` for the allowed party action.
+- Worker applications and role-specific notification feeds include authorized
+  entry points to Mini Agreement destinations.
+- `bun typecheck`, `bun lint`, `bun test`, and production `bun run build` passed
+  for the completed Milestone 3 state.
+
 ### Milestone 4 — Attendance, completion, and Passport
 
 **Dates:** July 25–26
+
+**Status:** Implementation completed on July 25, 2026.
+
+The attendance and completion slice is complete across named server operations,
+authorized work-session UI, Work Proof issuance, Passport read-model update,
+and active-report completion blocking. PostgreSQL integration coverage is in
+`tests/integration/work-attendance.test.ts`; run it with the local test
+database available.
 
 Deliverables:
 
@@ -146,6 +195,8 @@ Deliverables:
 - worker check-in and check-out;
 - atomic/idempotent `verifyCompletion`;
 - unique Work Proof issuance;
+- conditional Opportunity Credit issuance with source-job uniqueness and active
+  cap;
 - worker Passport update;
 - active-report completion block.
 
@@ -156,13 +207,41 @@ Exit criteria:
 - Worker becomes experienced only in the completed category.
 - Golden path works through Passport on preview deployment.
 
+Milestone 4 evidence:
+
+- `generateCheckInCode` stores only an scrypt hash, expiry, failed-attempt
+  count, and used timestamp; plaintext is returned only in the immediate
+  generation result.
+- `checkIn` validates worker party, active agreement, code expiry, failed
+  attempts, reuse state, and atomically transitions session and job.
+- `checkOut` records one worker completion note and moves the session to
+  `checked_out`.
+- `verifyCompletion` requires the employer party, checked-out session, active
+  agreement, in-progress job, and no active report; it completes session,
+  agreement, and job while issuing exactly one Work Proof and conditionally
+  issuing one Opportunity Credit.
+- Worker and employer work pages call `getWorkView` and render only allowed
+  actions for the current session state.
+- `bun typecheck`, `bun lint`, unit tests, and production `bun run build`
+  passed for the completed Milestone 4 implementation state.
+
 ### Milestone 5 — Opportunity Credit, boost, and minimum moderation
 
 **Date:** July 27
 
+**Status:** Implementation completed on July 25, 2026. Local validation must be
+run with the PostgreSQL test database available.
+
+The reward and moderation slice is complete across employer credit redemption,
+24-hour job boosts, public boosted ordering, report submission, admin report
+processing, and moderated Work Proof/Credit/Boost revocation behavior.
+PostgreSQL integration coverage is in
+`tests/integration/opportunity-credit-moderation.test.ts`; run it with the
+local test database available.
+
 Deliverables:
 
-- transactional credit issuance with source-job uniqueness and active cap;
+- credit redemption and earned-credit lifecycle hardening;
 - derived Opportunity Giver badge;
 - idempotent credit redemption and 24-hour boost;
 - boosted discovery ordering;
@@ -177,6 +256,23 @@ Exit criteria:
 - Failed or conflicting boost does not consume credit.
 - Active report blocks completion and resolved/rejected report releases the block as appropriate.
 - Full P0 golden path passes end to end.
+
+Milestone 5 evidence:
+
+- `redeemOpportunityCredit` is employer-only, idempotent by actor/operation/key,
+  validates credit ownership and target job state, rejects active boost
+  conflicts before consuming a credit, and creates one 24-hour boost atomically.
+- Employer Opportunity Credits renders active credit count, derived Opportunity
+  Giver state, redeemable credits, and eligible published jobs from authorized
+  server queries.
+- Public job discovery orders active boosts before normal published ordering.
+- `createReport`, `adminStartReportReview`, and `adminResolveReport` validate
+  relationships and admin role server-side, audit state changes, and revalidate
+  affected surfaces.
+- Admin moderation pages are data-backed and expose explicit actions for
+  hide/cancel job, suspend user, revoke Work Proof, revoke Credit, and
+  deactivate Boost. Revoking a redeemed credit deactivates its active boost in
+  the same moderated workflow.
 
 ## 4. Feature Freeze
 

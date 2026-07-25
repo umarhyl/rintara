@@ -1,11 +1,31 @@
 import { describe, expect, test } from "bun:test";
 import { MAX_WORKER_CATEGORY_INTERESTS } from "@/lib/onboarding";
+import { updateWorkerProfile } from "@/server/domain/profiles/actions";
 import { workerProfileSchema } from "@/server/domain/profiles/schemas";
 
 const areaId = "00000000-0000-4000-8000-000000000001";
 const categoryId = "00000000-0000-4000-8000-000000000002";
 
 describe("worker profile input", () => {
+  test("returns stable field errors before database access", async () => {
+    const result = await updateWorkerProfile({
+      displayName: " ",
+      areaId: "invalid",
+      bio: null,
+      availabilityNote: null,
+      categoryInterestIds: [],
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      fieldErrors: {
+        displayName: ["Nama tampilan terlalu pendek."],
+        areaId: ["Pilih area domisili yang valid."],
+      },
+    });
+  });
+
   test("normalizes bounded profile fields", () => {
     expect(
       workerProfileSchema.parse({

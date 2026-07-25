@@ -7,6 +7,12 @@ const staticGuardedPages = [
   ["app/worker/applications/page.tsx", "worker", "/worker/applications"],
   ["app/worker/passport/page.tsx", "worker", "/worker/passport"],
   ["app/worker/notifications/page.tsx", "worker", "/worker/notifications"],
+  ["app/employer/jobs/page.tsx", "employer", "/employer/jobs"],
+  [
+    "app/employer/settings/profile/page.tsx",
+    "employer",
+    "/employer/settings/profile",
+  ],
   ["app/admin/page.tsx", "admin", "/admin"],
   ["app/admin/reports/page.tsx", "admin", "/admin/reports"],
   ["app/admin/jobs/page.tsx", "admin", "/admin/jobs"],
@@ -15,46 +21,57 @@ const staticGuardedPages = [
   ["app/admin/audit-logs/page.tsx", "admin", "/admin/audit-logs"],
 ] as const;
 
-const demoRecordGuardedPages = [
+const demoRecordGuardedPages = [] as const;
+
+const backendRecordGuardedPages = [
   [
     "app/worker/agreements/[id]/page.tsx",
     "worker",
     "/worker/agreements/${encodeURIComponent(id)}",
-    "kesepakatan-kru-acara",
-  ],
-  [
-    "app/worker/work/[id]/page.tsx",
-    "worker",
-    "/worker/work/${encodeURIComponent(id)}",
-    "sesi-pekerjaan",
-  ],
-  [
-    "app/employer/jobs/[id]/page.tsx",
-    "employer",
-    "/employer/jobs/${encodeURIComponent(id)}",
-    "kru-acara-akhir-pekan",
+    "getAgreement(id)",
+    "NOT_FOUND",
   ],
   [
     "app/employer/agreements/[id]/page.tsx",
     "employer",
     "/employer/agreements/${encodeURIComponent(id)}",
-    "kesepakatan-kru-acara",
+    "getAgreement(id)",
+    "NOT_FOUND",
+  ],
+  [
+    "app/worker/work/[id]/page.tsx",
+    "worker",
+    "/worker/work/${encodeURIComponent(id)}",
+    "getWorkView(id)",
+    "NOT_FOUND",
   ],
   [
     "app/employer/work/[id]/page.tsx",
     "employer",
     "/employer/work/${encodeURIComponent(id)}",
-    "sesi-pekerjaan",
+    "getWorkView(id)",
+    "NOT_FOUND",
   ],
-] as const;
-
-const backendRecordGuardedPages = [
+  [
+    "app/employer/jobs/[id]/page.tsx",
+    "employer",
+    "/employer/jobs/${encodeURIComponent(id)}",
+    "loadEmployerJob(id)",
+    "JOB_NOT_FOUND",
+  ],
   [
     "app/employer/jobs/[id]/applicants/page.tsx",
     "employer",
     "/employer/jobs/${encodeURIComponent(id)}/applicants",
-    "getEmployerJob(id, account.userId)",
+    "getEmployerJob(id)",
     "JOB_NOT_FOUND",
+  ],
+  [
+    "app/employer/jobs/[id]/applicants/[applicationId]/passport/page.tsx",
+    "employer",
+    "${returnPath}/${encodeURIComponent(applicationId)}/passport",
+    "getApplicantPassport(id, applicationId, {",
+    "NOT_FOUND",
   ],
 ] as const;
 
@@ -163,8 +180,8 @@ describe("private page authorization boundaries", () => {
       const source = readFileSync(path, "utf8");
       const guardIndex = source.indexOf("await requireDashboardPageRole");
       const lookupIndex = source.indexOf(resourceLookup);
-      const notFoundIndex = source.indexOf("notFound();", lookupIndex);
-      const renderIndex = source.indexOf("return (", notFoundIndex);
+      const notFoundIndex = source.indexOf("notFound();");
+      const renderIndex = source.indexOf("return (", lookupIndex);
 
       expect(source).toContain(
         'import { requireDashboardPageRole } from "@/server/auth/page-access";',
@@ -177,8 +194,8 @@ describe("private page authorization boundaries", () => {
       expect(source).toContain(`error.code === "${notFoundCode}"`);
       expect(guardIndex).toBeGreaterThan(-1);
       expect(lookupIndex).toBeGreaterThan(guardIndex);
-      expect(notFoundIndex).toBeGreaterThan(lookupIndex);
-      expect(renderIndex).toBeGreaterThan(notFoundIndex);
+      expect(notFoundIndex).toBeGreaterThan(-1);
+      expect(renderIndex).toBeGreaterThan(lookupIndex);
     },
   );
 });

@@ -104,7 +104,7 @@ export default async function EmployerDashboardPage() {
               className="theme-static-light mt-8 h-12 rounded-full bg-white px-5 text-slate-950 shadow-none hover:bg-blue-50"
               asChild
             >
-              <Link href="/employer/jobs/kru-acara-akhir-pekan/applicants">
+              <Link href="/employer/jobs">
                 Tinjau pelamar <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
@@ -113,17 +113,20 @@ export default async function EmployerDashboardPage() {
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.13em] text-blue-200/65">
-                    Menunggu verifikasi
+                    Sesi aktif
                   </p>
-                  <h3 className="mt-2 font-semibold">Bantuan Bersih Ruang Pertemuan</h3>
-                  <p className="mt-1 text-sm text-blue-100/65">Pekerja sudah menyelesaikan check-out.</p>
+                  <h3 className="mt-2 font-semibold">Buka notifikasi kerja</h3>
+                  <p className="mt-1 text-sm text-blue-100/65">
+                    Verifikasi muncul dari agreement yang sudah aktif dan pekerja
+                    sudah check-out.
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
                   className="h-11 rounded-full border border-white/15 text-white hover:bg-white/10 hover:text-white"
                   asChild
                 >
-                  <Link href="/employer/work/sesi-pekerjaan">Verifikasi pekerjaan</Link>
+                  <Link href="/employer/notifications">Lihat notifikasi</Link>
                 </Button>
               </div>
             </div>
@@ -132,8 +135,8 @@ export default async function EmployerDashboardPage() {
 
         <aside className="rounded-[2rem] border border-border/70 bg-card/58 px-6 py-8 backdrop-blur-sm sm:px-8 lg:py-10">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Pekerjaan terbit</p>
-          <h2 className="mt-3 text-xl font-semibold leading-snug">Kru Acara Akhir Pekan</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Sukajadi, Bandung · 30 Juli 2026</p>
+          <h2 className="mt-3 text-xl font-semibold leading-snug">Pekerjaan terbaru</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Pantau dari daftar pekerjaan backend</p>
 
           <ol className="mt-8">
             {publishedJobJourney.map((step, index) => (
@@ -158,7 +161,7 @@ export default async function EmployerDashboardPage() {
           </ol>
 
           <Button variant="ghost" className="mt-8 h-11 w-full justify-between rounded-full px-3" asChild>
-            <Link href="/employer/jobs/kru-acara-akhir-pekan">
+            <Link href="/employer/jobs">
               Kelola pekerjaan <ArrowRight aria-hidden="true" />
             </Link>
           </Button>

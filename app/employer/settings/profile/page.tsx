@@ -4,6 +4,7 @@ import { EmployerProfileForm } from "@/features/employer/components/employer-pro
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Award, Briefcase } from "lucide-react";
+import { requireDashboardPageRole } from "@/server/auth/page-access";
 
 export const metadata: Metadata = {
   title: "Profil Pemberi Kerja | Rintara",
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function EmployerProfileSettingsPage() {
+  await requireDashboardPageRole("employer", "/employer/settings/profile");
+
   const [
     { getEmployerProfile },
     areas

@@ -61,6 +61,7 @@ describe("database schema invariants", () => {
     expect(projectionFields).not.toContain("fullAddress");
     expect(projectionFields).not.toContain("arrivalInstructions");
     expect(projectionFields).not.toContain("hiddenReason");
+    expect(projectionFields).not.toContain("employerId");
   });
 
   test("public job queries never reference private job details", async () => {

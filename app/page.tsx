@@ -76,7 +76,7 @@ function toJobCardView(job: PublicJobCard) {
 }
 
 export default async function Home() {
-  const jobPage = await listPublishedJobs({ pageSize: 4 });
+  const jobPage = await listPublishedJobs({ limit: 4 });
   const jobs = jobPage.items.map(toJobCardView);
   const featuredJob = jobs[0];
 

@@ -6,7 +6,7 @@ const requiredPages = [
   "app/page.tsx", "app/jobs/page.tsx", "app/jobs/[id]/page.tsx", "app/sign-in/page.tsx", "app/register/page.tsx",
   "app/onboarding/role/page.tsx", "app/onboarding/worker/page.tsx", "app/onboarding/employer/page.tsx",
   "app/worker/dashboard/page.tsx", "app/worker/profile/page.tsx", "app/worker/applications/page.tsx", "app/worker/agreements/[id]/page.tsx", "app/worker/work/[id]/page.tsx", "app/worker/passport/page.tsx", "app/worker/notifications/page.tsx",
-  "app/employer/dashboard/page.tsx", "app/employer/jobs/new/page.tsx", "app/employer/jobs/[id]/page.tsx", "app/employer/jobs/[id]/applicants/page.tsx", "app/employer/agreements/[id]/page.tsx", "app/employer/work/[id]/page.tsx", "app/employer/opportunity-credits/page.tsx", "app/employer/notifications/page.tsx",
+  "app/employer/dashboard/page.tsx", "app/employer/jobs/page.tsx", "app/employer/jobs/new/page.tsx", "app/employer/jobs/[id]/page.tsx", "app/employer/jobs/[id]/applicants/page.tsx", "app/employer/agreements/[id]/page.tsx", "app/employer/work/[id]/page.tsx", "app/employer/opportunity-credits/page.tsx", "app/employer/notifications/page.tsx",
   "app/admin/page.tsx", "app/admin/reports/page.tsx", "app/admin/jobs/page.tsx", "app/admin/users/page.tsx", "app/admin/wage-guidelines/page.tsx", "app/admin/audit-logs/page.tsx",
   "app/account/continue/page.tsx",
 ] as const;
@@ -267,6 +267,35 @@ describe("frontend flow surface", () => {
     expect(employer).toContain("submitEmployerOnboarding");
   });
 
+  test("wires the worker profile screen to private data and validated updates", async () => {
+    const page = await Bun.file("app/worker/profile/page.tsx").text();
+    const form = await Bun.file(
+      "features/onboarding/components/worker-onboarding-form.tsx",
+    ).text();
+
+    expect(page).toContain("getMyProfile");
+    expect(page).toContain("getOnboardingReferenceData");
+    expect(page).toContain("<WorkerProfileForm");
+    expect(page).toContain("profile.displayName");
+    expect(page).toContain("profile.areaName");
+    expect(page).not.toContain("Ayu Pratama");
+    expect(page).not.toContain("Bandung");
+    expect(page).not.toContain('type="tel"');
+    expect(page).not.toContain('type="button"');
+
+    expect(form).toContain("updateWorkerProfile");
+    expect(form).toContain("initialProfile");
+    expect(form).toContain("submittingRef.current");
+    expect(form).toContain('aria-busy={isPending}');
+    expect(form).toContain("Profil belum tersimpan");
+    expect(form).toContain("Profil diperbarui");
+    expect(form).toContain("fieldErrors");
+    expect(form).toMatch(/<fieldset[^>]*>\s*<legend/);
+    expect(form).toContain("verifiedCategoryIds");
+    expect(form).toContain("Belum ada Bukti Kerja terverifikasi");
+    expect(form).not.toContain(".reset()");
+  });
+
   test("prevents same-tick duplicate submissions without clearing valid input", async () => {
     const guardedForms = [
       "features/auth/components/sign-in-form.tsx",
@@ -279,9 +308,20 @@ describe("frontend flow surface", () => {
       const source = await Bun.file(path).text();
       expect(source, path).toContain("submittingRef");
       expect(source, path).toContain("submittingRef.current");
-      expect(source, path).not.toContain("router.refresh()");
       expect(source, path).not.toContain(".reset()");
+      if (!path.includes("worker-onboarding-form")) {
+        expect(source, path).not.toContain("router.refresh()");
+      }
     }
+
+    const workerProfileForm = await Bun.file(
+      "features/onboarding/components/worker-onboarding-form.tsx",
+    ).text();
+    expect(workerProfileForm).toContain("if (initialProfile)");
+    expect(workerProfileForm).toContain("router.refresh()");
+    expect(workerProfileForm).toContain(
+      'router.replace(nextPath ?? "/worker/dashboard")',
+    );
 
     const dashboardShell = await Bun.file(
       "features/dashboard/components/dashboard-shell.tsx",

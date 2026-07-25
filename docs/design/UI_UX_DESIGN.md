@@ -223,6 +223,11 @@ State what is empty and offer one relevant action. Avoid decorative illustration
 
 ## 8. Screen Specifications
 
+Employer jobs, My Applications, applicant lists, Passport history, and admin
+configuration lists use bounded forward pagination. Counts are explicitly
+page-local, opaque cursors are never displayed, and each next link preserves
+the other active filters or list cursors.
+
 ### 8.1 Landing page
 
 Primary message: Rintara helps workers turn a fair first opportunity into verified experience.
@@ -244,6 +249,7 @@ Do not display invented impact metrics.
 - Active filters appear as removable chips or a readable summary.
 - Sort behavior is understandable; boost is labeled, not disguised as organic ranking.
 - Pagination/loading does not duplicate or reorder cards unexpectedly.
+- The next-results action preserves search and every active filter.
 - Empty results suggest removing filters.
 
 ### 8.3 Job detail
@@ -271,10 +277,14 @@ The review screen groups:
 - wage and First Opportunity validation; and
 - final publish consequence.
 
+The applicable Wage Guideline shows its reference range, source label, and a
+clear simulation label when applicable; it is not described as a legal minimum.
+
 ### 8.5 Applicant list
 
 - Make category eligibility visible but not the sole decision content.
-- Passport opens within the authorized job context.
+- Show aggregate proof counts in the list; full proof history opens on a
+  separate authorized Passport screen only while the application is submitted.
 - Accept action requires confirmation and explains that all other applications will be rejected.
 - After a concurrency conflict, refresh to the server state.
 
@@ -300,15 +310,31 @@ Present the current lifecycle step and only the allowed next action.
 - Code entry supports numeric keyboards, paste, clear error, and expiry guidance.
 - Never display the previous plaintext code after leaving the generation result.
 
-### 8.8 Rintara Passport
+### 8.8 Worker profile
+
+- Load the current worker's private profile; never display placeholder identity or contact data.
+- Use active city/regency and category reference options, with clear recovery when a saved option becomes unavailable.
+- Category interests are checkboxes and are explicitly labeled as self-declared.
+- Per-category experience status is read-only and comes only from verified Work Proof.
+- Preserve valid input on failure and expose pending, field-error, recoverable-error, and success states.
+
+### 8.9 Employer profile
+
+- Load only the current employer's private profile and system-derived achievement values.
+- Offer only active city/regency options. If the saved area becomes inactive, explain the change and require a replacement before saving.
+- Never expose editable verification, completed-job, badge, or credit counters.
+
+### 8.10 Rintara Passport
 
 - Lead with verified work categories and chronological proof entries.
 - Each entry shows category, job title, general area, dates, and verification state.
 - Self-declared interests appear in profile, not as proof.
 - Revoked proof is not counted as verified; the owner may see a neutral explanation.
+- Applicant Passport history is cursor-paginated and links back to the owning
+  job's applicant list.
 - Do not show an edit or upload-proof action.
 
-### 8.9 Opportunity Credits
+### 8.11 Opportunity Credits
 
 - Distinguish active credit count from lifetime First Opportunities.
 - State the maximum active balance of three.
@@ -317,11 +343,20 @@ Present the current lifecycle step and only the allowed next action.
 - Show exact boost end time after redemption.
 - Never use currency symbols or “withdraw” language.
 
-### 8.10 Reports and admin
+### 8.12 Reports and admin
 
 User report form uses defined reasons and factual guidance. It must not promise a specific resolution time unless an operational SLA exists.
 
 Admin report screen shows target context, lifecycle state, relevant audit history, and explicit action checkboxes/buttons. Destructive actions require reason and confirmation.
+
+Admin marketplace configuration provides:
+
+- separate forms for categories, pilot city/regency areas, and Wage Guideline
+  versions;
+- source and simulation labels for each guideline;
+- explicit active/nonactive status controls with audit feedback; and
+- independently paginated summaries so advancing one configuration list does
+  not reset the other two.
 
 ## 9. Forms and Validation
 

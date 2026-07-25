@@ -59,6 +59,21 @@ Acceptance criteria:
 - Completed-job, verified-opportunity, badge, and credit values are derived from system records.
 - The interface never accepts a client-supplied credit balance or verification count.
 
+### FR-019 — Marketplace configuration [P0]
+
+An active administrator MUST be able to manage the pilot areas, job categories,
+and Wage Guidelines required by marketplace operations.
+
+Acceptance criteria:
+
+- Only active administrators can create marketplace configuration records.
+- Only active administrators can deactivate and reactivate existing marketplace
+  configuration records.
+- Pilot areas can be activated for onboarding, job publishing, and discovery.
+- Categories can be activated for worker interests, jobs, and First Opportunity rules.
+- Wage Guidelines are configured per active pilot area, active category, and wage unit.
+- Wage Guideline values include minimum and recommended reference amounts.
+
 ### FR-020 — Job drafting and publishing [P0]
 
 An active employer MUST be able to create a draft and publish a job containing:
@@ -148,6 +163,7 @@ Acceptance criteria:
 - Worker and employer confirm independently and in any order.
 - Agreement becomes `active` only after both confirmation timestamps exist.
 - Exactly one scheduled work session is created when the agreement first becomes active.
+- Repeated or concurrent confirmation creates no duplicate work session, notification, or audit side effect.
 - Terms cannot be edited after creation; cancellation requires a domain operation and reason.
 - Only the two parties and authorized administrators can view the full agreement.
 
@@ -280,8 +296,8 @@ Acceptance criteria:
 
 ### NFR-003 — Reliability and consistency [P0]
 
-- Acceptance, completion, and credit redemption MUST be transactional.
-- Completion and redemption MUST be idempotent.
+- Acceptance, agreement activation, completion, and credit redemption MUST be transactional.
+- Agreement confirmation, completion, and redemption MUST be idempotent.
 - Foreign keys, unique indexes, check constraints, and restricted deletes MUST protect critical invariants.
 - Failed multi-write operations MUST leave no partial business state.
 

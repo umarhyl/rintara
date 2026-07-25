@@ -21,7 +21,7 @@ Primary workstream owners are:
 | --- | --- |
 | Umar — Backend Engineer | Database, domain/API, authentication, authorization, backend tests, and deployment operations |
 | Zaki — Frontend Engineer | Screens, forms, responsive behavior, client interactions, accessibility, and frontend tests |
-| Catur — Product Manager | Scope, requirements, acceptance decisions, product documentation, and demo sign-off |
+| Catur — Project Manager | Scope, requirements, acceptance decisions, product documentation, and demo sign-off |
 
 Testing and golden-path delivery are shared responsibilities. Bring cross-boundary changes to every affected owner before implementation diverges.
 

@@ -66,6 +66,7 @@ export const jobs = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true, mode: "date" }),
     completedAt: timestamp("completed_at", { withTimezone: true, mode: "date" }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true, mode: "date" }),
+    cancellationReason: varchar("cancellation_reason", { length: 1000 }),
     hiddenAt: timestamp("hidden_at", { withTimezone: true, mode: "date" }),
     hiddenBy: uuid("hidden_by").references(() => users.id, {
       onDelete: "restrict",
@@ -113,7 +114,7 @@ export const jobs = pgTable(
     ),
     check(
       "jobs_cancelled_at_state_check",
-      sql`(${table.status} = 'cancelled' AND ${table.cancelledAt} IS NOT NULL) OR (${table.status} <> 'cancelled' AND ${table.cancelledAt} IS NULL)`,
+      sql`(${table.status} = 'cancelled' AND ${table.cancelledAt} IS NOT NULL AND ${table.cancellationReason} IS NOT NULL) OR (${table.status} <> 'cancelled' AND ${table.cancelledAt} IS NULL AND ${table.cancellationReason} IS NULL)`,
     ),
     check(
       "jobs_hidden_metadata_check",

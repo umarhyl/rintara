@@ -1,8 +1,8 @@
 # Rintara Application API Contracts
 
-> **Version:** 3.1
+> **Version:** 3.2
 >
-> **Date:** July 19, 2026
+> **Date:** July 24, 2026
 >
 > **Status:** MVP server contract baseline  
 > **Domain authority:** `docs/product/BUSINESS_RULES.md`  
@@ -92,7 +92,9 @@ type Page<T> = {
 };
 ```
 
-Cursors are opaque and encode deterministic sort keys. Clients must not depend on their internal format.
+Cursors are opaque and encode deterministic sort keys. Clients must not depend
+on their internal format. Malformed or incompatible cursors return
+`VALIDATION_FAILED`.
 
 ### 2.5 Authentication and onboarding
 
@@ -149,13 +151,16 @@ Access: public.
 
 Input:
 
+- `search?`
 - `categoryId?`
 - `areaId?`
 - `minimumWage?`
 - `maximumWage?`
-- `firstOpportunityOnly?`
+- `opportunity?: "all" | "first" | "general"`
 - `cursor?`
 - `limit?`
+
+Returns `Page<PublicJobCard>`.
 
 Output fields:
 
@@ -176,19 +181,29 @@ Returns public terms, Wage Guideline status, general area, tools, schedule, appl
 
 Errors: `JOB_NOT_FOUND` rather than revealing hidden/draft ownership state to anonymous callers.
 
-### `getPublicReferenceData()`
+### `getPublicJobReferenceData()`
 
 Access: public.
 
-Returns active pilot areas, categories, and safe Wage Guideline display data. Internal admin notes and inactive records are excluded.
+Returns active pilot areas and categories for discovery filters. Internal area
+codes, category risk fields, Wage Guideline records, and inactive records are
+excluded.
 
 ## 4. Profile Queries and Commands
 
 ### `getMyProfile()`
 
-Access: active worker or employer.
+Access: active worker.
 
-Returns the role-specific private profile DTO for the current user.
+Returns the current worker's private profile, category interests, and category
+IDs backed by a currently verified Work Proof; derived values are read-only.
+
+### `getEmployerProfile()`
+
+Access: active employer.
+
+Returns the current employer's private profile and system-derived completed-job,
+active-credit, and Opportunity Giver values.
 
 ### `updateWorkerProfile(input)`
 
@@ -204,9 +219,80 @@ Access: active employer.
 
 Input: display name, employer type, area ID, and bounded description.
 
-Derived fields such as badge, completed-job count, and credit count are not accepted.
+Server behavior derives the employer identity from the active session, requires
+an active city/regency, and updates only that employer's profile. Derived fields
+such as badge, completed-job count, and credit count are not accepted.
+
+## 4.5 Admin Marketplace Configuration
+
+### `getAdminMarketplaceConfig(input?)`
+
+Access: active admin.
+
+Returns bounded, independently cursor-paginated category, pilot-area, and Wage
+Guideline pages plus bounded active area/category options for the creation form.
+The input accepts `areaCursor`, `categoryCursor`, `wageGuidelineCursor`, and
+`limit`.
+
+### `createCategory(input)`
+
+Access: active admin.
+
+Input: category name, slug, risk level, First Opportunity availability, and
+active flag. A category with `restricted` risk cannot allow First Opportunity.
+
+### `setCategoryActive(input)`
+
+Access: active admin.
+
+Input: category ID and target active flag. The command records an audit entry
+and refreshes marketplace configuration, employer job creation, and discovery
+views.
+
+### `createPilotArea(input)`
+
+Access: active admin.
+
+Input: area name, unique code, and active flag. MVP pilot areas are stored as
+`city_regency` records so onboarding, job publishing, and discovery use one
+consistent area source.
+
+### `setPilotAreaActive(input)`
+
+Access: active admin.
+
+Input: pilot area ID and target active flag. Only MVP `city_regency` pilot areas
+can be changed through this command.
+
+### `createWageGuideline(input)`
+
+Access: active admin.
+
+Input: active pilot area, active category, wage unit, minimum reference amount,
+recommended reference amount, source label, optional source URL, effective date
+range, simulation flag, and active flag.
+
+Server behavior records an audit entry and revalidates admin configuration,
+employer job creation, and public discovery views.
+
+### `setWageGuidelineActive(input)`
+
+Access: active admin.
+
+Input: Wage Guideline ID and target active flag. This is the supported MVP edit
+path for existing guidelines; changing wage amounts requires creating a new
+guideline version with its own effective dates instead of mutating the old
+record.
 
 ## 5. Job Queries and Commands
+
+### `getJobReferenceData()`
+
+Access: active employer through the protected job create/edit flow.
+
+Returns active city/regency and category options plus active Wage Guidelines.
+Guidelines include their source label and simulation flag so the form can
+present the reference without implying a legal minimum.
 
 ### `createJobDraft(input)`
 
@@ -228,7 +314,7 @@ Access: active owning employer.
 
 Behavior:
 
-1. load draft and current reference data;
+1. lock the owned draft and load locked current reference data;
 2. validate required terms, future dates, category/risk rules, and full address;
 3. calculate Wage Guideline status;
 4. reject a non-compliant First Opportunity job;
@@ -246,11 +332,14 @@ Input: bounded cancellation reason. The command follows the state machine and do
 
 Access: owning employer or authorized admin.
 
-Returns owner view, safe status actions, and private details appropriate to the owner.
+Derives identity, active status, and role from the server session. Returns the
+owner/admin view, safe status actions, and private details appropriate to the
+authorized reader.
 
-### `listMyEmployerJobs(page)`
+### `listMyEmployerJobs(input?: PageInput)`
 
-Access: active employer. Returns only owned jobs.
+Access: active employer. Returns `Page<EmployerJobListItem>` containing only
+owned jobs.
 
 ## 6. Application Queries and Commands
 
@@ -272,21 +361,29 @@ Allowed only from `submitted`.
 
 Errors include `APPLICATION_NOT_FOUND` and `APPLICATION_NOT_WITHDRAWABLE`.
 
-### `listMyApplications(page)`
+### `listMyApplications(input?: PageInput)`
 
-Access: active worker. Returns only the current worker's applications with safe job summaries.
+Access: active worker. Returns a bounded cursor page containing only the current
+worker's applications with safe job summaries.
 
-### `listJobApplicants(jobId, page)`
+### `listJobApplicants(jobId, input?: PageInput)`
 
 Access: active owning employer or authorized admin.
 
-Returns applicant summary, note, server-computed category eligibility, and a link/identifier for the authorized Passport view.
+Returns `{ job, applicants, nextCursor }`. `applicants` contains bounded
+summaries, notes, server-computed category eligibility, aggregate proof counts,
+and a link/identifier for the authorized Passport view; full proof history is
+not embedded in the list.
 
-### `getApplicantPassport(jobId, applicationId)`
+### `getApplicantPassport(jobId, applicationId, input?: PageInput)`
 
-Access: active owner of the job receiving that application, the worker owner, or authorized admin.
+Access: active owner while the application is still `submitted`, the worker
+owner, or authorized admin.
 
-Returns non-revoked Work Proof entries and category eligibility. It does not return unrelated private profile fields.
+Returns applicant/category eligibility plus a bounded `proofEntries` cursor
+page containing only non-revoked verified Work Proof. It does not return
+unrelated private profile fields. An employer loses this applicant-review
+access after the application leaves `submitted`.
 
 ### `acceptApplication(applicationId)`
 
@@ -314,11 +411,74 @@ Access: worker party, employer party, or authorized admin.
 
 Returns the complete immutable terms snapshot, party confirmation states, lifecycle state, and allowed next actions. Full address appears only here and in other explicitly authorized agreement views.
 
+```ts
+type AgreementView = {
+  id: string;
+  applicationId: string;
+  snapshot: {
+    version: number;
+    jobId: string;
+    workerId: string;
+    employerId: string;
+    // Complete accepted terms from the immutable agreement snapshot.
+    title: string;
+    categoryId: string;
+    categoryName: string;
+    taskScope: string;
+    generalArea: string;
+    fullAddress: string;
+    arrivalInstructions: string | null;
+    startsAt: string;
+    estimatedMinutes: number;
+    wageAmount: string;
+    wageUnit: "hour" | "day" | "job";
+    paymentMethod: string;
+    paymentTiming: string;
+    toolsProvided: string | null;
+    toolsRequired: string | null;
+    cancellationWording: string;
+    isFirstOpportunity: boolean;
+    wageStatus: "compliant" | "below" | "unavailable";
+  };
+  confirmations: {
+    workerConfirmedAt: string | null;
+    employerConfirmedAt: string | null;
+  };
+  status: "pending_confirmation" | "active" | "completed" | "cancelled";
+  cancellation: { cancelledAt: string; reason: string } | null;
+  allowedActions: { confirm: boolean };
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
+The query reads accepted terms from `agreements.terms_snapshot`; it does not
+reconstruct them from mutable job or profile records. Inaccessible identifiers
+return safe `NOT_FOUND` behavior.
+
 ### `confirmAgreement(agreementId)`
 
 Access: either active party.
 
 Behavior sets only the caller's confirmation timestamp. It is idempotent for the same caller. When both timestamps exist, it transitions the agreement to `active` and ensures one scheduled work session exists.
+
+```ts
+type ConfirmAgreementResult = {
+  agreementId: string;
+  status: "pending_confirmation" | "active" | "completed" | "cancelled";
+  workerConfirmedAt: string | null;
+  employerConfirmedAt: string | null;
+};
+```
+
+The command locks the agreement row and performs confirmation, activation,
+scheduled-session creation, safe notifications, and the append-only
+`confirm_agreement` audit in one transaction. The activation audit is recorded
+by `metadata.activated = true`. A retry by an already-confirmed caller returns
+the stored state without another write, notification, audit, or work session.
+
+Errors include `VALIDATION_FAILED`, `UNAUTHENTICATED`, `ACCOUNT_INACTIVE`,
+`FORBIDDEN`, `NOT_FOUND`, and `INVALID_STATE_TRANSITION`.
 
 ### `generateCheckInCode(agreementId)`
 
@@ -471,7 +631,15 @@ Authentication provider callback routes follow provider documentation and are no
 | `NOT_FOUND` | Resource absent or intentionally hidden | 404 |
 | `VALIDATION_FAILED` | Invalid fields | 400 |
 | `INVALID_STATE_TRANSITION` | Command is not valid from current state | 409 |
+| `JOB_NOT_FOUND` | Job is absent, hidden, or not owned by the caller | 404 |
+| `JOB_NOT_DRAFT` | Job is no longer editable or publishable as a draft | 409 |
 | `JOB_NOT_AVAILABLE` | Job is closed, expired, filled, or otherwise unavailable | 409 |
+| `CATEGORY_NOT_ALLOWED` | Current category policy rejects the requested operation | 409 |
+| `WAGE_GUIDELINE_UNAVAILABLE` | No applicable active Wage Guideline exists | 409 |
+| `WAGE_BELOW_GUIDELINE` | Wage does not meet the applicable guideline | 409 |
+| `APPLICATION_ALREADY_EXISTS` | Worker already applied to the job | 409 |
+| `APPLICATION_NOT_FOUND` | Application is absent or not owned by the caller | 404 |
+| `APPLICATION_NOT_WITHDRAWABLE` | Application is no longer submitted | 409 |
 | `FIRST_OPPORTUNITY_INELIGIBLE` | Worker now has category proof | 409 |
 | `CONCURRENT_ACCEPTANCE_CONFLICT` | Another applicant won the race | 409 |
 | `ACTIVE_REPORT_BLOCKS_COMPLETION` | Moderation must finish first | 409 |

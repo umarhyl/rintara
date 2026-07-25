@@ -11,53 +11,60 @@ import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
+import { adminDashboardSummary } from "@/server/queries/admin/moderation";
 
-const metrics = [
-  {
-    label: "Laporan terbuka",
-    value: "3",
-    detail: "1 perlu diprioritaskan",
-    icon: ShieldAlert,
-  },
-  {
-    label: "Pekerjaan terbit",
-    value: "18",
-    detail: "Sedang ditayangkan",
-    icon: BriefcaseBusiness,
-  },
-  {
-    label: "Akun aktif",
-    value: "42",
-    detail: "30 pekerja · 12 pemberi kerja",
-    icon: UsersRound,
-  },
-  {
-    label: "Jejak hari ini",
-    value: "27",
-    detail: "Aksi penting tercatat",
-    icon: Activity,
-  },
-];
+const reasonLabels = {
+  suspicious_job: "Pekerjaan mencurigakan",
+  terms_mismatch: "Ketentuan tidak sesuai",
+  absence: "Masalah kehadiran",
+  unsafe_behavior: "Kekhawatiran keamanan",
+  spam: "Spam",
+  other: "Lainnya",
+} as const;
 
-const reports = [
-  {
-    id: "RPT-1042",
-    reason: "Ketentuan pekerjaan tidak sesuai",
-    target: "Kru Acara Akhir Pekan",
-    status: "Terbuka",
-    tone: "warning" as const,
-  },
-  {
-    id: "RPT-1041",
-    reason: "Masalah kehadiran",
-    target: "Bantuan Bersih Ruang Pertemuan",
-    status: "Ditinjau",
-    tone: "info" as const,
-  },
-];
+const statusLabels = {
+  open: "Terbuka",
+  reviewing: "Ditinjau",
+  resolved: "Selesai",
+  rejected: "Ditolak",
+} as const;
+
+const statusTones = {
+  open: "warning",
+  reviewing: "info",
+  resolved: "success",
+  rejected: "neutral",
+} as const;
 
 export default async function AdminPage() {
   await requireDashboardPageRole("admin", "/admin");
+  const summary = await adminDashboardSummary();
+  const metrics = [
+    {
+      label: "Laporan",
+      value: String(summary.reportCount),
+      detail: `${summary.activeReportCount} aktif`,
+      icon: ShieldAlert,
+    },
+    {
+      label: "Pekerjaan",
+      value: String(summary.jobCount),
+      detail: "Semua status",
+      icon: BriefcaseBusiness,
+    },
+    {
+      label: "Akun",
+      value: String(summary.userCount),
+      detail: "Terdaftar",
+      icon: UsersRound,
+    },
+    {
+      label: "Jejak audit",
+      value: String(summary.auditCount),
+      detail: "Aksi penting tercatat",
+      icon: Activity,
+    },
+  ];
 
   return (
     <div className="grid gap-9">
@@ -127,29 +134,32 @@ export default async function AdminPage() {
           </div>
 
           <div className="divide-y divide-white/10">
-            {reports.map((report, index) => (
+            {summary.latestReports.map((report, index) => (
               <article key={report.id} className="grid gap-4 px-5 py-5 sm:grid-cols-[3rem_1fr_auto] sm:items-center sm:px-7">
                 <div className="hidden size-10 place-items-center rounded-full border border-white/15 font-mono text-xs text-slate-400 sm:grid">
                   {String(index + 1).padStart(2, "0")}
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <p className="font-mono text-xs font-semibold tracking-wide text-slate-400">{report.id}</p>
+                    <p className="font-mono text-xs font-semibold tracking-wide text-slate-400">{report.id.slice(0, 8)}</p>
                     <StatusBadge
-                      status={report.tone}
+                      status={statusTones[report.status]}
                       className="border-white/10 bg-white/10 text-white"
                     >
-                      {report.status}
+                      {statusLabels[report.status]}
                     </StatusBadge>
                   </div>
-                  <h3 className="mt-2 font-medium leading-6">{report.reason}</h3>
-                  <p className="mt-1 text-sm text-slate-400">{report.target}</p>
+                  <h3 className="mt-2 font-medium leading-6">{reasonLabels[report.reason]}</h3>
+                  <p className="mt-1 text-sm text-slate-400">{report.targetTitle || report.jobId || report.agreementId || report.reportedUserId}</p>
                 </div>
                 <Button asChild variant="outline" className="border-white/15 bg-white/[0.06] text-white hover:bg-white/10">
                   <Link href="/admin/reports">Tinjau</Link>
                 </Button>
               </article>
             ))}
+            {summary.latestReports.length === 0 ? (
+              <p className="px-7 py-7 text-sm text-slate-400">Tidak ada laporan terbaru.</p>
+            ) : null}
           </div>
         </section>
 

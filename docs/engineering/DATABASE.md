@@ -188,6 +188,7 @@ Prevent overlapping active guidelines for the same area, category, and unit thro
 | `published_at` | timestamptz nullable | Set once on publish |
 | `completed_at` | timestamptz nullable | Set on verified completion |
 | `cancelled_at` | timestamptz nullable | Set on cancellation |
+| `cancellation_reason` | text nullable | Required when cancelled |
 | `hidden_at` | timestamptz nullable | Admin moderation timestamp |
 | `hidden_by` | uuid nullable | FK `users.id` |
 | `hidden_reason` | text nullable | Required while hidden |
@@ -434,6 +435,19 @@ Never serialize complete ORM rows into public responses.
 6. Create the unique agreement snapshot.
 7. Write notifications and audit record.
 8. Commit.
+
+### Confirm agreement
+
+1. Begin transaction and lock the agreement row through the caller's party relationship.
+2. Return the stored state without writes when that party already confirmed.
+3. Require `pending_confirmation` and set only the caller's confirmation timestamp.
+4. When the other timestamp already exists, transition to `active` in the same update and insert the unique scheduled work session.
+5. Write address-free notifications and an append-only confirmation audit; record activation in allowlisted audit metadata.
+6. Commit.
+
+The row lock serializes concurrent confirmations. The unique
+`work_sessions.agreement_id` constraint remains the final boundary against a
+duplicate session.
 
 ### Verify completion
 

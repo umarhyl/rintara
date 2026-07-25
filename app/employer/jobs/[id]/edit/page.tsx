@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
-import { requireActiveUser } from "@/server/auth/identity";
 import { getJobReferenceData } from "@/server/queries/jobs/reference-data";
 import { getEmployerJob } from "@/server/queries/jobs/get-employer-job";
 import { JobForm } from "@/features/employer/components/job-form";
@@ -11,14 +10,16 @@ export const dynamic = "force-dynamic";
 export default async function EditJobPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  await requireDashboardPageRole("employer", `/employer/jobs/${params.id}/edit`);
-  const context = await requireActiveUser();
-  
+  const { id } = await params;
+  await requireDashboardPageRole(
+    "employer",
+    `/employer/jobs/${encodeURIComponent(id)}/edit`,
+  );
   let jobData;
   try {
-    jobData = await getEmployerJob(params.id, context.userId);
+    jobData = await getEmployerJob(id);
   } catch {
     return notFound();
   }
@@ -46,7 +47,7 @@ export default async function EditJobPage({
           toolsProvided: jobData.toolsProvided || undefined,
           toolsRequired: jobData.toolsRequired || undefined,
         }} 
-        jobId={params.id} 
+        jobId={id}
       />
     </div>
   );
