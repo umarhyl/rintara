@@ -135,8 +135,8 @@ export default async function EmployerDashboardPage() {
 
         <aside className="rounded-[2rem] border border-border/70 bg-card/58 px-6 py-8 backdrop-blur-sm sm:px-8 lg:py-10">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Pekerjaan terbit</p>
-          <h2 className="mt-3 text-xl font-semibold leading-snug">Kru Acara Akhir Pekan</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Sukajadi, Bandung · 30 Juli 2026</p>
+          <h2 className="mt-3 text-xl font-semibold leading-snug">Pekerjaan terbaru</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Pantau dari daftar pekerjaan backend</p>
 
           <ol className="mt-8">
             {publishedJobJourney.map((step, index) => (

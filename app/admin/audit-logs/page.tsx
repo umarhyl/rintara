@@ -5,16 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
+import { adminListAuditLogs } from "@/server/queries/admin/moderation";
 
-const logs = [
-  { time: "19 Jul · 10.15", operation: "report.create", actor: "usr_…71a", target: "RPT-1042", result: "success", resultLabel: "Berhasil" },
-  { time: "19 Jul · 09.42", operation: "application.accept", actor: "usr_…29c", target: "job_…842", result: "success", resultLabel: "Berhasil" },
-  { time: "19 Jul · 09.11", operation: "agreement.confirm", actor: "usr_…29c", target: "agr_…901", result: "success", resultLabel: "Berhasil" },
-  { time: "19 Jul · 08.55", operation: "credit.redeem", actor: "usr_…188", target: "credit_…52b", result: "conflict", resultLabel: "Konflik" },
-];
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(value);
+}
+
+function shortId(value: string | null) {
+  return value ? `${value.slice(0, 8)}...` : "system";
+}
 
 export default async function AuditLogsPage() {
   await requireDashboardPageRole("admin", "/admin/audit-logs");
+  const logs = await adminListAuditLogs();
 
   return (
     <div className="grid gap-9">
@@ -42,7 +49,7 @@ export default async function AuditLogsPage() {
           <h2 className="font-semibold">Metadata aman untuk penelusuran</h2>
           <p className="mt-1 text-base leading-7 text-slate-400">Identitas dibatasi dan setiap entri bersifat tetap untuk menjaga riwayat tindakan.</p>
         </div>
-        <span className="font-mono text-xs text-slate-500">19 JUL 2026</span>
+        <span className="font-mono text-xs text-slate-500">UTC</span>
       </aside>
 
       <section aria-labelledby="audit-list-title" className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/72 backdrop-blur-sm">
@@ -56,22 +63,22 @@ export default async function AuditLogsPage() {
 
         <ol className="relative divide-y divide-border/70 md:hidden">
           {logs.map((log) => (
-            <li key={`${log.time}-${log.operation}`} className="relative grid grid-cols-[1.25rem_1fr] gap-4 px-5 py-5 before:absolute before:bottom-0 before:left-[1.53rem] before:top-0 before:w-px before:bg-border first:before:top-7 last:before:bottom-auto last:before:h-7">
-              <span className={`relative z-10 mt-1 size-3 rounded-full ring-4 ring-card ${log.result === "success" ? "bg-success" : "bg-amber-500"}`} aria-hidden="true" />
+            <li key={log.id} className="relative grid grid-cols-[1.25rem_1fr] gap-4 px-5 py-5 before:absolute before:bottom-0 before:left-[1.53rem] before:top-0 before:w-px before:bg-border first:before:top-7 last:before:bottom-auto last:before:h-7">
+              <span className="relative z-10 mt-1 size-3 rounded-full bg-success ring-4 ring-card" aria-hidden="true" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="break-all font-mono text-xs font-semibold">{log.operation}</p>
-                  <StatusBadge status={log.result === "success" ? "success" : "warning"}>{log.resultLabel}</StatusBadge>
+                  <p className="break-all font-mono text-xs font-semibold">{log.action}</p>
+                  <StatusBadge status="success">Tercatat</StatusBadge>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{log.time}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{formatDate(log.createdAt)}</p>
                 <dl className="mt-4 grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <dt className="text-muted-foreground">Aktor</dt>
-                    <dd className="mt-1 break-all font-mono">{log.actor}</dd>
+                    <dd className="mt-1 break-all font-mono">{shortId(log.actorId)}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Target</dt>
-                    <dd className="mt-1 break-all font-mono">{log.target}</dd>
+                    <dd className="mt-1 break-all font-mono">{log.entityType}:{shortId(log.entityId)}</dd>
                   </div>
                 </dl>
               </div>
@@ -92,15 +99,15 @@ export default async function AuditLogsPage() {
             </TableHeader>
             <TableBody>
               {logs.map((log) => (
-                <TableRow key={`${log.time}-${log.operation}`} className="h-17">
-                  <TableCell className="whitespace-nowrap pl-6 text-muted-foreground">{log.time}</TableCell>
-                  <TableCell className="font-mono text-xs font-medium">{log.operation}</TableCell>
-                  <TableCell className="font-mono text-xs">{log.actor}</TableCell>
-                  <TableCell className="font-mono text-xs">{log.target}</TableCell>
+                <TableRow key={log.id} className="h-17">
+                  <TableCell className="whitespace-nowrap pl-6 text-muted-foreground">{formatDate(log.createdAt)}</TableCell>
+                  <TableCell className="font-mono text-xs font-medium">{log.action}</TableCell>
+                  <TableCell className="font-mono text-xs">{shortId(log.actorId)}</TableCell>
+                  <TableCell className="font-mono text-xs">{log.entityType}:{shortId(log.entityId)}</TableCell>
                   <TableCell className="pr-6">
                     <span className="inline-flex items-center gap-2 text-sm font-medium">
-                      {log.result === "success" ? <CheckCircle2 className="size-4 text-success" aria-hidden="true" /> : <span className="size-2 rounded-full bg-amber-500" aria-hidden="true" />}
-                      {log.resultLabel}
+                      <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
+                      Tercatat
                     </span>
                   </TableCell>
                 </TableRow>

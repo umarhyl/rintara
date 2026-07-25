@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
-
-const jobs = [
-  { title: "Kru Acara Akhir Pekan", owner: "Sinar Event Studio", status: "published", label: "Terbit" },
-  { title: "Bantuan Bersih Ruang Pertemuan", owner: "Ruang Bersama", status: "in_progress", label: "Berjalan" },
-  { title: "Input Data Inventaris", owner: "Toko Rintis Bersama", status: "filled", label: "Terisi" },
-];
+import { adminListJobs } from "@/server/queries/admin/moderation";
 
 function jobTone(status: string) {
   return status === "published" ? "success" : "info";
@@ -18,6 +13,7 @@ function jobTone(status: string) {
 
 export default async function AdminJobsPage() {
   await requireDashboardPageRole("admin", "/admin/jobs");
+  const jobs = await adminListJobs();
 
   return (
     <div className="grid gap-9">
@@ -37,7 +33,7 @@ export default async function AdminJobsPage() {
           Filter status
         </Button>
         <p className="text-sm text-muted-foreground lg:pl-2">
-          <span className="font-semibold text-foreground">3</span> dari 18 pekerjaan
+          <span className="font-semibold text-foreground">{jobs.length}</span> pekerjaan
         </p>
       </section>
 
@@ -52,19 +48,19 @@ export default async function AdminJobsPage() {
 
         <div className="divide-y divide-border/70 md:hidden">
           {jobs.map((job, index) => (
-            <article key={job.title} className="grid gap-5 px-5 py-5">
+            <article key={job.id} className="grid gap-5 px-5 py-5">
               <div className="grid grid-cols-[2.5rem_1fr] gap-3">
                 <span className="grid size-9 place-items-center rounded-full border border-border font-mono text-xs text-muted-foreground" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
                   <h3 className="font-semibold leading-6">{job.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{job.owner}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{job.employerDisplayName}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3 pl-[3.25rem]">
                 <StatusBadge status={jobTone(job.status)}>
-                  {job.status} · {job.label}
+                  {job.status} · {job.visibility}
                 </StatusBadge>
                 <Button variant="ghost" type="button" className="h-11">
                   Tinjau
@@ -87,12 +83,12 @@ export default async function AdminJobsPage() {
             </TableHeader>
             <TableBody>
               {jobs.map((job) => (
-                <TableRow key={job.title} className="h-18">
+                <TableRow key={job.id} className="h-18">
                   <TableCell className="pl-6 font-medium">{job.title}</TableCell>
-                  <TableCell className="text-muted-foreground">{job.owner}</TableCell>
+                  <TableCell className="text-muted-foreground">{job.employerDisplayName}</TableCell>
                   <TableCell>
                     <StatusBadge status={jobTone(job.status)}>
-                      {job.status} · {job.label}
+                      {job.status} · {job.visibility}
                     </StatusBadge>
                   </TableCell>
                   <TableCell className="pr-6 text-right">

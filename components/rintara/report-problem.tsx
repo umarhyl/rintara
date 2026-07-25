@@ -1,6 +1,8 @@
 "use client";
 
-import { Flag } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Flag, LoaderCircle } from "lucide-react";
+import { createReport } from "@/server/domain/reports/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,9 +24,66 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ReportProblem() {
+type ReportReason =
+  | "suspicious_job"
+  | "terms_mismatch"
+  | "absence"
+  | "unsafe_behavior"
+  | "spam"
+  | "other";
+
+function messageFor(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code === "NOT_FOUND"
+      ? "Target laporan tidak tersedia."
+      : "Laporan belum bisa dikirim.";
+  }
+  return "Koneksi terputus. Coba lagi sebentar lagi.";
+}
+
+export function ReportProblem({
+  jobId,
+  agreementId,
+  reportedUserId,
+}: {
+  jobId?: string;
+  agreementId?: string;
+  reportedUserId?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<ReportReason | "">("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit() {
+    if (!reason || isPending) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await createReport({
+          reason,
+          description,
+          jobId,
+          agreementId,
+          reportedUserId,
+        });
+        setOpen(false);
+        setReason("");
+        setDescription("");
+      } catch (caughtError) {
+        setError(messageFor(caughtError));
+      }
+    });
+  }
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="outline" className="h-11">
           <Flag aria-hidden="true" />
@@ -44,7 +103,7 @@ export function ReportProblem() {
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="report-reason">Alasan laporan</Label>
-            <Select>
+            <Select value={reason} onValueChange={(value) => setReason(value as ReportReason)}>
               <SelectTrigger
                 id="report-reason"
                 className="h-11 w-full"
@@ -53,9 +112,11 @@ export function ReportProblem() {
                 <SelectValue placeholder="Pilih alasan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="terms">Ketentuan tidak sesuai</SelectItem>
-                <SelectItem value="attendance">Masalah kehadiran</SelectItem>
-                <SelectItem value="safety">Kekhawatiran keamanan</SelectItem>
+                <SelectItem value="terms_mismatch">Ketentuan tidak sesuai</SelectItem>
+                <SelectItem value="absence">Masalah kehadiran</SelectItem>
+                <SelectItem value="unsafe_behavior">Kekhawatiran keamanan</SelectItem>
+                <SelectItem value="suspicious_job">Pekerjaan mencurigakan</SelectItem>
+                <SelectItem value="spam">Spam</SelectItem>
                 <SelectItem value="other">Lainnya</SelectItem>
               </SelectContent>
             </Select>
@@ -69,22 +130,35 @@ export function ReportProblem() {
             </Label>
             <Textarea
               id="report-description"
+              value={description}
+              maxLength={2000}
+              onChange={(event) => setDescription(event.target.value)}
               placeholder="Jelaskan kejadian dan waktu secara ringkas"
             />
           </div>
+          {error ? (
+            <p className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" className="h-11">
+            <Button type="button" variant="outline" className="h-11" disabled={isPending}>
               Kembali
             </Button>
           </DialogClose>
-          <DialogClose asChild>
-            <Button type="button" className="h-11">
-              Kirim laporan
-            </Button>
-          </DialogClose>
+          <Button type="button" className="h-11" disabled={!reason || isPending} onClick={handleSubmit}>
+            {isPending ? (
+              <>
+                <LoaderCircle className="animate-spin" aria-hidden="true" />
+                Mengirim
+              </>
+            ) : (
+              "Kirim laporan"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

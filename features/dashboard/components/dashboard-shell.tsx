@@ -44,8 +44,8 @@ type Role = "worker" | "employer" | "admin";
 const roleConfig = {
   worker: {
     label: "Pekerja",
-    name: "Ayu Pratama",
-    initials: "AP",
+    name: "Pekerja Rintara",
+    initials: "PR",
     items: [
       { href: "/worker/dashboard", label: "Beranda", icon: Home },
       { href: "/jobs", label: "Cari kerja", icon: BriefcaseBusiness },
@@ -57,8 +57,8 @@ const roleConfig = {
   },
   employer: {
     label: "Pemberi kerja",
-    name: "Sinar Event Studio",
-    initials: "SE",
+    name: "Pemberi Kerja Rintara",
+    initials: "PK",
     items: [
       { href: "/employer/dashboard", label: "Beranda", icon: Home },
       { href: "/employer/jobs/new", label: "Pasang kerja", icon: PlusCircle },

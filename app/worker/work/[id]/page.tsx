@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import { CheckInForm, CheckOutButton } from "@/components/rintara/work-actions";
+import { ReportProblem } from "@/components/rintara/report-problem";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
@@ -203,6 +204,7 @@ export default async function WorkerWorkPage({
             </p>
           </div>
         </div>
+        <ReportProblem agreementId={work.agreementId} jobId={work.jobId} />
       </aside>
     </div>
   );

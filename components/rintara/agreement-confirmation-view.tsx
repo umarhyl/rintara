@@ -298,7 +298,10 @@ export function AgreementConfirmationView({
                 pembatalan atau laporkan masalah.
               </p>
             </div>
-            <ReportProblem />
+            <ReportProblem
+              agreementId={agreement.id}
+              jobId={agreement.snapshot.jobId}
+            />
           </div>
         </aside>
       </div>

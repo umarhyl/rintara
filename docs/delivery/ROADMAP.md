@@ -229,6 +229,16 @@ Milestone 4 evidence:
 
 **Date:** July 27
 
+**Status:** Implementation completed on July 25, 2026. Local validation must be
+run with the PostgreSQL test database available.
+
+The reward and moderation slice is complete across employer credit redemption,
+24-hour job boosts, public boosted ordering, report submission, admin report
+processing, and moderated Work Proof/Credit/Boost revocation behavior.
+PostgreSQL integration coverage is in
+`tests/integration/opportunity-credit-moderation.test.ts`; run it with the
+local test database available.
+
 Deliverables:
 
 - credit redemption and earned-credit lifecycle hardening;
@@ -246,6 +256,23 @@ Exit criteria:
 - Failed or conflicting boost does not consume credit.
 - Active report blocks completion and resolved/rejected report releases the block as appropriate.
 - Full P0 golden path passes end to end.
+
+Milestone 5 evidence:
+
+- `redeemOpportunityCredit` is employer-only, idempotent by actor/operation/key,
+  validates credit ownership and target job state, rejects active boost
+  conflicts before consuming a credit, and creates one 24-hour boost atomically.
+- Employer Opportunity Credits renders active credit count, derived Opportunity
+  Giver state, redeemable credits, and eligible published jobs from authorized
+  server queries.
+- Public job discovery orders active boosts before normal published ordering.
+- `createReport`, `adminStartReportReview`, and `adminResolveReport` validate
+  relationships and admin role server-side, audit state changes, and revalidate
+  affected surfaces.
+- Admin moderation pages are data-backed and expose explicit actions for
+  hide/cancel job, suspend user, revoke Work Proof, revoke Credit, and
+  deactivate Boost. Revoking a redeemed credit deactivates its active boost in
+  the same moderated workflow.
 
 ## 4. Feature Freeze
 

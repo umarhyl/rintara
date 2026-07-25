@@ -224,7 +224,7 @@ export default async function EmployerWorkPage({
               </AlertDescription>
             </Alert>
             <div className="mt-3 [&>button]:w-full [&>button]:border-background/20 [&>button]:bg-transparent [&>button]:text-background [&>button:hover]:bg-background/10">
-              <ReportProblem />
+              <ReportProblem agreementId={work.agreementId} jobId={work.jobId} />
             </div>
           </div>
         </aside>
