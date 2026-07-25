@@ -181,6 +181,8 @@ The following operations require database transactions:
 
 - validate employer and job ownership;
 - protect the job from concurrent acceptance;
+- require a submitted application and server time strictly before the
+  selection cutoff at `startsAt - 24 hours`;
 - re-evaluate First Opportunity eligibility;
 - accept one application and reject the others;
 - mark the job filled;

@@ -91,10 +91,15 @@ An active employer MUST be able to create a draft and publish a job containing:
 Acceptance criteria:
 
 - Only the owning employer can edit a draft or publish it.
-- Publishing rejects missing required fields, non-positive wages, past deadlines, and disallowed categories.
+- Publishing rejects missing required fields, non-positive wages, past
+  deadlines, an `applicationDeadline` that is not earlier than
+  `startsAt - 24 hours`, and disallowed categories.
 - Public job output never contains the full address.
 - A published job is immutable except for valid lifecycle operations; changed terms require cancellation and a new job.
 - A First Opportunity job publishes only when its category is allowed and its wage is compliant.
+- If no worker is selected by `startsAt - 24 hours`, the expiry workflow marks
+  the job `expired`, rejects remaining submitted applications, and writes
+  notifications and audit history atomically.
 
 ### FR-021 — Wage Guidelines [P0]
 
@@ -126,7 +131,12 @@ An active worker MUST be able to submit one short application note to an eligibl
 Acceptance criteria:
 
 - The database prevents more than one application per worker per job.
-- Application rejects a closed, filled, expired, cancelled, or worker-owned job.
+- Application rejects a closed, deadline-passed, filled, expired, cancelled, or
+  worker-owned job.
+- At or after `applicationDeadline`, a new submission returns
+  `JOB_NOT_AVAILABLE`.
+- Passing `applicationDeadline` does not prevent the owner from reviewing or
+  accepting an existing submitted application before the selection cutoff.
 - A First Opportunity application is accepted only when the worker has no non-revoked verified Work Proof in that category.
 - The application cannot propose or modify a wage.
 - Withdrawal is allowed only while status is `submitted`.
@@ -148,7 +158,12 @@ The job owner MUST be able to accept exactly one submitted application through t
 
 Acceptance criteria:
 
-- Role, ownership, account status, job status, and category eligibility are revalidated inside the operation.
+- Role, ownership, account status, job status, the selection cutoff derived
+  from `startsAt`, and category eligibility are revalidated inside the
+  operation using server time.
+- At or after `startsAt - 24 hours`, acceptance returns
+  `JOB_NOT_AVAILABLE` and leaves the job, applications, agreement,
+  notifications, and audit records unchanged.
 - Concurrent acceptance requests result in exactly one accepted application.
 - The selected application becomes `accepted`, other submitted applications become `rejected`, and the job becomes `filled` atomically.
 - Exactly one pending Mini Agreement is created from a snapshot of accepted terms.
@@ -347,6 +362,8 @@ No concurrency, uptime, or throughput claim may be published without measured ev
 - Duplicate application constraint.
 - Concurrent acceptance produces one winner.
 - Acceptance creates one agreement and rejects remaining applications atomically.
+- Acceptance at or after the selection cutoff returns
+  `JOB_NOT_AVAILABLE` without changing workflow or side-effect records.
 - Completion creates one Work Proof and at most one credit.
 - A forced write failure rolls back the entire transaction.
 - Public job projection excludes private address fields.

@@ -50,7 +50,7 @@ databaseTest(
       const paginatedApplicationId = randomUUID();
 
       const futureStart = new Date("2030-02-10T08:00:00.000Z");
-      const futureDeadline = new Date("2030-02-09T08:00:00.000Z");
+      const futureDeadline = new Date("2030-02-08T08:00:00.000Z");
       const pastDeadline = new Date("2020-02-09T08:00:00.000Z");
       const now = new Date("2030-01-01T08:00:00.000Z");
 

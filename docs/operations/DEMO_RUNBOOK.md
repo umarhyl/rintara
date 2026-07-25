@@ -57,7 +57,8 @@ Do not spend demo time on settings, admin configuration, or out-of-scope feature
 
 - No existing application by the worker to the demo job.
 - No open reports on the job/agreement.
-- Application deadline and start time in the future.
+- Application deadline is strictly before the selection cutoff, and current
+  time is before the selection cutoff and start time.
 
 ## 4. Pre-Demo Checklist
 

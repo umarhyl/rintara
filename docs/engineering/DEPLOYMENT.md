@@ -153,11 +153,15 @@ A backup is not considered operationally useful until a restore has been tested 
 
 The MVP may need protected scheduled operations for:
 
-- marking deadline-passed jobs expired;
+- marking unfilled jobs expired at the selection cutoff 24 hours before
+  `starts_at`;
 - marking elapsed boosts ended; and
 - deleting expired idempotency keys according to policy.
 
-Public queries must remain correct even if a maintenance job is delayed: they still filter deadline-passed jobs and elapsed boosts by server time.
+Public queries must remain correct even if a maintenance job is delayed: they
+still filter deadline-passed jobs and elapsed boosts by server time.
+`acceptApplication` must independently reject a selection-cutoff-passed job
+even while its persisted status is still `published`.
 
 Scheduled endpoints require authentication/secret validation, idempotency, bounded work, logs without sensitive payloads, and safe retries.
 

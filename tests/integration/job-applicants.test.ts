@@ -52,7 +52,7 @@ databaseTest(
       const proofAgreementBId = randomUUID();
 
       const start = new Date("2030-03-10T08:00:00.000Z");
-      const deadline = new Date("2030-03-09T08:00:00.000Z");
+      const deadline = new Date("2030-03-08T08:00:00.000Z");
       const publishedAt = new Date("2030-03-01T08:00:00.000Z");
       const completedAt = new Date("2030-02-01T10:00:00.000Z");
 

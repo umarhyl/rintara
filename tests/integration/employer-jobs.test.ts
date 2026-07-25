@@ -127,7 +127,7 @@ databaseTest(
         paymentMethod: "Cash",
         paymentTiming: "Done",
         riskLevel: "low" as const,
-        applicationDeadline: new Date(Date.now() + 86400000 * 2).toISOString(),
+        applicationDeadline: new Date(Date.now() + 86400000).toISOString(),
         startsAt: new Date(Date.now() + 86400000 * 3), // 3 days from now
         isFirstOpportunity: false,
       };

@@ -299,6 +299,8 @@ present the reference without implying a legal minimum.
 Access: active employer.
 
 Input includes every job field defined by FR-020 except server-owned status, wage status, and timestamps. `employerId` is derived from context.
+`selectionCutoff` is not accepted or stored; the server derives it as
+`startsAt - 24 hours`.
 
 Returns: `{ jobId, status: "draft" }`.
 
@@ -315,12 +317,16 @@ Access: active owning employer.
 Behavior:
 
 1. lock the owned draft and load locked current reference data;
-2. validate required terms, future dates, category/risk rules, and full address;
+2. validate required terms, future dates, `applicationDeadline <
+   startsAt - 24 hours`, category/risk rules, and full address;
 3. calculate Wage Guideline status;
 4. reject a non-compliant First Opportunity job;
 5. transition to `published`, set publication time, notify/audit as required.
 
-Errors include `JOB_NOT_DRAFT`, `WAGE_GUIDELINE_UNAVAILABLE`, `WAGE_BELOW_GUIDELINE`, and `CATEGORY_NOT_ALLOWED`.
+An invalid application-deadline/selection-cutoff relationship returns
+`VALIDATION_FAILED` for `applicationDeadline`. Other errors include
+`JOB_NOT_DRAFT`, `WAGE_GUIDELINE_UNAVAILABLE`, `WAGE_BELOW_GUIDELINE`, and
+`CATEGORY_NOT_ALLOWED`.
 
 ### `cancelJob(jobId, input)`
 
@@ -334,7 +340,8 @@ Access: owning employer or authorized admin.
 
 Derives identity, active status, and role from the server session. Returns the
 owner/admin view, safe status actions, and private details appropriate to the
-authorized reader.
+authorized reader. Owner job and applicant views include the server-derived
+selection cutoff.
 
 ### `listMyEmployerJobs(input?: PageInput)`
 
@@ -401,7 +408,14 @@ type AcceptApplicationResult = {
 };
 ```
 
-Errors include `APPLICATION_NOT_SUBMITTED`, `JOB_NOT_AVAILABLE`, `FIRST_OPPORTUNITY_INELIGIBLE`, and `CONCURRENT_ACCEPTANCE_CONFLICT`.
+`applicationDeadline` closes new submissions only. The command uses server time
+inside the transaction and allows acceptance while
+`now < startsAt - 24 hours`. At or after that selection cutoff it returns
+`JOB_NOT_AVAILABLE` without writes, even when the persisted job status is still
+`published`.
+
+Errors include `APPLICATION_NOT_SUBMITTED`, `JOB_NOT_AVAILABLE`,
+`FIRST_OPPORTUNITY_INELIGIBLE`, and `CONCURRENT_ACCEPTANCE_CONFLICT`.
 
 ## 7. Agreement and Attendance Contracts
 
@@ -633,7 +647,7 @@ Authentication provider callback routes follow provider documentation and are no
 | `INVALID_STATE_TRANSITION` | Command is not valid from current state | 409 |
 | `JOB_NOT_FOUND` | Job is absent, hidden, or not owned by the caller | 404 |
 | `JOB_NOT_DRAFT` | Job is no longer editable or publishable as a draft | 409 |
-| `JOB_NOT_AVAILABLE` | Job is closed, expired, filled, or otherwise unavailable | 409 |
+| `JOB_NOT_AVAILABLE` | Job is closed for the requested operation, its application or selection cutoff passed, or it is expired/filled | 409 |
 | `CATEGORY_NOT_ALLOWED` | Current category policy rejects the requested operation | 409 |
 | `WAGE_GUIDELINE_UNAVAILABLE` | No applicable active Wage Guideline exists | 409 |
 | `WAGE_BELOW_GUIDELINE` | Wage does not meet the applicable guideline | 409 |

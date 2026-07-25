@@ -135,14 +135,16 @@ Milestone 2 evidence:
 
 **Date:** July 24
 
-**Status:** Completed on July 25, 2026.
+**Status:** In progress as of July 25, 2026.
 
-The acceptance and agreement slice is complete across backend, App Router UI,
-authorization, presentation integration, and release evidence.
+The core acceptance and agreement slice is implemented across backend, App
+Router UI, authorization, and presentation integration. Selection-cutoff
+enforcement and final acceptance evidence remain open.
 
 Deliverables:
 
 - transactional `acceptApplication`;
+- selection-cutoff-aware acceptance using server time;
 - partial unique accepted-application constraint;
 - rejection of remaining applications;
 - immutable agreement snapshot;
@@ -151,6 +153,10 @@ Deliverables:
 
 Exit criteria:
 
+- Passing `applicationDeadline` blocks new submissions but not selection of
+  existing submitted applications.
+- Acceptance at or after `startsAt - 24 hours` returns
+  `JOB_NOT_AVAILABLE` without writes.
 - Concurrent acceptance test produces exactly one winner.
 - Forced failure rolls back job, applications, agreement, notification, and audit writes.
 - Both parties can confirm in either order.
@@ -175,7 +181,17 @@ Milestone 3 evidence:
 - Worker applications and role-specific notification feeds include authorized
   entry points to Mini Agreement destinations.
 - `bun typecheck`, `bun lint`, `bun test`, and production `bun run build` passed
-  for the completed Milestone 3 state.
+  for the previously implemented core state; required checks must run again
+  after selection-cutoff enforcement is implemented.
+
+Remaining closure:
+
+- enforce publish spacing with validation and a database constraint, then use
+  the derived selection cutoff in `acceptApplication` and unfilled-job expiry;
+- cover submission after `applicationDeadline` plus acceptance before, exactly
+  at, and after the selection cutoff in PostgreSQL;
+- update deterministic seed and test fixtures for the 24-hour spacing rule;
+- capture Catur's two-party acceptance evidence and product sign-off.
 
 ### Milestone 4 — Attendance, completion, and Passport
 

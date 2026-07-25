@@ -186,7 +186,7 @@ databaseTest(
         paymentMethod: "Tunai di luar Rintara",
         paymentTiming: "Setelah pekerjaan selesai",
         riskLevel: "low",
-        applicationDeadline: new Date("2026-06-30T08:00:00.000Z"),
+        applicationDeadline: new Date("2026-06-29T08:00:00.000Z"),
         status: "completed",
         publishedAt: new Date("2026-06-29T08:00:00.000Z"),
         completedAt,

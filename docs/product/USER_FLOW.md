@@ -130,7 +130,8 @@ not reset the other two.
    3. schedule and estimated duration;
    4. wage amount, unit, payment method, and payment timing;
    5. tools and risk questions;
-   6. application deadline and First Opportunity option.
+   6. application deadline and First Opportunity option; Rintara derives and
+      displays the employer selection cutoff 24 hours before the start time.
 3. The interface shows the applicable Wage Guideline with source/simulation label.
 4. Employer saves a draft or selects **Review job**.
 5. Review screen clearly distinguishes public information from details visible only after acceptance.
@@ -143,7 +144,8 @@ Alternative paths:
 - Below-guideline wage: explain the reference and block the First Opportunity option. A normal job may continue with a visible warning if product policy allows it.
 - No guideline: block First Opportunity publishing and explain that reference data is unavailable.
 - Restricted category/risk: disable First Opportunity and show a safety explanation.
-- Past schedule/deadline: highlight the field and retain all other input.
+- Past schedule/deadline, or an application deadline that is not earlier than
+  the selection cutoff: highlight the field and retain all other input.
 - Published terms need change: employer cancels the job and creates a new draft; published terms are not silently edited.
 
 ## 6. Worker Discovers and Applies to a Job
@@ -180,15 +182,22 @@ Alternative paths:
 3. Applicant cards show display name, general area, application note, category eligibility, and verified proof summary.
 4. While the application remains `submitted`, employer may open the applicant's
    separately paginated authorized Passport view.
-5. Employer selects **Accept worker** and reviews the fixed terms.
-6. Confirmation explains that one worker will be accepted, other submitted applications will be rejected, and terms will become an agreement snapshot.
-7. Employer confirms.
-8. Server runs the atomic acceptance operation.
-9. On success, employer goes to the pending agreement; selected worker receives an acceptance notification and other applicants receive a rejection notification.
+5. The applicant view shows when new applications close and the employer
+   selection cutoff 24 hours before the start time.
+6. Employer selects **Accept worker** and reviews the fixed terms.
+7. Confirmation explains that one worker will be accepted, other submitted applications will be rejected, and terms will become an agreement snapshot.
+8. Employer confirms.
+9. Server runs the atomic acceptance operation.
+10. On success, employer goes to the pending agreement; selected worker receives an acceptance notification and other applicants receive a rejection notification.
 
 Alternative paths:
 
 - Worker gained relevant proof after applying: acceptance is blocked with a clear eligibility explanation.
+- Application deadline passes: close new applications, but keep existing
+  submitted applications reviewable and selectable until the selection cutoff.
+- Selection cutoff passes before the employer confirms: show that selection is
+  closed and create no agreement. The expiry workflow then expires the job and
+  rejects remaining submitted applications.
 - Another acceptance request wins first: show the job as already filled and refresh applicant statuses.
 - Employer opens another employer's applicant URL: respond with not found/forbidden behavior without leaking applicant data.
 - Employer revisits Passport after the application leaves `submitted`: close

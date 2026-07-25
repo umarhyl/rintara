@@ -94,11 +94,12 @@ export const jobs = pgTable(
       table.status,
       table.createdAt.desc(),
     ),
+    index("jobs_unfilled_expiry_idx").on(table.status, table.startsAt),
     check("jobs_estimated_minutes_positive_check", sql`${table.estimatedMinutes} > 0`),
     check("jobs_wage_amount_positive_check", sql`${table.wageAmount} > 0`),
     check(
       "jobs_deadline_before_start_check",
-      sql`${table.applicationDeadline} < ${table.startsAt}`,
+      sql`${table.applicationDeadline} < ${table.startsAt} - interval '24 hours'`,
     ),
     check(
       "jobs_first_opportunity_eligibility_check",

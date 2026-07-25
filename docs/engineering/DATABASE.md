@@ -182,7 +182,7 @@ Prevent overlapping active guidelines for the same area, category, and unit thro
 | `tools_required` | text nullable | Bounded |
 | `risk_level` | risk_level | Required |
 | `is_first_opportunity` | boolean | Required, default false |
-| `application_deadline` | timestamptz | Before `starts_at` |
+| `application_deadline` | timestamptz | Strictly before `starts_at - interval '24 hours'` |
 | `status` | job_status | Required, default `draft` |
 | `visibility` | job_visibility | Required, default `visible` |
 | `published_at` | timestamptz nullable | Set once on publish |
@@ -399,6 +399,7 @@ Reuse with a different request hash is rejected. Response payloads contain safe 
 | Query | Index strategy |
 | --- | --- |
 | Public job discovery | `(status, visibility, application_deadline, is_first_opportunity, area_id, category_id, published_at desc)` plus targeted indexes based on query plans |
+| Unfilled job expiry | `(status, starts_at)` |
 | Wage lookup | `(area_id, category_id, unit, is_active, effective_from, effective_to)` |
 | Job applicants | `(job_id, status, submitted_at)` |
 | Worker applications | `(worker_id, status, submitted_at desc)` |
@@ -429,12 +430,26 @@ Never serialize complete ORM rows into public responses.
 
 1. Begin transaction.
 2. Lock the job row or perform a conditional `published -> filled` update.
-3. Validate employer ownership, deadline, and selected submitted application.
+3. Validate employer ownership and the selected submitted application, and
+   require server time to be strictly earlier than
+   `starts_at - interval '24 hours'`.
 4. Re-query category eligibility.
 5. Mark selected application accepted and remaining submitted applications rejected.
 6. Create the unique agreement snapshot.
 7. Write notifications and audit record.
 8. Commit.
+
+`application_deadline` is not an acceptance cutoff. It closes public discovery
+and new submissions while the job remains available to its owner for selection.
+
+### Expire unfilled job
+
+1. Lock an unfilled `published` job at or after
+   `starts_at - interval '24 hours'`.
+2. Transition the job to `expired`.
+3. Reject its remaining submitted applications.
+4. Write worker notifications and audit history.
+5. Commit all state and side effects atomically.
 
 ### Confirm agreement
 
