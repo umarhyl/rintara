@@ -83,9 +83,18 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
           Dikirim {formatDate(application.submittedAt)}
         </p>
       </div>
-      {application.status === "submitted" ? (
-        <WithdrawApplicationButton applicationId={application.id} />
-      ) : null}
+      <div className="flex flex-wrap gap-2 sm:justify-end">
+        {application.status === "submitted" ? (
+          <WithdrawApplicationButton applicationId={application.id} />
+        ) : null}
+        {application.status === "accepted" && application.agreementId ? (
+          <Button className="h-10 rounded-full" asChild>
+            <Link href={`/worker/agreements/${application.agreementId}`}>
+              Buka Mini Agreement <ArrowRight aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : null}
+      </div>
     </article>
   );
 }

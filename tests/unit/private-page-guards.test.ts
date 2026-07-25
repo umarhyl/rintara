@@ -23,22 +23,10 @@ const staticGuardedPages = [
 
 const demoRecordGuardedPages = [
   [
-    "app/worker/agreements/[id]/page.tsx",
-    "worker",
-    "/worker/agreements/${encodeURIComponent(id)}",
-    "kesepakatan-kru-acara",
-  ],
-  [
     "app/worker/work/[id]/page.tsx",
     "worker",
     "/worker/work/${encodeURIComponent(id)}",
     "sesi-pekerjaan",
-  ],
-  [
-    "app/employer/agreements/[id]/page.tsx",
-    "employer",
-    "/employer/agreements/${encodeURIComponent(id)}",
-    "kesepakatan-kru-acara",
   ],
   [
     "app/employer/work/[id]/page.tsx",
@@ -49,6 +37,20 @@ const demoRecordGuardedPages = [
 ] as const;
 
 const backendRecordGuardedPages = [
+  [
+    "app/worker/agreements/[id]/page.tsx",
+    "worker",
+    "/worker/agreements/${encodeURIComponent(id)}",
+    "getAgreement(id)",
+    "NOT_FOUND",
+  ],
+  [
+    "app/employer/agreements/[id]/page.tsx",
+    "employer",
+    "/employer/agreements/${encodeURIComponent(id)}",
+    "getAgreement(id)",
+    "NOT_FOUND",
+  ],
   [
     "app/employer/jobs/[id]/page.tsx",
     "employer",

@@ -8,7 +8,7 @@ import { assertActiveUser } from "@/server/auth/policies";
 import type { RequestContext } from "@/server/auth/types";
 import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
-import { agreements } from "@/server/db/schema";
+import { agreements, employerProfiles, workerProfiles } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
 
 type AgreementDatabase = PostgresJsDatabase<typeof schema>;
@@ -41,6 +41,10 @@ export type AgreementView = {
     cancellationWording: string;
     isFirstOpportunity: boolean;
     wageStatus: "compliant" | "below" | "unavailable";
+  };
+  parties: {
+    workerDisplayName: string;
+    employerDisplayName: string;
   };
   confirmations: {
     workerConfirmedAt: string | null;
@@ -115,6 +119,19 @@ export async function getAgreement(
     );
   }
 
+  const [[workerProfile], [employerProfile]] = await Promise.all([
+    database
+      .select({ displayName: workerProfiles.displayName })
+      .from(workerProfiles)
+      .where(eq(workerProfiles.userId, agreement.workerId))
+      .limit(1),
+    database
+      .select({ displayName: employerProfiles.displayName })
+      .from(employerProfiles)
+      .where(eq(employerProfiles.userId, agreement.employerId))
+      .limit(1),
+  ]);
+
   const terms = agreement.termsSnapshot;
   const ownConfirmation =
     actor.role === "worker"
@@ -149,6 +166,10 @@ export async function getAgreement(
       cancellationWording: terms.cancellationWording,
       isFirstOpportunity: agreement.isFirstOpportunity,
       wageStatus: agreement.wageStatus,
+    },
+    parties: {
+      workerDisplayName: workerProfile?.displayName ?? "Pekerja",
+      employerDisplayName: employerProfile?.displayName ?? "Pemberi kerja",
     },
     confirmations: {
       workerConfirmedAt: agreement.workerConfirmedAt?.toISOString() ?? null,

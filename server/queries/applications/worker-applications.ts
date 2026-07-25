@@ -9,6 +9,7 @@ import type { RequestContext } from "@/server/auth/types";
 import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 import {
+  agreements,
   applications,
   areas,
   categories,
@@ -26,6 +27,7 @@ export type WorkerApplicationListInput = {
 
 export type WorkerApplicationListItem = {
   id: string;
+  agreementId: string | null;
   jobId: string;
   jobTitle: string;
   employerDisplayName: string;
@@ -132,6 +134,7 @@ export async function listMyApplications(
   const rows = await database
     .select({
       id: applications.id,
+      agreementId: agreements.id,
       jobId: applications.jobId,
       jobTitle: jobs.title,
       employerDisplayName: employerProfiles.displayName,
@@ -151,6 +154,7 @@ export async function listMyApplications(
       isFirstOpportunity: jobs.isFirstOpportunity,
     })
     .from(applications)
+    .leftJoin(agreements, eq(agreements.applicationId, applications.id))
     .innerJoin(jobs, eq(applications.jobId, jobs.id))
     .innerJoin(categories, eq(jobs.categoryId, categories.id))
     .innerJoin(areas, eq(jobs.areaId, areas.id))
