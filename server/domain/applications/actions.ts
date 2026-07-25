@@ -14,6 +14,7 @@ import {
   workProofs,
 } from "@/server/db/schema";
 import type { AgreementTermsSnapshot } from "@/server/db/schema";
+import { getJobSelectionCutoff } from "@/server/domain/jobs/selection-cutoff";
 import { ApplicationError } from "@/server/errors/application-error";
 
 const applicationNoteSchema = z
@@ -25,6 +26,8 @@ const applicationNoteSchema = z
       .max(1000, "Catatan lamaran maksimal 1000 karakter."),
   })
   .strict();
+
+const applicationIdSchema = z.string().uuid();
 
 export async function submitApplication(jobId: string, input: unknown) {
   const context = await requireActiveUser();
@@ -327,8 +330,17 @@ function toSnapshotIsoTimestamp(value: Date | string) {
 }
 
 export async function acceptApplication(
-  applicationId: string,
+  applicationIdInput: unknown,
 ): Promise<AcceptApplicationResult> {
+  const parsedId = applicationIdSchema.safeParse(applicationIdInput);
+  if (!parsedId.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "The application identifier is invalid.",
+      { applicationId: ["Use a valid application identifier."] },
+    );
+  }
+
   const context = await requireActiveUser();
   if (context.role !== "employer") {
     throw new ApplicationError(
@@ -336,9 +348,6 @@ export async function acceptApplication(
       "Only employers can accept applications.",
     );
   }
-
-  const now = new Date();
-
   let result: AcceptApplicationResult;
 
   try {
@@ -374,7 +383,7 @@ export async function acceptApplication(
         inner join categories c on c.id = j.category_id
         inner join areas ar on ar.id = j.area_id
         inner join job_private_details jpd on jpd.job_id = j.id
-        where a.id = ${applicationId}
+        where a.id = ${parsedId.data}
         for update of a, j
       `);
 
@@ -404,6 +413,19 @@ export async function acceptApplication(
         throw new ApplicationError(
           "JOB_NOT_AVAILABLE",
           "This job is no longer available for acceptance.",
+        );
+      }
+
+      const now = new Date();
+      const startsAt =
+        row.starts_at instanceof Date
+          ? row.starts_at
+          : new Date(row.starts_at);
+
+      if (now >= getJobSelectionCutoff(startsAt)) {
+        throw new ApplicationError(
+          "JOB_NOT_AVAILABLE",
+          "The worker selection period has closed.",
         );
       }
 

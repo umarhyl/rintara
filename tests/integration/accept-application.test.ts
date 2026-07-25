@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, mock, test } from "bun:test";
+import { expect, mock, setSystemTime, test } from "bun:test";
 
 mock.module("server-only", () => ({}));
 mock.module("next/cache", () => ({
@@ -45,6 +45,7 @@ databaseTest(
       const firstOpportunityJobId = randomUUID();
       const completedJobId = randomUUID();
       const concurrentJobId = randomUUID();
+      const cutoffJobId = randomUUID();
       const applicationAId = randomUUID();
       const applicationBId = randomUUID();
       const rollbackApplicationId = randomUUID();
@@ -55,9 +56,10 @@ databaseTest(
       const existingRollbackAgreementId = randomUUID();
       const concurrentApplicationAId = randomUUID();
       const concurrentApplicationBId = randomUUID();
+      const cutoffApplicationId = randomUUID();
 
       const startsAt = new Date("2030-04-10T08:00:00.000Z");
-      const deadline = new Date("2030-04-09T08:00:00.000Z");
+      const deadline = new Date("2030-04-08T08:00:00.000Z");
       const publishedAt = new Date("2030-04-01T08:00:00.000Z");
       const completedAt = new Date("2030-03-01T10:00:00.000Z");
 
@@ -174,6 +176,7 @@ databaseTest(
             applicationDeadline: new Date("2030-02-28T08:00:00.000Z"),
           },
           { ...baseJob, id: concurrentJobId, title: "Job Concurrent" },
+          { ...baseJob, id: cutoffJobId, title: "Job Cutoff" },
         ]);
         await tx.insert(schema.jobPrivateDetails).values([
           {
@@ -196,6 +199,10 @@ databaseTest(
           {
             jobId: concurrentJobId,
             fullAddress: "Jalan Privat Concurrent 1",
+          },
+          {
+            jobId: cutoffJobId,
+            fullAddress: "Jalan Privat Cutoff 1",
           },
         ]);
 
@@ -258,6 +265,13 @@ databaseTest(
             jobId: concurrentJobId,
             workerId: workerCId,
             note: "Lamaran concurrent kedua.",
+            firstOpportunityEligibleAtSubmission: true,
+          },
+          {
+            id: cutoffApplicationId,
+            jobId: cutoffJobId,
+            workerId: workerCId,
+            note: "Lamaran untuk batas pemilihan worker.",
             firstOpportunityEligibleAtSubmission: true,
           },
         ]);
@@ -393,12 +407,70 @@ databaseTest(
         };
       };
 
+      activeContext = null;
+      await expect(acceptApplication(applicationAId)).rejects.toMatchObject({
+        code: "UNAUTHENTICATED",
+      });
+      activeContext = { ...employerContext, accountStatus: "suspended" };
+      await expect(acceptApplication(applicationAId)).rejects.toMatchObject({
+        code: "ACCOUNT_INACTIVE",
+      });
+      activeContext = employerContext;
+      await expect(
+        acceptApplication("not-an-application-id"),
+      ).rejects.toMatchObject({
+        code: "VALIDATION_FAILED",
+        details: { applicationId: expect.any(Array) },
+      });
+
+      setSystemTime(new Date("2030-04-09T08:00:00.000Z"));
+      await expect(
+        acceptApplication(cutoffApplicationId),
+      ).rejects.toMatchObject({
+        code: "JOB_NOT_AVAILABLE",
+      });
+      setSystemTime(new Date("2030-04-09T08:00:00.001Z"));
+      await expect(
+        acceptApplication(cutoffApplicationId),
+      ).rejects.toMatchObject({
+        code: "JOB_NOT_AVAILABLE",
+      });
+      const [cutoffApplication] = await database
+        .select()
+        .from(schema.applications)
+        .where(eq(schema.applications.id, cutoffApplicationId))
+        .limit(1);
+      const cutoffAgreements = await database
+        .select()
+        .from(schema.agreements)
+        .where(eq(schema.agreements.jobId, cutoffJobId));
+      const [cutoffJob] = await database
+        .select()
+        .from(schema.jobs)
+        .where(eq(schema.jobs.id, cutoffJobId))
+        .limit(1);
+      const cutoffNotifications = await database
+        .select()
+        .from(schema.notifications)
+        .where(eq(schema.notifications.recipientId, workerCId));
+      const cutoffAudits = await database
+        .select()
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.entityId, cutoffApplicationId));
+      expect(cutoffApplication.status).toBe("submitted");
+      expect(cutoffJob.status).toBe("published");
+      expect(cutoffAgreements).toHaveLength(0);
+      expect(cutoffNotifications).toHaveLength(0);
+      expect(cutoffAudits).toHaveLength(0);
+
+      setSystemTime(new Date("2030-04-08T12:00:00.000Z"));
       await expect(acceptApplication(applicationAId)).resolves.toMatchObject({
         jobId,
         applicationId: applicationAId,
         jobStatus: "filled",
         agreementStatus: "pending_confirmation",
       });
+      setSystemTime();
 
       const [applicationA] = await database
         .select()
@@ -747,6 +819,7 @@ databaseTest(
         "Jalan Privat Concurrent 1",
       );
     } finally {
+      setSystemTime();
       await client.end({ timeout: 5 });
     }
   },
