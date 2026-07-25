@@ -241,6 +241,7 @@ Electrical work, working at height, heavy machinery, medical work, unverified ch
 | Wage interaction | Fixed and visible; applications do not change it |
 | Payment | Recorded as an agreement term; executed outside Rintara |
 | Job capacity | One accepted worker per job |
+| Hiring cutoffs | `applicationDeadline` closes new applications; employer selection closes 24 hours before `startsAt` |
 | First Opportunity badge | Derived after the employer earns the first non-revoked credit |
 | Credit issuance | At most one per qualifying completed job |
 | Credit balance | At most three active credits per employer |

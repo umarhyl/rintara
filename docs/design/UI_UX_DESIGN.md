@@ -279,6 +279,9 @@ The review screen groups:
 
 The applicable Wage Guideline shows its reference range, source label, and a
 clear simulation label when applicable; it is not described as a legal minimum.
+The schedule section shows both the application deadline and the derived
+selection cutoff 24 hours before the start time. The cutoff is display-only,
+not another employer input.
 
 ### 8.5 Applicant list
 
@@ -286,6 +289,12 @@ clear simulation label when applicable; it is not described as a legal minimum.
 - Show aggregate proof counts in the list; full proof history opens on a
   separate authorized Passport screen only while the application is submitted.
 - Accept action requires confirmation and explains that all other applications will be rejected.
+- After the application deadline, explain that new applications are closed but
+  existing submitted applicants remain selectable until the displayed
+  selection cutoff.
+- If the server reports that the selection cutoff passed, explain that
+  selection is closed and refresh to the authoritative unavailable state; show
+  `expired` after the expiry workflow persists it.
 - After a concurrency conflict, refresh to the server state.
 
 ### 8.6 Mini Agreement
