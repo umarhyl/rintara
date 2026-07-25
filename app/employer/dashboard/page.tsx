@@ -113,17 +113,20 @@ export default async function EmployerDashboardPage() {
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.13em] text-blue-200/65">
-                    Menunggu verifikasi
+                    Sesi aktif
                   </p>
-                  <h3 className="mt-2 font-semibold">Bantuan Bersih Ruang Pertemuan</h3>
-                  <p className="mt-1 text-sm text-blue-100/65">Pekerja sudah menyelesaikan check-out.</p>
+                  <h3 className="mt-2 font-semibold">Buka notifikasi kerja</h3>
+                  <p className="mt-1 text-sm text-blue-100/65">
+                    Verifikasi muncul dari agreement yang sudah aktif dan pekerja
+                    sudah check-out.
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
                   className="h-11 rounded-full border border-white/15 text-white hover:bg-white/10 hover:text-white"
                   asChild
                 >
-                  <Link href="/employer/work/sesi-pekerjaan">Verifikasi pekerjaan</Link>
+                  <Link href="/employer/notifications">Lihat notifikasi</Link>
                 </Button>
               </div>
             </div>

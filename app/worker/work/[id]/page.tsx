@@ -1,157 +1,208 @@
-import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
-import { ConfirmAction } from "@/components/rintara/confirm-action";
+import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
+import { CheckInForm, CheckOutButton } from "@/components/rintara/work-actions";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
+import { ApplicationError } from "@/server/errors/application-error";
+import { getWorkView, type WorkView } from "@/server/queries/work/get-work-session";
 
-const workSteps = ["Kesepakatan aktif", "Check-in", "Check-out", "Terverifikasi"] as const;
+type SessionStatus = WorkView["session"]["status"];
 
-export default async function WorkerWorkPage({ params }: { params: Promise<{ id: string }> }) {
+const steps: Array<{ label: string; statuses: SessionStatus[] }> = [
+  { label: "Kesepakatan aktif", statuses: ["scheduled", "checked_in", "checked_out", "verified"] },
+  { label: "Check-in", statuses: ["checked_in", "checked_out", "verified"] },
+  { label: "Check-out", statuses: ["checked_out", "verified"] },
+  { label: "Terverifikasi", statuses: ["verified"] },
+];
+
+function formatDateTime(value: string | null) {
+  if (!value) return "Belum tercatat";
+  return new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Jakarta",
+  }).format(new Date(value));
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes} menit`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining > 0 ? `${hours} jam ${remaining} menit` : `${hours} jam`;
+}
+
+function stepState(work: WorkView, index: number) {
+  const complete = steps[index]!.statuses.includes(work.session.status);
+  const nextIncomplete = steps.findIndex((step) => !step.statuses.includes(work.session.status));
+  return {
+    complete,
+    active: nextIncomplete === index,
+  };
+}
+
+export default async function WorkerWorkPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   await requireDashboardPageRole("worker", `/worker/work/${encodeURIComponent(id)}`);
-  if (id !== "sesi-pekerjaan") notFound();
+
+  let work: WorkView;
+  try {
+    work = await getWorkView(id);
+  } catch (error) {
+    if (
+      error instanceof ApplicationError &&
+      (error.code === "NOT_FOUND" || error.code === "VALIDATION_FAILED")
+    ) {
+      notFound();
+    }
+    throw error;
+  }
 
   return (
     <div className="grid gap-9">
       <PageHeader
-        eyebrow="Bantuan Bersih Ruang Pertemuan"
+        eyebrow={work.title}
         title="Langkah pekerjaan"
         description="Selesaikan aksi yang tersedia pada status saat ini."
       />
 
       <ol className="grid border-y border-border/75 sm:grid-cols-4" aria-label="Tahapan pekerjaan">
-        {workSteps.map((step, index) => {
-          const done = index === 0;
-          const active = index === 1;
+        {steps.map((step, index) => {
+          const state = stepState(work, index);
 
           return (
             <li
-              key={step}
+              key={step.label}
               className="relative flex min-h-20 items-center gap-3 border-b border-border/70 py-4 last:border-b-0 sm:border-b-0 sm:border-l sm:px-5 sm:first:border-l-0"
-              aria-current={active ? "step" : undefined}
+              aria-current={state.active ? "step" : undefined}
             >
               <span
                 className={`grid size-8 shrink-0 place-items-center rounded-full border text-xs font-semibold ${
-                  done
+                  state.complete
                     ? "border-success bg-success text-success-foreground"
-                    : active
-                      ? "border-primary bg-primary text-primary-foreground shadow-[0_0_0_5px_rgb(30_79_214/0.1)]"
+                    : state.active
+                      ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-card text-muted-foreground"
                 }`}
               >
-                {done ? <Check className="size-4" aria-hidden="true" /> : index + 1}
+                {state.complete ? <Check className="size-4" aria-hidden="true" /> : index + 1}
               </span>
               <div>
-                <p className={`text-sm font-semibold ${active ? "text-primary" : done ? "text-success" : "text-muted-foreground"}`}>
-                  {step}
+                <p className={`text-sm font-semibold ${state.active ? "text-primary" : state.complete ? "text-success" : "text-muted-foreground"}`}>
+                  {step.label}
                 </p>
-                {active ? <p className="mt-0.5 text-xs text-muted-foreground">Sedang aktif</p> : null}
+                {state.active ? <p className="mt-0.5 text-xs text-muted-foreground">Sedang aktif</p> : null}
               </div>
-              {active ? <span className="absolute inset-x-0 bottom-[-1px] h-0.5 bg-primary sm:inset-x-5" aria-hidden="true" /> : null}
             </li>
           );
         })}
       </ol>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(19rem,0.8fr)] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:items-start">
         <section
-          className="relative isolate overflow-hidden rounded-[2rem] bg-[#0a1c3f] p-6 text-white shadow-[0_30px_78px_-44px_rgb(15_42_104/0.92)] sm:p-8"
-          aria-labelledby="check-in-title"
+          className="relative isolate overflow-hidden rounded-[1.5rem] bg-[#0a1c3f] p-6 text-white shadow-[0_30px_78px_-44px_rgb(15_42_104/0.92)] sm:p-8"
+          aria-labelledby="worker-action-title"
         >
-          <div className="pointer-events-none absolute -right-28 -top-28 -z-10 size-80 rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
-
           <div className="max-w-xl">
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/70">
               <span className="soft-pulse size-2 rounded-full bg-amber-400" aria-hidden="true" />
               Aksi tersedia
             </p>
-            <h2 id="check-in-title" className="mt-6 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
-              Masukkan kode check-in
+            <h2 id="worker-action-title" className="mt-6 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+              {work.allowedActions.checkIn
+                ? "Masukkan kode check-in"
+                : work.allowedActions.checkOut
+                  ? "Check-out setelah selesai"
+                  : work.session.status === "verified"
+                    ? "Pekerjaan terverifikasi"
+                    : "Menunggu langkah berikutnya"}
             </h2>
             <p className="mt-3 text-base leading-7 text-blue-100/75">
-              Minta kode enam digit langsung dari pemberi kerja. Kode berlaku selama 15 menit.
+              {work.allowedActions.checkIn
+                ? "Minta kode enam digit langsung dari pemberi kerja. Kode berlaku selama 15 menit."
+                : work.allowedActions.checkOut
+                  ? "Tambahkan catatan singkat jika perlu, lalu selesaikan sesi kerja."
+                  : "Tidak ada aksi pekerja yang tersedia pada status ini."}
             </p>
 
-            <div className="mt-8 grid gap-3">
-              <Label htmlFor="code" className="text-blue-100">Kode check-in</Label>
-              <Input
-                id="code"
-                name="code"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                minLength={6}
-                maxLength={6}
-                required
-                aria-describedby="check-in-code-help"
-                placeholder="000000"
-                className="theme-static-light h-16 rounded-2xl border-white/20 bg-white text-center font-mono text-2xl tracking-[0.35em] text-slate-950 shadow-[0_20px_45px_-28px_rgb(0_0_0/0.8)] dark:bg-white dark:text-slate-950"
-              />
+            <div className="theme-static-light mt-8 rounded-2xl bg-white p-4 text-slate-950 dark:bg-white dark:text-slate-950">
+              {work.allowedActions.checkIn ? (
+                <CheckInForm agreementId={work.agreementId} />
+              ) : work.allowedActions.checkOut ? (
+                <CheckOutButton agreementId={work.agreementId} />
+              ) : (
+                <Button type="button" className="w-full" disabled>
+                  Menunggu
+                </Button>
+              )}
             </div>
 
             <div className="mt-5 flex gap-3 border-t border-white/15 pt-5 text-base leading-7 text-blue-100/70">
               <LockKeyhole className="mt-0.5 size-4 shrink-0 text-blue-300" aria-hidden="true" />
-              <div>
-                <p className="font-medium text-blue-50">Jaga kode tetap privat</p>
-                <p id="check-in-code-help" className="mt-1">Gunakan tepat enam digit. Kode lama tidak dapat digunakan setelah diganti, kedaluwarsa, atau berhasil dipakai.</p>
+              <p>
+                Rintara tidak mengumpulkan GPS berkelanjutan atau foto bukti
+                kerja. Kode check-in tidak pernah ditampilkan ulang.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <aside className="grid gap-6 border-y border-border/75 py-7 lg:border-l lg:border-y-0 lg:pl-8">
+          <section aria-labelledby="work-summary">
+            <h2 id="work-summary" className="text-xl font-semibold">Ringkasan kerja</h2>
+            <dl className="mt-4 divide-y divide-border/70 border-y border-border/70">
+              <div className="grid gap-1 py-4">
+                <dt className="text-sm text-muted-foreground">Pemberi kerja</dt>
+                <dd className="font-medium">{work.employerDisplayName}</dd>
               </div>
-            </div>
+              <div className="grid gap-1 py-4">
+                <dt className="text-sm text-muted-foreground">Alamat lengkap</dt>
+                <dd className="font-medium">{work.snapshot.fullAddress}</dd>
+              </div>
+              <div className="grid gap-1 py-4">
+                <dt className="text-sm text-muted-foreground">Jadwal</dt>
+                <dd className="font-medium">{formatDateTime(work.snapshot.startsAt)}</dd>
+              </div>
+              <div className="grid gap-1 py-4">
+                <dt className="text-sm text-muted-foreground">Durasi rencana</dt>
+                <dd className="font-medium">{formatDuration(work.snapshot.estimatedMinutes)}</dd>
+              </div>
+            </dl>
+          </section>
 
-            <Button type="button" className="theme-static-light mt-7 h-12 w-full rounded-full bg-white text-slate-950 shadow-none hover:bg-blue-50 sm:w-auto sm:px-8">
-              Check-in
-            </Button>
-          </div>
-        </section>
-
-        <section className="border-t border-border/75 pt-7 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-3" aria-labelledby="check-out-title">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Setelah check-in</p>
-          <h2 id="check-out-title" className="mt-3 text-2xl font-semibold tracking-[-0.035em]">Check-out setelah selesai</h2>
-          <p className="mt-3 text-base leading-7 text-muted-foreground">
-            Aksi ini akan tersedia setelah check-in berhasil.
-          </p>
-
-          <div className="mt-7 grid gap-5 opacity-65">
-            <div className="grid gap-2">
-              <Label htmlFor="note">
-                Catatan penyelesaian <span className="font-normal text-muted-foreground">(opsional)</span>
-              </Label>
-              <Textarea id="note" disabled placeholder="Contoh: seluruh tugas selesai sesuai arahan" className="min-h-28" />
-            </div>
-            <div className="[&>button]:w-full [&>button]:rounded-full">
-              <ConfirmAction
-                disabled
-                triggerLabel="Check-out"
-                title="Selesaikan pekerjaan?"
-                description="Waktu check-out akan dicatat dan pemberi kerja diminta memverifikasi penyelesaian."
-                confirmLabel="Ya, check-out"
-              />
-            </div>
-          </div>
-
-          <div className="mt-8 flex gap-3 border-t border-border/75 pt-6">
-            <Clock3 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-            <p className="text-base leading-7 text-muted-foreground">
-              Setelah check-out, pemberi kerja akan diminta memverifikasi penyelesaian.
-            </p>
-          </div>
-        </section>
+          <section aria-labelledby="attendance-log">
+            <h2 id="attendance-log" className="flex items-center gap-2 text-xl font-semibold">
+              <Clock3 className="size-5 text-primary" aria-hidden="true" />
+              Kehadiran
+            </h2>
+            <dl className="mt-4 grid gap-3">
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <dt className="text-sm text-muted-foreground">Check-in</dt>
+                <dd className="mt-1 font-medium">{formatDateTime(work.session.checkedInAt)}</dd>
+              </div>
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <dt className="text-sm text-muted-foreground">Check-out</dt>
+                <dd className="mt-1 font-medium">{formatDateTime(work.session.checkedOutAt)}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
       </div>
 
       <aside className="flex flex-col gap-4 border-y border-border/75 py-6 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="privacy-note-title">
         <div className="flex max-w-3xl gap-4">
           <ShieldCheck className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
           <div>
-            <h2 id="privacy-note-title" className="font-semibold">Tanpa pelacakan lokasi</h2>
+            <h2 id="privacy-note-title" className="font-semibold">Privasi dijaga</h2>
             <p className="mt-1 text-base leading-7 text-muted-foreground">
-              Rintara tidak mengumpulkan GPS berkelanjutan atau foto bukti kerja. Bukti Kerja diterbitkan setelah penyelesaian diverifikasi pemberi kerja.
+              Bukti Kerja diterbitkan setelah penyelesaian diverifikasi pemberi kerja.
             </p>
           </div>
         </div>
-        <span className="shrink-0 text-xs font-semibold uppercase tracking-[0.14em] text-success">Privasi dijaga</span>
       </aside>
     </div>
   );

@@ -181,12 +181,22 @@ Milestone 3 evidence:
 
 **Dates:** July 25–26
 
+**Status:** Implementation completed on July 25, 2026.
+
+The attendance and completion slice is complete across named server operations,
+authorized work-session UI, Work Proof issuance, Passport read-model update,
+and active-report completion blocking. PostgreSQL integration coverage is in
+`tests/integration/work-attendance.test.ts`; run it with the local test
+database available.
+
 Deliverables:
 
 - check-in code generation, hashing, expiry, attempt limit, and replacement;
 - worker check-in and check-out;
 - atomic/idempotent `verifyCompletion`;
 - unique Work Proof issuance;
+- conditional Opportunity Credit issuance with source-job uniqueness and active
+  cap;
 - worker Passport update;
 - active-report completion block.
 
@@ -197,13 +207,31 @@ Exit criteria:
 - Worker becomes experienced only in the completed category.
 - Golden path works through Passport on preview deployment.
 
+Milestone 4 evidence:
+
+- `generateCheckInCode` stores only an scrypt hash, expiry, failed-attempt
+  count, and used timestamp; plaintext is returned only in the immediate
+  generation result.
+- `checkIn` validates worker party, active agreement, code expiry, failed
+  attempts, reuse state, and atomically transitions session and job.
+- `checkOut` records one worker completion note and moves the session to
+  `checked_out`.
+- `verifyCompletion` requires the employer party, checked-out session, active
+  agreement, in-progress job, and no active report; it completes session,
+  agreement, and job while issuing exactly one Work Proof and conditionally
+  issuing one Opportunity Credit.
+- Worker and employer work pages call `getWorkView` and render only allowed
+  actions for the current session state.
+- `bun typecheck`, `bun lint`, unit tests, and production `bun run build`
+  passed for the completed Milestone 4 implementation state.
+
 ### Milestone 5 — Opportunity Credit, boost, and minimum moderation
 
 **Date:** July 27
 
 Deliverables:
 
-- transactional credit issuance with source-job uniqueness and active cap;
+- credit redemption and earned-credit lifecycle hardening;
 - derived Opportunity Giver badge;
 - idempotent credit redemption and 24-hour boost;
 - boosted discovery ordering;

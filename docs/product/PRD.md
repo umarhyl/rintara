@@ -314,9 +314,9 @@ These product/data decisions remain open and require explicit team approval:
 - [ ] Employer can publish a transparent job and worker can discover and apply to it.
 - [x] Employer can accept exactly one worker under concurrent requests.
 - [x] Both parties can confirm the Mini Agreement.
-- [ ] Check-in, check-out, and completion verification work.
-- [ ] Completion creates exactly one Work Proof.
-- [ ] Passport eligibility changes independently per category.
+- [x] Check-in, check-out, and completion verification work.
+- [x] Completion creates exactly one Work Proof.
+- [x] Passport eligibility changes independently per category.
 - [ ] A qualifying completion issues at most one credit and a credit creates one 24-hour boost.
 - [ ] Reports and minimum admin moderation work.
 - [ ] Private addresses and cross-account resources are protected.
