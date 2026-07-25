@@ -83,7 +83,7 @@ databaseTest(
           paymentMethod: "Transfer",
           paymentTiming: "Setelah selesai",
           riskLevel: "low",
-          applicationDeadline: new Date("2030-01-02T08:00:00.000Z"),
+          applicationDeadline: new Date("2030-01-01T10:00:00.000Z"),
           status: "published",
           publishedAt: new Date("2030-01-01T08:00:00.000Z"),
         });

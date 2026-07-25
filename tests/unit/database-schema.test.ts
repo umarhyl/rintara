@@ -16,6 +16,9 @@ import {
 
 describe("database schema invariants", () => {
   test("defines all one-to-one and one-source uniqueness boundaries", () => {
+    const jobIndexes = getTableConfig(jobs).indexes.map(
+      (index) => index.config.name,
+    );
     const applicationIndexes = getTableConfig(applications).indexes.map(
       (index) => index.config.name,
     );
@@ -37,6 +40,7 @@ describe("database schema invariants", () => {
 
     expect(applicationIndexes).toContain("applications_job_worker_unique");
     expect(applicationIndexes).toContain("applications_one_accepted_per_job");
+    expect(jobIndexes).toContain("jobs_unfilled_expiry_idx");
     expect(agreementIndexes).toContain("agreements_application_unique");
     expect(agreementIndexes).toContain("agreements_job_unique");
     expect(sessionIndexes).toContain("work_sessions_agreement_unique");
@@ -87,6 +91,8 @@ describe("database schema invariants", () => {
       /WHERE "applications"\."status" = 'accepted'/,
     );
     expect(migrationSql).toContain("jobs_wage_amount_positive_check");
+    expect(migrationSql).toContain("jobs_deadline_before_start_check");
+    expect(migrationSql).toContain("interval '24 hours'");
     expect(migrationSql).toContain("reports_has_target_check");
     expect(migrationSql).toContain("job_boosts_exact_duration_check");
   });
