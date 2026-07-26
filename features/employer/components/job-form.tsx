@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useMemo } from "react";
 import {
+  CalendarClock,
   CircleAlert,
   Info,
   LoaderCircle,
@@ -21,6 +22,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import { createJobDraft, updateJobDraft, publishJob } from "@/server/domain/jobs/actions";
 
@@ -62,6 +73,68 @@ type ReferenceData = {
   categories: { id: string; name: string; riskLevel: string; firstOpportunityAllowed: boolean }[];
   wageGuidelines: WageGuidelineReference[];
 };
+
+const selectionCutoffFormatter = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Jakarta",
+});
+
+function selectionCutoffFor(startsAt: string) {
+  if (!startsAt) return null;
+
+  const startDate = new Date(startsAt);
+  if (Number.isNaN(startDate.getTime())) return null;
+
+  return new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+}
+
+const jobErrorMessages: Record<string, string> = {
+  CATEGORY_NOT_ALLOWED:
+    "Kategori ini belum dapat digunakan untuk ketentuan pekerjaan tersebut.",
+  FORBIDDEN: "Akun ini tidak dapat mengelola pekerjaan.",
+  JOB_NOT_DRAFT:
+    "Draf ini sudah berubah status. Muat ulang daftar pekerjaan untuk melihat kondisi terbaru.",
+  JOB_NOT_FOUND: "Pekerjaan tidak ditemukan atau bukan milik akun ini.",
+  VALIDATION_FAILED: "Periksa kembali ketentuan pekerjaan yang ditandai.",
+  WAGE_BELOW_GUIDELINE:
+    "Upah Kesempatan Pertama harus memenuhi panduan upah yang berlaku.",
+  WAGE_GUIDELINE_UNAVAILABLE:
+    "Panduan upah belum tersedia untuk kombinasi area, kategori, dan satuan ini.",
+};
+
+function errorCodeFor(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code;
+  }
+
+  return null;
+}
+
+function fieldErrorsFor(error: unknown) {
+  if (typeof error !== "object" || error === null) return null;
+
+  const candidate = error as {
+    details?: unknown;
+    fieldErrors?: unknown;
+  };
+  const value = candidate.details ?? candidate.fieldErrors;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, string[]>;
+}
+
+function messageForJobError(error: unknown, fallback: string) {
+  const code = errorCodeFor(error);
+  return code ? (jobErrorMessages[code] ?? fallback) : fallback;
+}
 
 function FormSection({
   number,
@@ -163,6 +236,7 @@ export function JobForm({
 
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [submissionIntent, setSubmissionIntent] = useState<
     "draft" | "publish" | null
   >(null);
@@ -177,6 +251,10 @@ export function JobForm({
   };
 
   const selectedCategory = useMemo(() => referenceData.categories.find(c => c.id === formData.categoryId), [formData.categoryId, referenceData.categories]);
+  const selectionCutoff = useMemo(
+    () => selectionCutoffFor(formData.startsAt),
+    [formData.startsAt],
+  );
   const activeGuideline = useMemo(() => {
     const guidelineDate = formData.startsAt
       ? new Date(formData.startsAt).toISOString().slice(0, 10)
@@ -242,11 +320,14 @@ export function JobForm({
         router.push("/employer/jobs");
       }
     } catch (error: unknown) {
-      if (error && typeof error === "object" && "fieldErrors" in error) {
-        setErrors((error as { fieldErrors: Record<string, string[]> }).fieldErrors);
-      } else {
-        setGlobalError((error as Error).message || "Terjadi kesalahan.");
-      }
+      const fieldErrors = fieldErrorsFor(error);
+      if (fieldErrors) setErrors(fieldErrors);
+      setGlobalError(
+        messageForJobError(
+          error,
+          "Draf belum tersimpan. Periksa koneksi lalu coba lagi.",
+        ),
+      );
     } finally {
       submittingRef.current = false;
       setSubmissionIntent(null);
@@ -275,11 +356,15 @@ export function JobForm({
       await publishJob(currentJobId!);
       router.push(`/employer/jobs/${currentJobId}`);
     } catch (error: unknown) {
-      if (error && typeof error === "object" && "fieldErrors" in error) {
-        setErrors((error as { fieldErrors: Record<string, string[]> }).fieldErrors);
-      } else {
-        setGlobalError((error as Error).message || "Terjadi kesalahan saat mempublikasikan.");
-      }
+      const fieldErrors = fieldErrorsFor(error);
+      if (fieldErrors) setErrors(fieldErrors);
+      setGlobalError(
+        messageForJobError(
+          error,
+          "Pekerjaan belum diterbitkan. Periksa koneksi lalu coba lagi.",
+        ),
+      );
+      setPublishDialogOpen(false);
     } finally {
       submittingRef.current = false;
       setSubmissionIntent(null);
@@ -421,6 +506,23 @@ export function JobForm({
                 className="h-11 rounded-xl"
               />
             </Field>
+            <div
+              className="flex min-h-20 items-start gap-3 rounded-xl bg-secondary/70 p-4 sm:col-span-2"
+              aria-live="polite"
+            >
+              <CalendarClock
+                className="mt-0.5 size-5 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              <div>
+                <p className="font-medium">Batas pemilihan pekerja</p>
+                <p className="mt-1 text-base leading-6 text-muted-foreground">
+                  {selectionCutoff
+                    ? `${selectionCutoffFormatter.format(selectionCutoff)}. Batas lamaran harus lebih awal dari waktu ini.`
+                    : "Isi waktu mulai kerja untuk melihat batas pemilihan otomatis."}
+                </p>
+              </div>
+            </div>
           </div>
         </FormSection>
 
@@ -594,19 +696,65 @@ export function JobForm({
           </li>
         </ol>
         <div className="mt-6 grid gap-3 [&>button]:w-full">
-          <Button
-            type="button"
-            onClick={onPublish}
-            disabled={isSubmitting}
-            className="w-full rounded-xl"
+          <Dialog
+            open={publishDialogOpen}
+            onOpenChange={(open) => {
+              if (!isSubmitting) setPublishDialogOpen(open);
+            }}
           >
-            {submissionIntent === "publish" ? (
-              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-            ) : null}
-            {submissionIntent === "publish"
-              ? "Menerbitkan pekerjaan..."
-              : "Terbitkan pekerjaan"}
-          </Button>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                disabled={isSubmitting}
+                className="w-full rounded-xl"
+              >
+                Terbitkan pekerjaan
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Terbitkan pekerjaan ini?</DialogTitle>
+                <DialogDescription className="text-base leading-7">
+                  Ketentuan akan terlihat oleh pekerja dan tidak dapat diedit
+                  setelah terbit. Alamat lengkap tetap privat sampai satu
+                  pekerja diterima.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-xl bg-secondary/70 p-4 text-sm leading-6 text-muted-foreground">
+                Pastikan jadwal, tugas, upah, serta batas lamaran sudah benar.
+                Jika ketentuan terbit perlu diubah, pekerjaan harus dibatalkan
+                lalu dibuat sebagai draf baru.
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11"
+                    disabled={isSubmitting}
+                  >
+                    Periksa lagi
+                  </Button>
+                </DialogClose>
+                <Button
+                  type="button"
+                  className="h-11"
+                  disabled={isSubmitting}
+                  onClick={onPublish}
+                >
+                  {submissionIntent === "publish" ? (
+                    <LoaderCircle
+                      className="size-4 animate-spin"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  {submissionIntent === "publish"
+                    ? "Menerbitkan..."
+                    : "Ya, terbitkan"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button
             type="button"
             onClick={onSaveDraft}

@@ -30,6 +30,7 @@ import {
   workerProfiles,
 } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
+import { getJobSelectionCutoff } from "@/server/domain/jobs/selection-cutoff";
 
 type JobApplicantsDatabase = PostgresJsDatabase<typeof schema>;
 
@@ -86,6 +87,17 @@ export type JobApplicantsResult = {
     categoryId: string;
     categoryName: string;
     isFirstOpportunity: boolean;
+    status:
+      | "draft"
+      | "published"
+      | "filled"
+      | "in_progress"
+      | "completed"
+      | "expired"
+      | "cancelled";
+    applicationDeadline: Date;
+    selectionCutoff: Date;
+    submittedApplicationCount: number;
   };
   applicants: JobApplicantListItem[];
   nextCursor: string | null;
@@ -332,6 +344,9 @@ export async function listJobApplicants(
       categoryId: jobs.categoryId,
       categoryName: categories.name,
       isFirstOpportunity: jobs.isFirstOpportunity,
+      status: jobs.status,
+      applicationDeadline: jobs.applicationDeadline,
+      startsAt: jobs.startsAt,
     })
     .from(jobs)
     .innerJoin(categories, eq(jobs.categoryId, categories.id))
@@ -352,58 +367,85 @@ export async function listJobApplicants(
     );
   }
 
-  const applicantRows = await database
-    .select({
-      id: applications.id,
-      jobId: applications.jobId,
-      workerId: applications.workerId,
-      workerDisplayName: workerProfiles.displayName,
-      workerAreaName: areas.name,
-      workerBio: workerProfiles.bio,
-      availabilityNote: workerProfiles.availabilityNote,
-      note: applications.note,
-      status: applications.status,
-      agreementId: agreements.id,
-      submittedAt: applications.submittedAt,
-      firstOpportunityEligibleAtSubmission:
-        applications.firstOpportunityEligibleAtSubmission,
-      jobCategoryId: jobs.categoryId,
-    })
-    .from(applications)
-    .innerJoin(jobs, eq(applications.jobId, jobs.id))
-    .innerJoin(workerProfiles, eq(applications.workerId, workerProfiles.userId))
-    .innerJoin(areas, eq(workerProfiles.areaId, areas.id))
-    .leftJoin(agreements, eq(agreements.applicationId, applications.id))
-    .where(
-      and(
-        eq(applications.jobId, job.id),
-        cursor
-          ? or(
-              gt(applications.status, cursor.status),
-              and(
-                eq(applications.status, cursor.status),
-                gt(applications.submittedAt, cursor.submittedAt),
-              ),
-              and(
-                eq(applications.status, cursor.status),
-                eq(applications.submittedAt, cursor.submittedAt),
-                gt(applications.id, cursor.id),
-              ),
-            )
-          : undefined,
+  const [applicantRows, [submittedCountRow]] = await Promise.all([
+    database
+      .select({
+        id: applications.id,
+        jobId: applications.jobId,
+        workerId: applications.workerId,
+        workerDisplayName: workerProfiles.displayName,
+        workerAreaName: areas.name,
+        workerBio: workerProfiles.bio,
+        availabilityNote: workerProfiles.availabilityNote,
+        note: applications.note,
+        status: applications.status,
+        agreementId: agreements.id,
+        submittedAt: applications.submittedAt,
+        firstOpportunityEligibleAtSubmission:
+          applications.firstOpportunityEligibleAtSubmission,
+        jobCategoryId: jobs.categoryId,
+      })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .innerJoin(workerProfiles, eq(applications.workerId, workerProfiles.userId))
+      .innerJoin(areas, eq(workerProfiles.areaId, areas.id))
+      .leftJoin(agreements, eq(agreements.applicationId, applications.id))
+      .where(
+        and(
+          eq(applications.jobId, job.id),
+          cursor
+            ? or(
+                gt(applications.status, cursor.status),
+                and(
+                  eq(applications.status, cursor.status),
+                  gt(applications.submittedAt, cursor.submittedAt),
+                ),
+                and(
+                  eq(applications.status, cursor.status),
+                  eq(applications.submittedAt, cursor.submittedAt),
+                  gt(applications.id, cursor.id),
+                ),
+              )
+            : undefined,
+        ),
+      )
+      .orderBy(
+        asc(applications.status),
+        asc(applications.submittedAt),
+        asc(applications.id),
+      )
+      .limit(limit + 1),
+    database
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(applications)
+      .where(
+        and(
+          eq(applications.jobId, job.id),
+          eq(applications.status, "submitted"),
+        ),
       ),
-    )
-    .orderBy(asc(applications.status), asc(applications.submittedAt), asc(applications.id))
-    .limit(limit + 1);
+  ]);
+
+  const {
+    startsAt,
+    ...jobSummary
+  } = job;
+  const resultJob: JobApplicantsResult["job"] = {
+    ...jobSummary,
+    selectionCutoff: getJobSelectionCutoff(startsAt),
+    submittedApplicationCount: submittedCountRow?.count ?? 0,
+  };
 
   if (applicantRows.length === 0) {
-    return { job, applicants: [], nextCursor: null };
+    return { job: resultJob, applicants: [], nextCursor: null };
   }
 
   const pageRows = applicantRows.slice(0, limit);
 
   return {
-    job,
+    job: resultJob,
     applicants: await enrichApplicants(pageRows, database),
     nextCursor:
       applicantRows.length > limit ? encodeCursor(pageRows.at(-1)!) : null,
