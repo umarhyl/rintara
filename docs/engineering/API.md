@@ -421,7 +421,9 @@ Access: active owning employer or authorized admin.
 Returns `{ job, applicants, nextCursor }`. `applicants` contains bounded
 summaries, notes, server-computed category eligibility, aggregate proof counts,
 and a link/identifier for the authorized Passport view; full proof history is
-not embedded in the list.
+not embedded in the list. `job` includes the lifecycle status, application
+deadline, server-derived selection cutoff, and total submitted-applicant count
+so page-local pagination never produces an incorrect active count.
 
 ### `getApplicantPassport(jobId, applicationId, input?: PageInput)`
 

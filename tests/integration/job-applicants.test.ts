@@ -380,6 +380,12 @@ databaseTest(
       );
 
       expect(result.job.title).toBe("Pekerjaan Dengan Pelamar");
+      expect(result.job.status).toBe("published");
+      expect(result.job.applicationDeadline).toEqual(deadline);
+      expect(result.job.selectionCutoff).toEqual(
+        new Date("2030-03-09T08:00:00.000Z"),
+      );
+      expect(result.job.submittedApplicationCount).toBe(2);
       expect(result.applicants).toHaveLength(2);
 
       const workerA = result.applicants.find(
@@ -413,6 +419,8 @@ databaseTest(
         database,
       );
       expect(firstPage.nextCursor).not.toBeNull();
+      expect(firstPage.job.submittedApplicationCount).toBe(2);
+      expect(secondPage.job.submittedApplicationCount).toBe(2);
       expect([
         ...firstPage.applicants.map(({ id }) => id),
         ...secondPage.applicants.map(({ id }) => id),

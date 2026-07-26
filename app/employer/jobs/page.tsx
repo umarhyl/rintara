@@ -29,7 +29,7 @@ function formatDate(value: Date) {
 }
 
 function statusLabel(status: EmployerJobListItem["status"]) {
-  if (status === "draft") return "Draft";
+  if (status === "draft") return "Draf";
   if (status === "published") return "Menerima lamaran";
   if (status === "filled") return "Terisi";
   if (status === "in_progress") return "Berjalan";
@@ -99,7 +99,7 @@ function JobCard({ job }: { job: EmployerJobListItem }) {
       <div className="flex flex-wrap gap-2 sm:justify-end">
         {job.status === "draft" ? (
           <Button variant="outline" className="min-h-11" asChild>
-            <Link href={`/employer/jobs/${job.id}/edit`}>Edit draft</Link>
+            <Link href={`/employer/jobs/${job.id}/edit`}>Edit draf</Link>
           </Button>
         ) : null}
         <Button className="min-h-11" asChild>
@@ -132,7 +132,7 @@ export default async function EmployerJobsPage({
     <div className="grid gap-7">
       <PageHeader
         title="Pekerjaan"
-        description="Kelola draft, pekerjaan terbit, pelamar, dan pekerjaan yang sudah ditutup."
+        description="Kelola draf, pekerjaan terbit, pelamar, dan pekerjaan yang sudah ditutup."
         action={
           <Button className="px-5" asChild>
             <Link href="/employer/jobs/new">
@@ -154,7 +154,7 @@ export default async function EmployerJobsPage({
             <dd className="font-semibold tabular-nums">{activeCount}</dd>
           </div>
           <div className="flex items-baseline gap-2">
-            <dt className="text-muted-foreground">Draft</dt>
+            <dt className="text-muted-foreground">Draf</dt>
             <dd className="font-semibold tabular-nums">{draftCount}</dd>
           </div>
         </dl>
@@ -169,7 +169,7 @@ export default async function EmployerJobsPage({
       ) : (
         <EmptyState
           title="Belum ada pekerjaan"
-          description="Draft dan pekerjaan terbit akan muncul di sini setelah dibuat."
+          description="Draf dan pekerjaan terbit akan muncul di sini setelah dibuat."
           actionLabel="Buat pekerjaan"
           actionHref="/employer/jobs/new"
         />
