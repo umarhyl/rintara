@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { ThemeProvider } from "@/components/rintara/theme-provider";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Rintara — Kesempatan menjadi bukti kerja",
+    default: "Rintara | Kesempatan menjadi Bukti Kerja",
     template: "%s · Rintara",
   },
   description:
@@ -23,10 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" suppressHydrationWarning data-scroll-behavior="smooth" className={geistSans.variable}>
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+    <html lang="id" data-scroll-behavior="smooth" className={figtree.variable}>
+      <body>{children}</body>
     </html>
   );
 }

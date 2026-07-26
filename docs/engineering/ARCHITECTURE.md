@@ -242,21 +242,25 @@ Full work addresses live in `job_private_details` and appear only in authorized 
 
 ### 9.1 Client rendering and motion budget
 
-The motion behavior and accessibility requirements remain authoritative in `docs/design/UI_UX_DESIGN.md`. The implementation follows these runtime guardrails:
+The interaction behavior and accessibility requirements remain authoritative in `docs/design/UI_UX_DESIGN.md`. The shipped runtime follows these guardrails:
 
-- Keep decorative client rendering confined to the hero and authentication Canvas 2D islands. Public content and personalized dashboards remain normal semantic markup; dashboards are not registered for broad automatic scroll reveal.
-- Cap the particle field according to the rendered surface and device hint:
-
-| Runtime class | Frame-rate cap | Device-pixel-ratio cap | Hero particles | Authentication particles |
-| --- | ---: | ---: | ---: | ---: |
-| Typical desktop | 30 fps | 1.25 | 160 | 120 |
-| Lower-power desktop | 24 fps | 1.15 | 112 | 88 |
-| Compact fine-pointer viewport | 30 fps | 1.0 | 80 | 64 |
-
-- Do not mount the Canvas renderer for a coarse pointer, data-saving mode, `prefers-reduced-motion`, or very-low-power hardware. Render the static CSS particle layer instead, avoiding a canvas backing buffer and pointer observers. Stop the animation frame loop and pointer listeners whenever a mounted canvas is offscreen or the document is hidden.
-- Keep initial entrances finite. Do not apply a full-page opacity entrance; authentication uses a transform-only entrance and slow-update displays skip it. Public sections use a one-time 760 ms observer reveal with bounded 90 ms item staggering; already-visible content is not hidden or replayed, and keyboard focus reveals its containing section immediately.
-- Scope reveal observation to the active public or dashboard content root instead of observing the entire document body. Newly inserted content is measured in a batch before reveal attributes are written.
-- Remove backdrop-filter blur on narrow viewports, slow-update displays, and reduced-transparency preferences. Reduced-motion mode disables non-essential entrance, reveal, floating, drawing, and theme-transition animation while leaving content visible. Data-saving, slow-update, reduced-motion, and lower-power devices use the simple theme color transition rather than the full-root clip-path reveal.
+- Render public pages, authentication, onboarding, and dashboards as normal semantic markup. Use Server Components by default and add `"use client"` only for small islands that require browser state or APIs, including authentication controls, navigation, forms, sheets, and dialogs. The `/sign-in` and `/register` Server Pages normalize their own query input inside one shared route-group layout; the persistent client state island retains only ephemeral form drafts and pending state, while credential mutations remain Server Actions.
+- Load the two approved documentary assets through `next/image` with reserved responsive dimensions and appropriate `sizes`: `public/visuals/rintara-local-work-v2.webp` on the homepage and `public/visuals/rintara-auth-work-v1.webp` on sign-in and registration. Images must not become a gallery, autoplay surface, or client-rendered background system.
+- The public header may use one passive scroll listener throttled through a
+  single scheduled `requestAnimationFrame` to interpolate its contained,
+  lightly frosted starting layout into a compact translucent floating surface
+  across a bounded scroll distance. One bounded `backdrop-filter` is allowed
+  on this header surface. It must not update React state per scroll event, run
+  a continuous animation-frame loop, or observe each content section.
+- The public profile control reads only the private, no-store presentation DTO
+  from `/auth/status?detail=account`. That DTO is derived from the
+  proxy-verified session and allowlists account state, active role, and the
+  signed-in account's own display name. It is navigation presentation only;
+  every private route and operation still performs independent server-side
+  role and relationship authorization.
+- Keep interaction motion finite and state-based. Prefer short transform, color, border, opacity, height, width, radius, padding, and shadow transitions; do not create ambient loops or automatic entrance or reveal choreography.
+- Do not mount decorative Canvas or WebGL renderers, particle fields, pointer-tracking or mouse-following effects, automatic scroll reveal, or fallback CSS particle layers.
+- `prefers-reduced-motion: reduce` collapses nonessential transitions and disables smooth scrolling while keeping every route, form, navigation control, image, and status immediately available. No appearance or theme-transition runtime is shipped.
 
 ## 10. Scalability Strategy
 

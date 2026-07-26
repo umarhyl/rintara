@@ -120,11 +120,10 @@ export default async function EmployerJobPage({
   ] as const;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Manajemen pekerjaan"
         title={job.title}
-        description="Kelola pekerjaan milikmu tanpa membuka alamat lengkap ke halaman publik."
+        description="Tinjau detail, pelamar, dan status pekerjaan."
         action={
           <StatusBadge tone={statusTone(job.status)}>
             {statusLabel(job.status)}
@@ -134,23 +133,23 @@ export default async function EmployerJobPage({
 
       <section
         aria-label="Ringkasan pekerjaan"
-        className="grid border-y border-border/70 sm:grid-cols-3"
+        className="grid border-y border-border/75 sm:grid-cols-3"
       >
         {facts.map((fact, index) => {
           const Icon = fact.icon;
           return (
             <div
               key={fact.label}
-              className={`grid grid-cols-[auto_1fr] gap-4 py-5 sm:px-6 ${
+              className={`grid grid-cols-[auto_1fr] gap-3 py-4 sm:px-5 ${
                 index > 0 ? "border-t border-border/70 sm:border-l sm:border-t-0" : ""
               } ${index === 0 ? "sm:pl-0" : ""}`}
             >
               <Icon className="mt-1 size-4 text-primary" aria-hidden="true" />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {fact.label}
                 </p>
-                <p className="mt-1.5 text-lg font-semibold tracking-[-0.02em]">
+                <p className="mt-1 font-semibold">
                   {fact.value}
                 </p>
                 <p className="mt-0.5 text-sm text-muted-foreground">{fact.detail}</p>
@@ -160,14 +159,14 @@ export default async function EmployerJobPage({
         })}
       </section>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <article className="overflow-hidden rounded-[1.75rem] border border-border/75 bg-card/75 backdrop-blur-sm">
-          <div className="grid gap-6 border-b border-border/70 px-6 py-7 sm:grid-cols-[1fr_auto] sm:items-end sm:px-8">
+      <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <article className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="grid gap-4 border-b border-border/70 p-5 sm:grid-cols-[1fr_auto] sm:items-end sm:p-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <p className="text-sm font-medium text-muted-foreground">
                 Upah tetap
               </p>
-              <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
+              <p className="mt-1 text-2xl font-semibold tracking-tight">
                 {formatWage(job.wageAmount, job.wageUnit)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -180,9 +179,9 @@ export default async function EmployerJobPage({
             </div>
           </div>
 
-          <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[0.78fr_1.22fr]">
+          <div className="grid gap-7 p-5 sm:p-6 lg:grid-cols-[0.78fr_1.22fr]">
             <section>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-sm font-semibold text-primary">
                 Waktu & kategori
               </p>
               <dl className="mt-4 divide-y divide-border/70 border-y border-border/70">
@@ -213,23 +212,19 @@ export default async function EmployerJobPage({
             </section>
 
             <section>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <p className="text-sm font-semibold text-primary">
                 Ruang lingkup
               </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight">
                 Tugas yang disepakati
               </h2>
               <p className="mt-3 text-base leading-7 text-muted-foreground">
                 {job.description}
               </p>
-              <ol className="mt-6 border-l border-primary/25 pl-6">
+              <ol className="mt-5 grid gap-3">
                 {(tasks.length > 0 ? tasks : [job.taskScope]).map((task, index) => (
-                  <li key={`${task}-${index}`} className="relative pb-6 last:pb-0">
-                    <span
-                      className="absolute -left-[1.78rem] top-1.5 size-2.5 rounded-full border-2 border-card bg-primary"
-                      aria-hidden="true"
-                    />
-                    <span className="mr-3 text-xs text-muted-foreground">
+                  <li key={`${task}-${index}`} className="grid grid-cols-[2rem_1fr] gap-2">
+                    <span className="text-xs tabular-nums text-muted-foreground">
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <span className="leading-7">{task}</span>
@@ -240,21 +235,20 @@ export default async function EmployerJobPage({
           </div>
         </article>
 
-        <aside className="rounded-[1.75rem] bg-foreground p-6 text-background shadow-[0_28px_70px_-44px_rgb(15_23_42/0.7)] lg:sticky lg:top-24">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-background/70">
+        <aside className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-24">
+          <p className="flex items-center gap-2 text-sm font-semibold text-primary">
             <Eye className="size-4" aria-hidden="true" />
-            Tindakan utama
+            Tindakan
           </p>
-          <h2 className="mt-3 text-xl font-semibold tracking-[-0.02em]">
+          <h2 className="mt-3 text-xl font-semibold tracking-tight">
             Kelola pekerjaan
           </h2>
-          <p className="mt-2 text-base leading-7 text-background/65">
-            Tinjau lamaran, lihat halaman publik, atau batalkan pekerjaan yang
-            belum terisi.
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Lanjutkan sesuai status pekerjaan saat ini.
           </p>
           {job.status === "draft" ? (
             <Button
-              className="mt-6 w-full bg-background text-foreground shadow-none hover:bg-background/90"
+              className="mt-5 w-full"
               asChild
             >
               <Link href={`/employer/jobs/${job.id}/edit`}>
@@ -263,7 +257,7 @@ export default async function EmployerJobPage({
             </Button>
           ) : (
             <Button
-              className="mt-6 w-full bg-background text-foreground shadow-none hover:bg-background/90"
+              className="mt-5 w-full"
               asChild
             >
               <Link href={`/employer/jobs/${job.id}/applicants`}>
@@ -274,15 +268,15 @@ export default async function EmployerJobPage({
           {job.status === "published" ? (
             <Button
               variant="outline"
-              className="mt-3 w-full border-background/20 bg-transparent text-background hover:border-background/35 hover:bg-background/10 hover:text-background"
+              className="mt-3 w-full"
               asChild
             >
               <Link href={`/jobs/${job.id}`}>Lihat halaman publik</Link>
             </Button>
           ) : null}
 
-          <div className="mt-7 border-t border-background/15 pt-5">
-            <p className="text-xs leading-5 text-background/70">
+          <div className="mt-6 border-t border-border/75 pt-5">
+            <p className="text-xs leading-5 text-muted-foreground">
               Membatalkan pekerjaan akan menutup lamaran yang masih aktif.
             </p>
             <div className="mt-3 [&>button]:w-full">

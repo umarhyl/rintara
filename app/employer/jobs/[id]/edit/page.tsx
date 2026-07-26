@@ -32,13 +32,13 @@ export default async function EditJobPage({
   const referenceData = await getJobReferenceData();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto grid max-w-[70rem] gap-7">
       <PageHeader
-        title="Edit Draft Pekerjaan"
-        description="Perbarui informasi pekerjaan Anda."
+        title="Edit draf pekerjaan"
+        description="Perbarui ketentuan sebelum pekerjaan diterbitkan."
       />
-      <JobForm 
-        referenceData={referenceData} 
+      <JobForm
+        referenceData={referenceData}
         initialData={{
           ...jobData,
           wageAmount: Number(jobData.wageAmount),
@@ -46,7 +46,7 @@ export default async function EditJobPage({
           applicationDeadline: jobData.applicationDeadline?.toISOString() || "",
           toolsProvided: jobData.toolsProvided || undefined,
           toolsRequired: jobData.toolsRequired || undefined,
-        }} 
+        }}
         jobId={id}
       />
     </div>

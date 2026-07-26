@@ -1,5 +1,5 @@
 import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
-import { AuthShell } from "@/features/auth/components/auth-shell";
+import { AuthPanel } from "@/features/auth/components/auth-shell";
 import { RegisterForm } from "@/features/auth/components/register-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
@@ -15,9 +15,13 @@ export default async function RegisterPage({
   const nextPath = rawNextPath ? safeApplicationPath(rawNextPath, "/account/continue") : undefined;
 
   return (
-    <AuthShell title="Mulai dari satu kesempatan" description="Buat akses awal, lalu pilih satu peran aktif sebagai pekerja atau pemberi kerja." eyebrow="Mulai jejakmu" stage={1}>
+    <AuthPanel
+      title="Buat akun Rintara"
+      description="Gunakan email aktif untuk melanjutkan ke pilihan peran."
+      stage={1}
+    >
       <AuthRouteSwitch active="register" nextPath={nextPath} />
       <RegisterForm nextPath={nextPath} />
-    </AuthShell>
+    </AuthPanel>
   );
 }

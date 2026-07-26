@@ -1,5 +1,3 @@
-import { Clock3, FileCheck2, TicketCheck } from "lucide-react";
-
 import { RedeemCreditForm } from "@/components/rintara/redeem-credit-form";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
@@ -14,7 +12,6 @@ export default async function CreditsPage() {
       label: "Kredit aktif",
       value: `${summary.activeCreditCount} / 3`,
       description: "Batas maksimum tiga kredit aktif",
-      icon: TicketCheck,
     },
     {
       label: "Kesempatan selesai",
@@ -22,49 +19,42 @@ export default async function CreditsPage() {
       description: summary.hasOpportunityGiverBadge
         ? "Badge pemberi kesempatan aktif"
         : "Belum ada badge",
-      icon: FileCheck2,
     },
     {
       label: "Boost aktif",
       value: String(summary.activeBoostCount),
       description: "Pekerjaan dengan prioritas 24 jam",
-      icon: Clock3,
     },
   ];
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Jejak pemberi kesempatan"
-        title="Ubah satu kredit menjadi 24 jam visibilitas"
-        description="Kredit Kesempatan adalah manfaat produk, bukan uang, tidak dapat dipindahkan, dan digunakan satu kali untuk pekerjaan terbit milikmu."
+        title="Kredit Kesempatan"
+        description="Gunakan satu kredit untuk boost 24 jam pada pekerjaan terbit milikmu. Kredit bukan uang dan tidak dapat dipindahkan."
       />
 
       <section
         aria-label="Ringkasan Kredit Kesempatan"
-        className="grid border-y border-border/70 sm:grid-cols-3"
+        className="grid border-y border-border/75 sm:grid-cols-3"
       >
         {summaries.map((item, index) => {
-          const Icon = item.icon;
           return (
             <div
               key={item.label}
-              className={`grid grid-cols-[auto_1fr] gap-4 py-5 sm:px-6 ${
+              className={`py-4 sm:px-5 ${
                 index > 0 ? "border-t border-border/70 sm:border-l sm:border-t-0" : ""
               } ${index === 0 ? "sm:pl-0" : ""}`}
             >
-              <Icon className="mt-1 size-4 text-primary" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  {item.label}
-                </p>
-                <p className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                  {item.value}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {item.description}
-                </p>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {item.label}
+              </p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                {item.value}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {item.description}
+              </p>
             </div>
           );
         })}

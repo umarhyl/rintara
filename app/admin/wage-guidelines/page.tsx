@@ -1,12 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BookOpenCheck,
-  CheckCircle2,
-  CircleDashed,
-  MapPinned,
-  Tags,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
@@ -90,126 +83,45 @@ export default async function WageGuidelinesPage({
   );
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Konfigurasi marketplace"
-        title="Kategori, area, dan Panduan Upah"
-        description="Kelola konfigurasi operasional yang menentukan area pilot, kategori pekerjaan, dan kelayakan upah untuk Kesempatan Pertama."
+        title="Konfigurasi marketplace"
+        description="Kelola kategori, area pilot, dan Panduan Upah untuk Kesempatan Pertama."
         action={
-          <div className="grid grid-cols-3 overflow-hidden rounded-2xl border border-border bg-card/75 text-center">
-            <div className="px-4 py-3">
-              <p className="text-2xl font-semibold tracking-[-0.04em]">
-                {activeCategories.length}
-              </p>
-              <p className="text-xs text-muted-foreground">aktif di halaman</p>
+          <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            <div className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">Kategori</dt>
+              <dd className="font-semibold tabular-nums">{activeCategories.length}</dd>
             </div>
-            <div className="border-l border-border px-4 py-3">
-              <p className="text-2xl font-semibold tracking-[-0.04em]">
-                {activeAreas.length}
-              </p>
-              <p className="text-xs text-muted-foreground">aktif di halaman</p>
+            <div className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">Area</dt>
+              <dd className="font-semibold tabular-nums">{activeAreas.length}</dd>
             </div>
-            <div className="border-l border-border px-4 py-3">
-              <p className="text-2xl font-semibold tracking-[-0.04em]">
-                {activeGuidelines.length}
-              </p>
-              <p className="text-xs text-muted-foreground">aktif di halaman</p>
+            <div className="flex items-baseline gap-2">
+              <dt className="text-muted-foreground">Panduan</dt>
+              <dd className="font-semibold tabular-nums">{activeGuidelines.length}</dd>
             </div>
-          </div>
+          </dl>
         }
       />
 
-      <section className="grid gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)]">
-        <div className="relative isolate overflow-hidden rounded-[1.75rem] border border-border/75 bg-card/72 px-6 py-8 backdrop-blur-sm sm:px-8">
-          <div
-            className="absolute -right-20 -top-24 size-64 rounded-full bg-primary/[0.07] blur-3xl"
-            aria-hidden="true"
-          />
-          <BookOpenCheck className="size-7 text-primary" aria-hidden="true" />
-          <p className="mt-7 text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-            Panduan aktif
-          </p>
-          <h2 className="mt-2 max-w-lg text-3xl font-semibold tracking-[-0.04em]">
-            Referensi upah per lokasi dan kategori.
-          </h2>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-            Nilai minimum dipakai untuk menentukan kepatuhan upah. Rekomendasi
-            maksimum membantu admin memberi konteks penyesuaian lokasi tanpa
-            menjadikannya klaim hukum.
-          </p>
-          <p className="mt-8 flex items-start gap-3 border-t border-border/70 pt-5 text-base leading-7 text-muted-foreground">
-            <CircleDashed
-              className="mt-0.5 size-4.5 shrink-0 text-amber-600"
-              aria-hidden="true"
-            />
-            Kesempatan Pertama hanya bisa diterbitkan saat kategori, area, dan
-            panduan upah aktif tersedia.
-          </p>
-        </div>
-
-        <section
-          aria-labelledby="guideline-route"
-          className="rounded-[1.75rem] border border-border/75 bg-card/72 p-6 backdrop-blur-sm sm:p-7"
-        >
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-            Jejak penerbitan
-          </p>
-          <h2
-            id="guideline-route"
-            className="mt-2 text-xl font-semibold tracking-[-0.025em]"
-          >
-            Dari konfigurasi ke marketplace
-          </h2>
-          <ol className="relative mt-8 grid gap-8 before:absolute before:bottom-3 before:left-[0.3rem] before:top-3 before:w-px before:bg-border">
-            {[
-              ["Pilot area", "Area aktif muncul di onboarding, filter, dan form pekerjaan."],
-              ["Kategori", "Kategori aktif menentukan jenis pekerjaan dan aturan First Opportunity."],
-              ["Panduan Upah", "Nilai aktif dipakai saat employer menerbitkan pekerjaan."],
-            ].map(([title, detail], index) => (
-              <li key={title} className="relative grid grid-cols-[1.1rem_1fr] gap-4">
-                <span
-                  className={`mt-1 size-2.5 rounded-full ring-4 ring-card ${
-                    index < 2 ? "bg-primary" : "bg-muted-foreground/50"
-                  }`}
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="font-medium">{title}</p>
-                  <p className="mt-1 text-base leading-7 text-muted-foreground">
-                    {detail}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      </section>
-
       <section
         aria-labelledby="category-config-title"
-        className="overflow-hidden rounded-[1.75rem] border border-border/75 bg-card/82"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
-        <div className="grid gap-4 border-b border-border/70 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="border-b border-border/70 p-5 sm:p-6">
           <div>
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-              <Tags className="size-4" aria-hidden="true" />
-              Kategori pekerjaan
-            </p>
             <h2
               id="category-config-title"
-              className="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+              className="text-xl font-semibold tracking-tight"
             >
               Buat kategori
             </h2>
-            <p className="mt-2 max-w-2xl text-base leading-7 text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Kategori aktif tersedia untuk profil pekerja, pencarian, dan form
               pekerjaan employer.
             </p>
           </div>
-          <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
-            Aksi tercatat di audit
-          </p>
         </div>
         <div className="px-5 py-6 sm:px-7">
           <CategoryConfigForm />
@@ -218,21 +130,17 @@ export default async function WageGuidelinesPage({
 
       <section
         aria-labelledby="area-config-title"
-        className="overflow-hidden rounded-[1.75rem] border border-border/75 bg-card/82"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
-        <div className="grid gap-4 border-b border-border/70 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="border-b border-border/70 p-5 sm:p-6">
           <div>
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-              <MapPinned className="size-4" aria-hidden="true" />
-              Pilot area
-            </p>
             <h2
               id="area-config-title"
-              className="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+              className="text-xl font-semibold tracking-tight"
             >
               Kelola area pilot
             </h2>
-            <p className="mt-2 max-w-2xl text-base leading-7 text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Area pilot disimpan sebagai kota/kabupaten agar bisa dipakai oleh
               onboarding, pekerjaan, dan Panduan Upah.
             </p>
@@ -245,20 +153,17 @@ export default async function WageGuidelinesPage({
 
       <section
         aria-labelledby="guideline-config-title"
-        className="overflow-hidden rounded-[1.75rem] border border-border/75 bg-card/82"
+        className="overflow-hidden rounded-xl border border-border bg-card"
       >
-        <div className="grid gap-4 border-b border-border/70 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="border-b border-border/70 p-5 sm:p-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-              Panduan Upah
-            </p>
             <h2
               id="guideline-config-title"
-              className="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+              className="text-xl font-semibold tracking-tight"
             >
               Konfigurasi upah per area
             </h2>
-            <p className="mt-2 max-w-2xl text-base leading-7 text-muted-foreground">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Setiap panduan berlaku untuk satu area, kategori, dan satuan upah.
               Nilai ini menjadi dasar penyesuaian lokasi saat pekerjaan
               diterbitkan.
@@ -277,20 +182,17 @@ export default async function WageGuidelinesPage({
         aria-labelledby="existing-config-title"
         className="grid gap-5"
       >
-        <div className="border-b border-border/70 pb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">
-            Data tersimpan
-          </p>
+        <div className="border-b border-border/70 pb-4">
           <h2
             id="existing-config-title"
-            className="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+            className="text-xl font-semibold tracking-tight"
           >
-            Ringkasan konfigurasi
+            Konfigurasi tersimpan
           </h2>
         </div>
 
         <div className="grid gap-5 xl:grid-cols-3">
-          <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <h3 className="font-semibold">Kategori</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
               {config.categories.map((category) => (
@@ -318,7 +220,7 @@ export default async function WageGuidelinesPage({
                 aria-label="Navigasi kategori"
                 className="mt-4 flex justify-end"
               >
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" className="min-h-11" asChild>
                   <Link
                     href={nextPageHref(
                       cursors,
@@ -334,7 +236,7 @@ export default async function WageGuidelinesPage({
             ) : null}
           </article>
 
-          <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <h3 className="font-semibold">Pilot area</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
               {config.areas.map((area) => (
@@ -359,7 +261,7 @@ export default async function WageGuidelinesPage({
                 aria-label="Navigasi area pilot"
                 className="mt-4 flex justify-end"
               >
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" className="min-h-11" asChild>
                   <Link
                     href={nextPageHref(
                       cursors,
@@ -375,7 +277,7 @@ export default async function WageGuidelinesPage({
             ) : null}
           </article>
 
-          <article className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <h3 className="font-semibold">Panduan Upah</h3>
             <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
               {config.wageGuidelines.map((guideline) => (
@@ -411,7 +313,7 @@ export default async function WageGuidelinesPage({
                 aria-label="Navigasi Panduan Upah"
                 className="mt-4 flex justify-end"
               >
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" className="min-h-11" asChild>
                   <Link
                     href={nextPageHref(
                       cursors,

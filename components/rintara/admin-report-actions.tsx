@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import {
@@ -39,20 +39,36 @@ export function AdminReportActions({
   const [deactivateBoostId, setDeactivateBoostId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const submissionLockRef = useRef(false);
+
+  useEffect(() => {
+    submissionLockRef.current = false;
+  }, [reportId, status]);
 
   function startReview() {
+    if (isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
         await adminStartReportReview(reportId);
         router.refresh();
       } catch {
+        submissionLockRef.current = false;
         setError("Laporan belum bisa mulai ditinjau.");
       }
     });
   }
 
   function resolve(outcome: "resolved" | "rejected") {
+    if (
+      isPending ||
+      note.trim().length < 10 ||
+      submissionLockRef.current
+    ) {
+      return;
+    }
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
@@ -71,6 +87,7 @@ export function AdminReportActions({
         });
         router.refresh();
       } catch {
+        submissionLockRef.current = false;
         setError("Keputusan belum bisa disimpan. Pastikan catatan minimal 10 karakter.");
       }
     });

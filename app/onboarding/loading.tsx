@@ -7,7 +7,7 @@ export default function OnboardingLoading() {
       aria-busy="true"
       aria-label="Memuat proses pendaftaran"
     >
-      <section className="hidden min-h-screen bg-[#07142f] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14">
+      <section className="hidden min-h-screen bg-[#1b512d] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14">
         <Skeleton className="h-11 w-32 bg-white/12" />
         <div className="grid max-w-lg gap-5">
           <Skeleton className="h-4 w-44 bg-white/12" />
@@ -18,7 +18,7 @@ export default function OnboardingLoading() {
       </section>
 
       <section className="flex min-h-screen items-center justify-center px-4 py-24 sm:px-8 lg:px-12">
-        <div className="w-full max-w-[34rem] rounded-[2rem] border border-border bg-card p-6 shadow-sm sm:p-9 lg:p-10">
+        <div className="w-full max-w-[34rem] rounded-xl border border-border bg-card p-6 sm:p-9 lg:p-10">
           <div className="mb-8 flex items-center justify-between gap-4">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-10" />
@@ -30,7 +30,7 @@ export default function OnboardingLoading() {
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-12 w-full rounded-full" />
+            <Skeleton className="h-12 w-full rounded-xl" />
           </div>
         </div>
       </section>

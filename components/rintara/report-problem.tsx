@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Flag, LoaderCircle } from "lucide-react";
 import { createReport } from "@/server/domain/reports/actions";
 import { Button } from "@/components/ui/button";
@@ -60,9 +60,11 @@ export function ReportProblem({
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const submissionLockRef = useRef(false);
 
   function handleSubmit() {
-    if (!reason || isPending) return;
+    if (!reason || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
@@ -76,7 +78,9 @@ export function ReportProblem({
         setOpen(false);
         setReason("");
         setDescription("");
+        submissionLockRef.current = false;
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });
@@ -94,9 +98,8 @@ export function ReportProblem({
         <DialogHeader>
           <DialogTitle>Laporkan masalah</DialogTitle>
           <DialogDescription className="text-base leading-7">
-            Gunakan keterangan faktual. Laporan dapat menjeda penyelesaian
-            pekerjaan terkait, tetapi Rintara tidak menyelesaikan sengketa hukum
-            atau pembayaran.
+            Tulis kejadian secara faktual. Laporan aktif dapat menjeda
+            penyelesaian pekerjaan terkait.
           </DialogDescription>
         </DialogHeader>
 

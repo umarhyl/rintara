@@ -95,7 +95,7 @@ export function EmployerOnboardingForm({ areas, nextPath }: { areas: AreaOption[
   const noAreaAvailable = areas.length === 0;
 
   return (
-    <form className="grid gap-7" aria-busy={isPending} onSubmit={handleSubmit}>
+    <form className="grid gap-6" aria-busy={isPending} onSubmit={handleSubmit}>
       {error ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
@@ -114,8 +114,8 @@ export function EmployerOnboardingForm({ areas, nextPath }: { areas: AreaOption[
         </Alert>
       ) : null}
 
-      <div className="grid gap-5">
-        <div className="grid gap-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2 sm:col-span-2">
           <Label htmlFor="employer-display-name">Nama usaha atau pemberi kerja</Label>
           <Input
             id="employer-display-name"
@@ -188,7 +188,7 @@ export function EmployerOnboardingForm({ areas, nextPath }: { areas: AreaOption[
           {areaError ? <p id="employer-area-error" className="text-sm leading-6 text-destructive">{areaError}</p> : null}
         </div>
 
-        <div className="grid gap-2">
+        <div className="grid gap-2 sm:col-span-2">
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor="employer-description">Deskripsi singkat</Label>
             <span className="text-xs text-muted-foreground">Opsional</span>
@@ -204,14 +204,14 @@ export function EmployerOnboardingForm({ areas, nextPath }: { areas: AreaOption[
         </div>
       </div>
 
-      <p className="border-y border-border py-4 text-base leading-7 text-muted-foreground">
-        Gunakan identitas yang dapat dikenali pekerja. Informasi rekening dan pembayaran tidak diperlukan di profil.
+      <p className="border-l-2 border-primary/35 pl-3 text-sm leading-6 text-muted-foreground">
+        Jangan cantumkan informasi rekening atau pembayaran di profil.
       </p>
 
       <Button
         type="submit"
         size="lg"
-        className="w-full rounded-full"
+        className="h-12 w-full"
         disabled={isPending || noAreaAvailable}
       >
         {isPending ? "Menyimpan profil…" : "Simpan dan lihat beranda"}

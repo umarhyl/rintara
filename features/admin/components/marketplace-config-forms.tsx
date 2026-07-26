@@ -26,7 +26,7 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="rounded-full" disabled={pending}>
+    <Button type="submit" disabled={pending}>
       {pending ? "Menyimpan..." : children}
     </Button>
   );
@@ -46,6 +46,7 @@ function StatusButton({
       type="submit"
       variant={isActive ? "destructive" : "outline"}
       size="sm"
+      className="min-h-11"
       disabled={pending}
     >
       {pending ? "Menyimpan..." : children}
@@ -58,7 +59,7 @@ function FormMessage({ state }: { state: ActionState }) {
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
         state.ok
           ? "border-success/25 bg-success/10 text-success"
           : "border-destructive/25 bg-destructive/10 text-destructive"

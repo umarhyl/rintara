@@ -1,42 +1,86 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, LoaderCircle } from "lucide-react";
+import { ArrowRight, LoaderCircle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobApplicationForm } from "@/components/rintara/job-application-form";
-import { usePublicAuthState } from "@/features/auth/use-public-auth-state";
+import {
+  type PublicAccountRole,
+  usePublicAccountState,
+} from "@/features/auth/use-public-auth-state";
+
+const workspaceByRole: Record<
+  PublicAccountRole,
+  { href: string; label: string; title: string; description: string }
+> = {
+  worker: {
+    href: "/worker/dashboard",
+    label: "Buka dasbor pekerja",
+    title: "Akun pekerja siap",
+    description: "Tulis catatan singkat untuk mengirim lamaran.",
+  },
+  employer: {
+    href: "/employer/dashboard",
+    label: "Buka ruang pemberi kerja",
+    title: "Kamu masuk sebagai pemberi kerja",
+    description:
+      "Lamaran hanya dapat dikirim dari akun pekerja. Kelola pekerjaanmu dari ruang pemberi kerja.",
+  },
+  admin: {
+    href: "/admin",
+    label: "Buka ruang admin",
+    title: "Kamu masuk sebagai admin",
+    description:
+      "Akun admin tidak dapat mengirim lamaran. Lanjutkan pekerjaanmu dari ruang admin.",
+  },
+};
+
+function ApplyMessage({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-semibold text-white">{title}</p>
+      <p className="mt-1.5 text-sm leading-6 text-[#c9d8cd]">{description}</p>
+    </div>
+  );
+}
 
 export function JobApplyAuthAction({ jobId }: { jobId: string }) {
-  const authState = usePublicAuthState();
+  const { accountState, retry } = usePublicAccountState();
+  const nextPath = `/jobs/${jobId}`;
 
-  const signedIn = authState === "signed-in";
+  if (accountState.kind === "ready" && accountState.role === "worker") {
+    return <JobApplicationForm jobId={jobId} />;
+  }
 
-  return (
-    <div className="grid gap-5" aria-busy={authState === "checking"}>
-      <div className="rounded-2xl border border-white/15 bg-white/[0.055] p-4">
-        <p className="text-sm font-semibold text-white">
-          {signedIn ? "Tulis catatan singkat" : "Catatan singkat setelah masuk"}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-blue-100/65">
-          {signedIn
-            ? "Ceritakan ketersediaanmu dan alasan kamu cocok. Upah tetap mengikuti ketentuan pekerjaan."
-            : "Masuk sebagai pekerja untuk menulis ketersediaan dan alasan kamu cocok. Jangan cantumkan nomor rekening atau alamat pribadi."}
-        </p>
-      </div>
-
-      {authState === "checking" ? (
+  if (accountState.kind === "checking") {
+    return (
+      <div className="grid gap-4" aria-busy="true">
         <Button
-          className="theme-static-light h-12 rounded-full bg-white text-slate-950 shadow-none"
+          className="theme-static-light h-11 bg-[#73e2a7] text-[#0c1711] shadow-none"
           disabled
         >
           <LoaderCircle className="animate-spin" aria-hidden="true" />
           Memeriksa akun
         </Button>
-      ) : signedIn ? (
-        <JobApplicationForm jobId={jobId} />
-      ) : (
+      </div>
+    );
+  }
+
+  if (accountState.kind === "anonymous") {
+    return (
+      <div className="grid gap-4">
+        <ApplyMessage
+          title="Masuk sebagai pekerja"
+          description="Setelah masuk, kamu dapat menulis satu catatan lamaran singkat. Jangan cantumkan rekening atau alamat pribadi."
+        />
         <Button
-          className="theme-static-light h-12 rounded-full bg-white text-slate-950 shadow-none hover:bg-blue-50"
+          className="theme-static-light h-11 bg-[#73e2a7] text-[#0c1711] shadow-none hover:bg-[#def4c6]"
           asChild
         >
           <Link
@@ -46,12 +90,106 @@ export function JobApplyAuthAction({ jobId }: { jobId: string }) {
             Masuk untuk melamar <ArrowRight aria-hidden="true" />
           </Link>
         </Button>
-      )}
+      </div>
+    );
+  }
 
-      <p className="flex gap-2 text-xs leading-5 text-blue-100/70">
-        <BadgeCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-        Satu catatan singkat cukup; tidak ada penawaran upah.
-      </p>
+  if (accountState.kind === "onboarding") {
+    const onboardingPath =
+      accountState.role === "worker"
+        ? "/onboarding/worker"
+        : accountState.role === "employer"
+          ? "/onboarding/employer"
+          : "/onboarding/role";
+    const selectedEmployer = accountState.role === "employer";
+
+    return (
+      <div className="grid gap-4">
+        <ApplyMessage
+          title={
+            selectedEmployer
+              ? "Selesaikan profil pemberi kerja"
+              : "Lengkapi akun untuk melamar"
+          }
+          description={
+            selectedEmployer
+              ? "Profilmu belum lengkap. Setelah selesai, kamu dapat mengelola pekerjaan dari ruang pemberi kerja."
+              : "Selesaikan peran dan profil pekerja terlebih dahulu. Kamu akan kembali ke pekerjaan ini setelahnya."
+          }
+        />
+        <Button
+          className="theme-static-light h-11 bg-[#73e2a7] text-[#0c1711] shadow-none hover:bg-[#def4c6]"
+          asChild
+        >
+          <Link
+            href={{
+              pathname: onboardingPath,
+              query: { next: nextPath },
+            }}
+            prefetch={false}
+          >
+            Lanjutkan penyiapan akun <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (accountState.kind === "inactive") {
+    return (
+      <div className="grid gap-4">
+        <ApplyMessage
+          title="Akun tidak dapat mengirim lamaran"
+          description="Periksa status akunmu dan langkah pemulihan yang tersedia sebelum melanjutkan."
+        />
+        <Button
+          className="theme-static-light h-11 bg-[#73e2a7] text-[#0c1711] shadow-none hover:bg-[#def4c6]"
+          asChild
+        >
+          <Link href="/account-restricted">
+            Lihat status akun <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (accountState.kind === "unavailable") {
+    return (
+      <div className="grid gap-4">
+        <ApplyMessage
+          title="Status akun belum terbaca"
+          description="Koneksi mungkin sedang terganggu. Muat ulang status akun tanpa kehilangan halaman pekerjaan ini."
+        />
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+          onClick={retry}
+        >
+          <RotateCw aria-hidden="true" />
+          Coba lagi
+        </Button>
+      </div>
+    );
+  }
+
+  const workspace = workspaceByRole[accountState.role];
+
+  return (
+    <div className="grid gap-4">
+      <ApplyMessage
+        title={workspace.title}
+        description={workspace.description}
+      />
+      <Button
+        className="theme-static-light h-11 bg-[#73e2a7] text-[#0c1711] shadow-none hover:bg-[#def4c6]"
+        asChild
+      >
+        <Link href={workspace.href}>
+          {workspace.label} <ArrowRight aria-hidden="true" />
+        </Link>
+      </Button>
     </div>
   );
 }

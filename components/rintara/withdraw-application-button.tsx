@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { LoaderCircle } from "lucide-react";
 import { withdrawApplication } from "@/server/domain/applications/actions";
 import { Button } from "@/components/ui/button";
@@ -31,13 +31,17 @@ export function WithdrawApplicationButton({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const submissionLockRef = useRef(false);
 
   function handleWithdraw() {
+    if (isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
         await withdrawApplication(applicationId);
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });
@@ -48,7 +52,7 @@ export function WithdrawApplicationButton({
       <Button
         type="button"
         variant="outline"
-        className="h-10 rounded-full"
+        className="h-11"
         disabled={isPending}
         onClick={handleWithdraw}
       >

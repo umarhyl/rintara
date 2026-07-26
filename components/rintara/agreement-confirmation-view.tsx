@@ -172,11 +172,10 @@ export function AgreementConfirmationView({
   ];
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Mini Agreement"
         title={agreement.snapshot.title}
-        description={`Ketentuan ini adalah snapshot tetap saat ${otherPartyName} dan ${partyName} terhubung melalui penerimaan lamaran.`}
+        description={`Ketentuan tetap antara ${otherPartyName} dan ${partyName}.`}
         action={
           <StatusBadge tone={statusTones[agreement.status]}>
             {statusLabels[agreement.status]}
@@ -185,69 +184,60 @@ export function AgreementConfirmationView({
       />
 
       <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <article className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/80 shadow-[0_24px_70px_-56px_rgb(15_23_42/0.5)] backdrop-blur-sm">
-          <header className="grid gap-5 border-b border-border/70 px-5 py-6 sm:grid-cols-[1fr_auto] sm:items-center sm:px-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Snapshot versi {agreement.snapshot.version}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-                Ketentuan diterima
-              </h2>
-            </div>
-            <p className="flex max-w-xs items-center gap-2 text-base leading-7 text-muted-foreground">
+        <article className="overflow-hidden rounded-xl border border-border bg-card">
+          <header className="flex flex-col gap-3 border-b border-border/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <p className="text-sm font-semibold text-muted-foreground">
+              Versi {agreement.snapshot.version}
+            </p>
+            <p className="flex max-w-sm items-center gap-2 text-sm leading-6 text-muted-foreground">
               <LockKeyhole className="size-4 shrink-0 text-primary" aria-hidden="true" />
-              Alamat lengkap hanya tampil di tampilan agreement privat ini.
+              Alamat lengkap hanya tampil di Mini Agreement privat.
             </p>
           </header>
 
-          <section className="grid gap-4 border-b border-border/70 px-5 py-7 sm:px-8 lg:grid-cols-[10rem_1fr] lg:gap-10">
+          <section className="grid gap-4 border-b border-border/70 p-5 sm:p-6 lg:grid-cols-[10rem_1fr] lg:gap-8">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
                 <UsersRound className="size-4" aria-hidden="true" />
-                01
-              </p>
-              <h2 className="mt-3 text-lg font-semibold">Para pihak</h2>
+                Para pihak
+              </h2>
             </div>
             <DetailList items={partyItems} className="border-y border-border/70" />
           </section>
 
-          <section className="grid gap-4 border-b border-border/70 px-5 py-7 sm:px-8 lg:grid-cols-[10rem_1fr] lg:gap-10">
+          <section className="grid gap-4 border-b border-border/70 p-5 sm:p-6 lg:grid-cols-[10rem_1fr] lg:gap-8">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
                 <BriefcaseBusiness className="size-4" aria-hidden="true" />
-                02
-              </p>
-              <h2 className="mt-3 text-lg font-semibold">Pekerjaan & lokasi</h2>
+                Pekerjaan dan lokasi
+              </h2>
             </div>
             <DetailList items={workItems} className="border-y border-border/70" />
           </section>
 
-          <section className="grid gap-4 border-b border-border/70 px-5 py-7 sm:px-8 lg:grid-cols-[10rem_1fr] lg:gap-10">
+          <section className="grid gap-4 border-b border-border/70 p-5 sm:p-6 lg:grid-cols-[10rem_1fr] lg:gap-8">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
                 <CalendarClock className="size-4" aria-hidden="true" />
-                03
-              </p>
-              <h2 className="mt-3 text-lg font-semibold">Waktu</h2>
+                Waktu
+              </h2>
             </div>
             <DetailList items={scheduleItems} className="border-y border-border/70" />
           </section>
 
-          <section className="grid gap-4 px-5 py-7 sm:px-8 lg:grid-cols-[10rem_1fr] lg:gap-10">
+          <section className="grid gap-4 p-5 sm:p-6 lg:grid-cols-[10rem_1fr] lg:gap-8">
             <div>
-              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-primary">
                 <Banknote className="size-4" aria-hidden="true" />
-                04
-              </p>
-              <h2 className="mt-3 text-lg font-semibold">Upah & ketentuan</h2>
+                Upah dan ketentuan
+              </h2>
             </div>
             <DetailList items={paymentItems} className="border-y border-border/70" />
           </section>
         </article>
 
-        <aside className="rounded-[1.5rem] border border-border/75 bg-card p-6 shadow-[0_24px_70px_-56px_rgb(15_23_42/0.5)] xl:sticky xl:top-24">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+        <aside className="rounded-xl border border-border bg-card p-5 xl:sticky xl:top-24">
+          <p className="flex items-center gap-2 text-sm font-semibold text-primary">
             <Clock3 className="size-4" aria-hidden="true" />
             Status konfirmasi
           </p>
@@ -291,7 +281,7 @@ export function AgreementConfirmationView({
           </div>
 
           <div className="mt-5 grid gap-3">
-            <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+            <div className="flex gap-3 border-t border-amber-300/60 pt-4 text-sm leading-6 text-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden="true" />
               <p>
                 Jika ada ketentuan yang salah, jangan konfirmasi. Gunakan alur

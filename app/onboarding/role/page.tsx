@@ -9,5 +9,13 @@ export default async function RolePage({ searchParams }: { searchParams: Promise
   const rawNextPath = typeof query.next === "string" ? query.next : null;
   const nextPath = rawNextPath ? safeApplicationPath(rawNextPath, "/account/continue") : undefined;
 
-  return <AuthShell title="Pilih peranmu" description="Setiap akun memiliki satu peran aktif. Pilih sebagai pekerja atau pemberi kerja." eyebrow="Tentukan jalurmu" stage={2}><RoleSelection nextPath={nextPath} /></AuthShell>;
+  return (
+    <AuthShell
+      title="Pilih peran akun"
+      description="Pilih ruang kerja yang sesuai dengan tujuanmu."
+      stage={2}
+    >
+      <RoleSelection nextPath={nextPath} />
+    </AuthShell>
+  );
 }

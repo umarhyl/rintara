@@ -18,7 +18,7 @@ export function AuthPasswordField({ className, disabled, ...props }: AuthPasswor
         type="button"
         disabled={disabled}
         onClick={() => setVisible((current) => !current)}
-        className="absolute right-0.5 top-0.5 grid size-11 place-items-center rounded-[0.7rem] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        className="absolute right-0.5 top-0.5 grid size-11 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50"
         aria-label={visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
         aria-pressed={visible}
       >
