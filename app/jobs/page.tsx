@@ -8,26 +8,56 @@ import {
 } from "@/components/rintara/job-filters";
 import { PublicShell } from "@/components/rintara/public-shell";
 import { Button } from "@/components/ui/button";
-import { normalizeRupiahDigits } from "@/lib/format-rupiah";
 import {
   getPublicJobReferenceData,
   listPublishedJobs,
-  type OpportunityFilter,
   type PublicJobCard,
 } from "@/server/queries/jobs/public-jobs";
 
 export const metadata = { title: "Cari pekerjaan" };
 
 const opportunityValues = ["all", "first", "general"] as const;
+const wageQueryPattern = /^[1-9]\d{0,11}$/;
+
+function isOpportunityFilter(
+  value: string,
+): value is JobFilterValues["opportunity"] {
+  return opportunityValues.some((option) => option === value);
+}
 
 function firstQueryValue(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
 }
 
-function parsePositiveInteger(value: string) {
-  if (!/^\d+$/.test(value)) return undefined;
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+function singleFilterValue(
+  value: string | string[] | undefined,
+  field: string,
+) {
+  if (value === undefined) return undefined;
+  if (typeof value === "string") return value;
+
+  throw new Error(`Invalid public job filter: ${field}.`);
+}
+
+function parseWageQuery(
+  value: string | string[] | undefined,
+  field: "minimum wage" | "maximum wage",
+) {
+  const rawValue = singleFilterValue(value, field);
+  if (rawValue === undefined) {
+    return { input: "", value: undefined };
+  }
+
+  if (!wageQueryPattern.test(rawValue)) {
+    throw new Error(`Invalid public job filter: ${field}.`);
+  }
+
+  const parsedValue = Number(rawValue);
+  if (!Number.isSafeInteger(parsedValue) || parsedValue <= 0) {
+    throw new Error(`Invalid public job filter: ${field}.`);
+  }
+
+  return { input: rawValue, value: parsedValue };
 }
 
 function parseFilters(searchParams: {
@@ -37,24 +67,43 @@ function parseFilters(searchParams: {
   minWage?: string | string[];
   maxWage?: string | string[];
   opportunity?: string | string[];
-}): JobFilterValues {
-  const rawOpportunity = firstQueryValue(searchParams.opportunity);
+}) {
+  const rawOpportunity = singleFilterValue(
+    searchParams.opportunity,
+    "opportunity",
+  );
+  if (
+    rawOpportunity !== undefined &&
+    !isOpportunityFilter(rawOpportunity)
+  ) {
+    throw new Error("Invalid public job filter: opportunity.");
+  }
+
+  const minimumWage = parseWageQuery(
+    searchParams.minWage,
+    "minimum wage",
+  );
+  const maximumWage = parseWageQuery(
+    searchParams.maxWage,
+    "maximum wage",
+  );
+  const hasInvalidWageRange =
+    minimumWage.value !== undefined &&
+    maximumWage.value !== undefined &&
+    minimumWage.value > maximumWage.value;
 
   return {
-    search: firstQueryValue(searchParams.q).trim().slice(0, 120),
-    categoryId: firstQueryValue(searchParams.category) || "all",
-    areaId: firstQueryValue(searchParams.location) || "all",
-    minimumWage: normalizeRupiahDigits(
-      firstQueryValue(searchParams.minWage),
-    ),
-    maximumWage: normalizeRupiahDigits(
-      firstQueryValue(searchParams.maxWage),
-    ),
-    opportunity: opportunityValues.includes(
-      rawOpportunity as JobFilterValues["opportunity"],
-    )
-      ? (rawOpportunity as JobFilterValues["opportunity"])
-      : "all",
+    values: {
+      search: firstQueryValue(searchParams.q).trim().slice(0, 120),
+      categoryId: firstQueryValue(searchParams.category) || "all",
+      areaId: firstQueryValue(searchParams.location) || "all",
+      minimumWage: minimumWage.input,
+      maximumWage: maximumWage.input,
+      opportunity: rawOpportunity ?? "all",
+    },
+    minimumWage: minimumWage.value,
+    maximumWage: maximumWage.value,
+    hasInvalidWageRange,
   };
 }
 
@@ -130,18 +179,23 @@ export default async function JobsPage({
   }>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const filters = parseFilters(resolvedSearchParams);
+  const parsedFilters = parseFilters(resolvedSearchParams);
+  const filters = parsedFilters.values;
+  const shouldLoadJobs = !parsedFilters.hasInvalidWageRange;
   const [referenceData, jobPage] = await Promise.all([
     getPublicJobReferenceData(),
-    listPublishedJobs({
-      search: filters.search,
-      categoryId: filters.categoryId === "all" ? undefined : filters.categoryId,
-      areaId: filters.areaId === "all" ? undefined : filters.areaId,
-      minimumWage: parsePositiveInteger(filters.minimumWage),
-      maximumWage: parsePositiveInteger(filters.maximumWage),
-      opportunity: filters.opportunity as OpportunityFilter,
-      cursor: firstQueryValue(resolvedSearchParams.cursor) || undefined,
-    }),
+    shouldLoadJobs
+      ? listPublishedJobs({
+          search: filters.search,
+          categoryId:
+            filters.categoryId === "all" ? undefined : filters.categoryId,
+          areaId: filters.areaId === "all" ? undefined : filters.areaId,
+          minimumWage: parsedFilters.minimumWage,
+          maximumWage: parsedFilters.maximumWage,
+          opportunity: filters.opportunity,
+          cursor: firstQueryValue(resolvedSearchParams.cursor) || undefined,
+        })
+      : Promise.resolve({ items: [], nextCursor: null }),
   ]);
   const filteredJobs = jobPage.items.map(toJobCardView);
   const filterKey = `${filters.search}:${filters.categoryId}:${filters.areaId}:${filters.minimumWage}:${filters.maximumWage}:${filters.opportunity}`;
@@ -179,7 +233,9 @@ export default async function JobsPage({
               <div aria-live="polite">
                 <p className="text-sm text-muted-foreground">{areaLabel}</p>
                 <h2 className="mt-1 text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
-                  {filteredJobs.length} pekerjaan pada halaman ini
+                  {parsedFilters.hasInvalidWageRange
+                    ? "Rentang upah perlu diperbaiki"
+                    : `${filteredJobs.length} pekerjaan pada halaman ini`}
                 </h2>
               </div>
               <span className="inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-muted px-3 text-sm text-muted-foreground">
@@ -188,7 +244,18 @@ export default async function JobsPage({
               </span>
             </div>
 
-            {filteredJobs.length > 0 ? (
+            {parsedFilters.hasInvalidWageRange ? (
+              <div className="mt-5 rounded-xl bg-[#eef4ef] p-5">
+                <h3 className="font-semibold">
+                  Perbaiki rentang upah untuk melihat hasil
+                </h3>
+                <p className="mt-1 text-base leading-7 text-muted-foreground">
+                  Nilai yang kamu masukkan tetap tersimpan. Pastikan upah
+                  maksimum sama dengan atau lebih besar dari upah minimum,
+                  lalu terapkan kembali filter.
+                </p>
+              </div>
+            ) : filteredJobs.length > 0 ? (
               <div className="mt-5 grid gap-3">
                 {filteredJobs.map((job) => (
                   <JobCard key={job.id} job={job} />

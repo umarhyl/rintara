@@ -37,6 +37,10 @@ export type JobFilterValues = {
   opportunity: "all" | "first" | "general";
 };
 
+function isPositiveWageValue(value: string) {
+  return /^[1-9]\d*$/.test(value);
+}
+
 type FilterFieldsProps = JobFilterValues & {
   prefix: string;
   categories: { id: string; name: string }[];
@@ -216,8 +220,8 @@ export function JobFilters({
   const [maximumWage, setMaximumWage] = useState(initialValues.maximumWage);
   const [opportunity, setOpportunity] = useState(initialValues.opportunity);
   const hasInvalidWageRange =
-    minimumWage.length > 0 &&
-    maximumWage.length > 0 &&
+    isPositiveWageValue(minimumWage) &&
+    isPositiveWageValue(maximumWage) &&
     Number(minimumWage) > Number(maximumWage);
   const wageRangeError = hasInvalidWageRange
     ? "Upah maksimum harus sama dengan atau lebih besar dari upah minimum."
@@ -225,6 +229,12 @@ export function JobFilters({
 
   function navigate(nextValues: JobFilterValues) {
     const query = new URLSearchParams();
+    const minimumWageQuery = isPositiveWageValue(nextValues.minimumWage)
+      ? nextValues.minimumWage
+      : null;
+    const maximumWageQuery = isPositiveWageValue(nextValues.maximumWage)
+      ? nextValues.maximumWage
+      : null;
 
     if (nextValues.search.trim()) query.set("q", nextValues.search.trim());
     if (nextValues.categoryId !== "all") {
@@ -233,11 +243,11 @@ export function JobFilters({
     if (nextValues.areaId !== "all") {
       query.set("location", nextValues.areaId);
     }
-    if (nextValues.minimumWage.trim()) {
-      query.set("minWage", nextValues.minimumWage.trim());
+    if (minimumWageQuery) {
+      query.set("minWage", minimumWageQuery);
     }
-    if (nextValues.maximumWage.trim()) {
-      query.set("maxWage", nextValues.maximumWage.trim());
+    if (maximumWageQuery) {
+      query.set("maxWage", maximumWageQuery);
     }
     if (nextValues.opportunity !== "all") {
       query.set("opportunity", nextValues.opportunity);
@@ -300,8 +310,8 @@ export function JobFilters({
     Number(search.trim().length > 0) +
     Number(categoryId !== "all") +
     Number(areaId !== "all") +
-    Number(minimumWage.trim().length > 0) +
-    Number(maximumWage.trim().length > 0) +
+    Number(isPositiveWageValue(minimumWage)) +
+    Number(isPositiveWageValue(maximumWage)) +
     Number(opportunity !== "all");
 
   type FilterKey =
@@ -335,7 +345,7 @@ export function JobFilters({
           },
         ]
       : []),
-    ...(minimumWage.trim()
+    ...(isPositiveWageValue(minimumWage)
       ? [
           {
             key: "minimumWage" as const,
@@ -343,7 +353,7 @@ export function JobFilters({
           },
         ]
       : []),
-    ...(maximumWage.trim()
+    ...(isPositiveWageValue(maximumWage)
       ? [
           {
             key: "maximumWage" as const,
@@ -467,6 +477,10 @@ export function JobFilters({
               type="button"
               variant="outline"
               className="h-11 shrink-0 px-3"
+              aria-invalid={wageRangeError ? true : undefined}
+              aria-describedby={
+                wageRangeError ? "mobile-job-wage-summary" : undefined
+              }
             >
               <Filter aria-hidden="true" />
               Filter
@@ -510,6 +524,15 @@ export function JobFilters({
           </SheetContent>
         </Sheet>
       </form>
+      {wageRangeError ? (
+        <p
+          id="mobile-job-wage-summary"
+          className="mt-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm leading-5 text-destructive lg:hidden"
+          role="alert"
+        >
+          {wageRangeError} Buka Filter untuk memperbaiki rentang upah.
+        </p>
+      ) : null}
 
       {activeFilters.length > 0 ? (
         <div className="mt-3 flex flex-wrap gap-2" aria-label="Filter aktif">

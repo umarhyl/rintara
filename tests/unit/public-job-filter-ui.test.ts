@@ -9,8 +9,11 @@ describe("public job filter recovery", () => {
     const filters = await Bun.file(
       "components/rintara/job-filters.tsx",
     ).text();
+    const jobsPage = await Bun.file("app/jobs/page.tsx").text();
 
     expect(filters).toContain("normalizeRupiahDigits(value)");
+    expect(filters).toContain("isPositiveWageValue(minimumWage)");
+    expect(filters).toContain("isPositiveWageValue(maximumWage)");
     expect(filters).toContain(
       "Number(minimumWage) > Number(maximumWage)",
     );
@@ -23,6 +26,17 @@ describe("public job filter recovery", () => {
       )?.length,
     ).toBe(2);
     expect(filters).toContain('role="alert"');
+    expect(jobsPage).toContain("minimumWage: minimumWage.input");
+    expect(jobsPage).toContain("maximumWage: maximumWage.input");
+    expect(jobsPage).toContain(
+      "const shouldLoadJobs = !parsedFilters.hasInvalidWageRange",
+    );
+    expect(jobsPage).toContain(
+      ": Promise.resolve({ items: [], nextCursor: null })",
+    );
+    expect(jobsPage).toContain(
+      "Perbaiki rentang upah untuk melihat hasil",
+    );
   });
 
   test("formats wage fields as Rupiah while keeping clean query digits", async () => {
@@ -45,13 +59,68 @@ describe("public job filter recovery", () => {
     );
     expect(filters).toContain("value={minimumWageDisplay}");
     expect(filters).toContain("value={maximumWageDisplay}");
-    expect(filters).toContain('query.set("minWage", nextValues.minimumWage.trim())');
-    expect(filters).toContain('query.set("maxWage", nextValues.maximumWage.trim())');
+    expect(filters).toContain('query.set("minWage", minimumWageQuery)');
+    expect(filters).toContain('query.set("maxWage", maximumWageQuery)');
     expect(jobsPage).toContain(
-      "minimumWage: normalizeRupiahDigits(",
+      "const wageQueryPattern = /^[1-9]\\d{0,11}$/",
     );
+    expect(jobsPage).not.toContain("normalizeRupiahDigits");
     expect(jobsPage).toContain(
       "lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]",
+    );
+  });
+
+  test("rejects malformed URL filters instead of silently normalizing them", async () => {
+    const jobsPage = await Bun.file("app/jobs/page.tsx").text();
+
+    expect(jobsPage).toContain(
+      'throw new Error(`Invalid public job filter: ${field}.`)',
+    );
+    expect(jobsPage).toContain(
+      'throw new Error("Invalid public job filter: opportunity.")',
+    );
+    expect(jobsPage).toContain("rawOpportunity !== undefined");
+    expect(jobsPage).toContain("!isOpportunityFilter(rawOpportunity)");
+    expect(jobsPage).not.toContain(
+      '? (rawOpportunity as JobFilterValues["opportunity"])',
+    );
+  });
+
+  test("does not send zero or nonpositive wage values from the filter UI", async () => {
+    const filters = await Bun.file(
+      "components/rintara/job-filters.tsx",
+    ).text();
+
+    expect(filters).toContain("function isPositiveWageValue(value: string)");
+    expect(filters).toContain("return /^[1-9]\\d*$/.test(value)");
+    expect(filters).toContain(
+      "isPositiveWageValue(nextValues.minimumWage)",
+    );
+    expect(filters).toContain(
+      "isPositiveWageValue(nextValues.maximumWage)",
+    );
+    expect(filters).not.toContain(
+      'query.set("minWage", nextValues.minimumWage.trim())',
+    );
+    expect(filters).not.toContain(
+      'query.set("maxWage", nextValues.maximumWage.trim())',
+    );
+  });
+
+  test("shows an invalid wage range outside the closed mobile filter sheet", async () => {
+    const filters = await Bun.file(
+      "components/rintara/job-filters.tsx",
+    ).text();
+
+    expect(filters).toContain('id="mobile-job-wage-summary"');
+    expect(filters).toContain(
+      "Buka Filter untuk memperbaiki rentang upah.",
+    );
+    expect(filters).toContain(
+      'wageRangeError ? "mobile-job-wage-summary" : undefined',
+    );
+    expect(filters).toContain(
+      "text-destructive lg:hidden",
     );
   });
 

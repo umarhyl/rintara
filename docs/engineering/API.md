@@ -354,9 +354,13 @@ owned jobs.
 
 Access: active worker.
 
-Input: `jobId` path/action argument plus bounded note.
+Input: UUID `jobId` path/action argument plus bounded note.
 
-Behavior validates current job state, visibility, deadline, uniqueness, and category eligibility. It derives `workerId` and stores the eligibility snapshot.
+Behavior validates current job state, visibility, deadline, uniqueness, and
+category eligibility. It derives `workerId`, stores the eligibility snapshot,
+and creates one employer notification plus a safe application audit entry in
+the same transaction. Neither record copies the application note or private
+job details.
 
 Errors include `JOB_NOT_AVAILABLE`, `APPLICATION_ALREADY_EXISTS`, and `FIRST_OPPORTUNITY_INELIGIBLE`.
 
@@ -364,14 +368,51 @@ Errors include `JOB_NOT_AVAILABLE`, `APPLICATION_ALREADY_EXISTS`, and `FIRST_OPP
 
 Access: owning worker.
 
-Allowed only from `submitted`.
+The application identifier must be a UUID. Withdrawal is allowed only from
+`submitted` and creates one employer notification plus a safe audit entry in
+the same transaction. Retrying after a successful withdrawal returns
+`APPLICATION_NOT_WITHDRAWABLE` and does not create another notification.
 
 Errors include `APPLICATION_NOT_FOUND` and `APPLICATION_NOT_WITHDRAWABLE`.
 
-### `listMyApplications(input?: PageInput)`
+### `getWorkerJobApplicationState(jobId)`
+
+Access: active worker.
+
+Returns one safe presentation state:
+
+```ts
+type WorkerJobApplicationState =
+  | { state: "eligible" }
+  | {
+      state: "existing";
+      applicationStatus: "submitted" | "accepted" | "rejected" | "withdrawn";
+      agreementId?: string;
+    }
+  | { state: "ineligible" }
+  | { state: "unavailable" };
+```
+
+The read validates the UUID, checks current public availability, and calculates
+First Opportunity eligibility from non-revoked verified Work Proof in the
+job's category. An existing application takes precedence over current public
+availability so the Worker receives the recorded state instead of a second
+application form. The DTO excludes the application note, private address,
+proof rows, and Employer-private fields. The application command remains the
+final authority after this read.
+
+`GET /jobs/:jobId/application-status` is the private, no-store presentation
+adapter for this query. It returns no raw provider or database error detail.
+
+### `listMyApplications(input?: PageInput & { view?: "active" | "history" })`
 
 Access: active worker. Returns a bounded cursor page containing only the current
-worker's applications with safe job summaries.
+worker's applications with safe job summaries. `active` filters `submitted`
+and `accepted`; `history` filters `rejected` and `withdrawn`. Filtering happens
+before cursor pagination. Omitting `view` retains all statuses for compact
+dashboard queries. Each item includes a derived `publicDetailAvailable`
+boolean so closed, hidden, or deadline-passed jobs are not linked back to an
+unavailable public detail route.
 
 ### `listJobApplicants(jobId, input?: PageInput)`
 
@@ -685,7 +726,8 @@ Use specific field errors for form correction, but do not disclose whether an in
 Commands revalidate only affected views:
 
 - publish/cancel/expire/complete job: public discovery, job detail, owner dashboard;
-- application submit/withdraw/accept: worker applications, owner applicant list, relevant dashboards;
+- application submit/withdraw/accept: worker applications, owner applicant
+  list, relevant dashboards, and affected notification views;
 - agreement/attendance/completion: party dashboards and agreement/work views;
 - proof issue/revoke: worker Passport and authorized applicant views;
 - credit/boost changes: employer credit view and public discovery;

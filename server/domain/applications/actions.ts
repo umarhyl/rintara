@@ -27,12 +27,17 @@ const applicationNoteSchema = z
   })
   .strict();
 
+const jobIdSchema = z.string().uuid();
 const applicationIdSchema = z.string().uuid();
 
-export async function submitApplication(jobId: string, input: unknown) {
-  const context = await requireActiveUser();
-  if (context.role !== "worker") {
-    throw new ApplicationError("FORBIDDEN", "Only workers can apply to jobs.");
+export async function submitApplication(jobIdInput: unknown, input: unknown) {
+  const parsedJobId = jobIdSchema.safeParse(jobIdInput);
+  if (!parsedJobId.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "The job identifier is invalid.",
+      { jobId: ["Use a valid job identifier."] },
+    );
   }
 
   const parseResult = applicationNoteSchema.safeParse(input);
@@ -44,6 +49,11 @@ export async function submitApplication(jobId: string, input: unknown) {
     );
   }
 
+  const context = await requireActiveUser();
+  if (context.role !== "worker") {
+    throw new ApplicationError("FORBIDDEN", "Only workers can apply to jobs.");
+  }
+
   const now = new Date();
   const { note } = parseResult.data;
 
@@ -51,84 +61,108 @@ export async function submitApplication(jobId: string, input: unknown) {
 
   try {
     result = await db.transaction(async (tx) => {
-    const [job] = await tx
-      .select({
-        id: jobs.id,
-        employerId: jobs.employerId,
-        categoryId: jobs.categoryId,
-        status: jobs.status,
-        visibility: jobs.visibility,
-        applicationDeadline: jobs.applicationDeadline,
-        isFirstOpportunity: jobs.isFirstOpportunity,
-      })
-      .from(jobs)
-      .where(eq(jobs.id, jobId))
-      .limit(1);
+      const [job] = await tx
+        .select({
+          id: jobs.id,
+          employerId: jobs.employerId,
+          categoryId: jobs.categoryId,
+          title: jobs.title,
+          status: jobs.status,
+          visibility: jobs.visibility,
+          applicationDeadline: jobs.applicationDeadline,
+          isFirstOpportunity: jobs.isFirstOpportunity,
+        })
+        .from(jobs)
+        .where(eq(jobs.id, parsedJobId.data))
+        .limit(1);
 
-    if (!job) {
-      throw new ApplicationError("JOB_NOT_FOUND", "Job not found.");
-    }
+      if (!job) {
+        throw new ApplicationError("JOB_NOT_FOUND", "Job not found.");
+      }
 
-    if (
-      job.employerId === context.userId ||
-      job.status !== "published" ||
-      job.visibility !== "visible" ||
-      job.applicationDeadline <= now
-    ) {
-      throw new ApplicationError(
-        "JOB_NOT_AVAILABLE",
-        "This job is no longer accepting applications.",
-      );
-    }
+      if (
+        job.employerId === context.userId ||
+        job.status !== "published" ||
+        job.visibility !== "visible" ||
+        job.applicationDeadline <= now
+      ) {
+        throw new ApplicationError(
+          "JOB_NOT_AVAILABLE",
+          "This job is no longer accepting applications.",
+        );
+      }
 
-    const [existingApplication] = await tx
-      .select({ id: applications.id })
-      .from(applications)
-      .where(
-        and(
-          eq(applications.jobId, job.id),
-          eq(applications.workerId, context.userId),
-        ),
-      )
-      .limit(1);
+      const [existingApplication] = await tx
+        .select({ id: applications.id })
+        .from(applications)
+        .where(
+          and(
+            eq(applications.jobId, job.id),
+            eq(applications.workerId, context.userId),
+          ),
+        )
+        .limit(1);
 
-    if (existingApplication) {
-      throw new ApplicationError(
-        "APPLICATION_ALREADY_EXISTS",
-        "You have already applied to this job.",
-      );
-    }
+      if (existingApplication) {
+        throw new ApplicationError(
+          "APPLICATION_ALREADY_EXISTS",
+          "You have already applied to this job.",
+        );
+      }
 
-    const [verifiedProof] = await tx
-      .select({ id: workProofs.id })
-      .from(workProofs)
-      .where(
-        and(
-          eq(workProofs.workerId, context.userId),
-          eq(workProofs.categoryId, job.categoryId),
-          eq(workProofs.verificationStatus, "verified"),
-          sql`${workProofs.revokedAt} is null`,
-        ),
-      )
-      .limit(1);
-    const firstOpportunityEligible = !verifiedProof;
+      const [verifiedProof] = await tx
+        .select({ id: workProofs.id })
+        .from(workProofs)
+        .where(
+          and(
+            eq(workProofs.workerId, context.userId),
+            eq(workProofs.categoryId, job.categoryId),
+            eq(workProofs.verificationStatus, "verified"),
+            sql`${workProofs.revokedAt} is null`,
+          ),
+        )
+        .limit(1);
+      const firstOpportunityEligible = !verifiedProof;
 
-    if (job.isFirstOpportunity && !firstOpportunityEligible) {
-      throw new ApplicationError(
-        "FIRST_OPPORTUNITY_INELIGIBLE",
-        "This First Opportunity job is reserved for workers without verified proof in this category.",
-      );
-    }
+      if (job.isFirstOpportunity && !firstOpportunityEligible) {
+        throw new ApplicationError(
+          "FIRST_OPPORTUNITY_INELIGIBLE",
+          "This First Opportunity job is reserved for workers without verified proof in this category.",
+        );
+      }
 
-    const [application] = await tx
-      .insert(applications)
-      .values({
-        jobId: job.id,
-        workerId: context.userId,
-        note,
-        firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
-      })
-      .returning({ id: applications.id, status: applications.status });
+      const [application] = await tx
+        .insert(applications)
+        .values({
+          jobId: job.id,
+          workerId: context.userId,
+          note,
+          firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
+        })
+        .returning({ id: applications.id, status: applications.status });
+
+      await tx.insert(notifications).values({
+        recipientId: job.employerId,
+        type: "application_submitted",
+        title: "Lamaran baru diterima",
+        body: `Ada lamaran baru untuk "${job.title}".`,
+        entityType: "job",
+        entityId: job.id,
+        createdAt: now,
+      });
+
+      await tx.insert(auditLogs).values({
+        actorId: context.userId,
+        action: "submit_application",
+        entityType: "application",
+        entityId: application.id,
+        requestId: context.requestId,
+        metadata: {
+          jobId: job.id,
+          firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
+        },
+        createdAt: now,
+      });
 
       return application;
     });
@@ -143,9 +177,12 @@ export async function submitApplication(jobId: string, input: unknown) {
     throw error;
   }
 
-  revalidatePath(`/jobs/${jobId}`);
+  revalidatePath(`/jobs/${parsedJobId.data}`);
   revalidatePath("/worker/applications");
   revalidatePath("/worker/dashboard");
+  revalidatePath(`/employer/jobs/${parsedJobId.data}/applicants`);
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/employer/notifications");
 
   return {
     applicationId: result.id,
@@ -189,7 +226,16 @@ function getDatabaseError(error: unknown):
   return getDatabaseError(candidate.cause);
 }
 
-export async function withdrawApplication(applicationId: string) {
+export async function withdrawApplication(applicationIdInput: unknown) {
+  const parsedApplicationId = applicationIdSchema.safeParse(applicationIdInput);
+  if (!parsedApplicationId.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "The application identifier is invalid.",
+      { applicationId: ["Use a valid application identifier."] },
+    );
+  }
+
   const context = await requireActiveUser();
   if (context.role !== "worker") {
     throw new ApplicationError(
@@ -206,11 +252,14 @@ export async function withdrawApplication(applicationId: string) {
         id: applications.id,
         jobId: applications.jobId,
         status: applications.status,
+        employerId: jobs.employerId,
+        jobTitle: jobs.title,
       })
       .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
       .where(
         and(
-          eq(applications.id, applicationId),
+          eq(applications.id, parsedApplicationId.data),
           eq(applications.workerId, context.userId),
         ),
       )
@@ -252,12 +301,39 @@ export async function withdrawApplication(applicationId: string) {
       );
     }
 
+    await tx.insert(notifications).values({
+      recipientId: application.employerId,
+      type: "application_withdrawn",
+      title: "Lamaran ditarik",
+      body: `Satu lamaran untuk "${application.jobTitle}" telah ditarik oleh pekerja.`,
+      entityType: "job",
+      entityId: application.jobId,
+      createdAt: now,
+    });
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "withdraw_application",
+      entityType: "application",
+      entityId: application.id,
+      requestId: context.requestId,
+      metadata: {
+        jobId: application.jobId,
+        previousStatus: "submitted",
+        newStatus: "withdrawn",
+      },
+      createdAt: now,
+    });
+
     return withdrawn;
   });
 
   revalidatePath(`/jobs/${result.jobId}`);
   revalidatePath("/worker/applications");
   revalidatePath("/worker/dashboard");
+  revalidatePath(`/employer/jobs/${result.jobId}/applicants`);
+  revalidatePath("/employer/dashboard");
+  revalidatePath("/employer/notifications");
 
   return {
     applicationId: result.id,
