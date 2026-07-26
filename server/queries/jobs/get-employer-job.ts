@@ -4,7 +4,14 @@ import { Buffer } from "node:buffer";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
-import { applications, areas, categories, jobs, jobPrivateDetails } from "@/server/db/schema";
+import {
+  agreements,
+  applications,
+  areas,
+  categories,
+  jobs,
+  jobPrivateDetails,
+} from "@/server/db/schema";
 import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
 import { requireActiveUser } from "@/server/auth/identity";
 import { assertActiveUser, assertRole } from "@/server/auth/policies";
@@ -158,6 +165,7 @@ export async function listMyEmployerJobs(
       isFirstOpportunity: jobs.isFirstOpportunity,
       publishedAt: jobs.publishedAt,
       createdAt: jobs.createdAt,
+      agreementId: agreements.id,
       submittedApplicationCount: sql<number>`count(${applications.id})::int`,
     })
     .from(jobs)
@@ -170,6 +178,7 @@ export async function listMyEmployerJobs(
         eq(applications.status, "submitted"),
       ),
     )
+    .leftJoin(agreements, eq(agreements.jobId, jobs.id))
     .where(
       and(
         eq(jobs.employerId, actor.userId),
@@ -184,7 +193,7 @@ export async function listMyEmployerJobs(
           : undefined,
       ),
     )
-    .groupBy(jobs.id, categories.name, areas.name)
+    .groupBy(jobs.id, categories.name, areas.name, agreements.id)
     .orderBy(desc(jobs.createdAt), asc(jobs.id))
     .limit(limit + 1);
 

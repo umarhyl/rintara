@@ -45,6 +45,9 @@ function jobDestination(job: EmployerJobListItem) {
   if (job.status === "published" && job.submittedApplicationCount > 0) {
     return `/employer/jobs/${job.id}/applicants`;
   }
+  if (job.status === "filled" && job.agreementId) {
+    return `/employer/agreements/${job.agreementId}`;
+  }
   return `/employer/jobs/${job.id}`;
 }
 
@@ -52,6 +55,9 @@ function jobActionLabel(job: EmployerJobListItem) {
   if (job.status === "draft") return "Lanjutkan draf";
   if (job.status === "published" && job.submittedApplicationCount > 0) {
     return "Tinjau pelamar";
+  }
+  if (job.status === "filled" && job.agreementId) {
+    return "Buka kesepakatan";
   }
   return "Kelola";
 }
@@ -117,6 +123,8 @@ export function EmployerDashboardContent({
                 ? `${actionableJob.submittedApplicationCount} pelamar menunggu peninjauanmu.`
                 : actionableJob.status === "draft"
                   ? "Draf ini belum terlihat oleh pekerja."
+                  : actionableJob.status === "filled"
+                    ? "Mini Agreement menunggu konfirmasi kedua pihak."
                   : "Buka pekerjaan untuk melanjutkan tahap berikutnya."}
             </p>
           </div>
