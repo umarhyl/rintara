@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, ShieldCheck } from "lucide-react";
 import { redeemOpportunityCredit } from "@/server/domain/rewards/actions";
@@ -65,9 +65,11 @@ export function RedeemCreditForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const submissionLockRef = useRef(false);
 
   function handleRedeem() {
-    if (!creditId || !jobId || isPending) return;
+    if (!creditId || !jobId || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     setSuccess(null);
     startTransition(async () => {
@@ -88,27 +90,26 @@ export function RedeemCreditForm({
         router.refresh();
       } catch (caughtError) {
         setError(messageFor(caughtError));
+      } finally {
+        submissionLockRef.current = false;
       }
     });
   }
 
   return (
-    <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_21rem]">
-      <section className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/75 backdrop-blur-sm">
-        <header className="border-b border-border/70 px-6 py-7 sm:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-            Pilih sumber
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-            Kredit aktif
+    <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <header className="border-b border-border/70 p-5 sm:p-6">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Pilih kredit
           </h2>
-          <p className="mt-2 text-base leading-7 text-muted-foreground">
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
             Setiap kredit berasal dari satu Kesempatan Pertama yang selesai dan
             hanya dapat ditebus satu kali.
           </p>
         </header>
 
-        <div className="px-6 py-7 sm:px-8">
+        <div className="p-5 sm:p-6">
           {availableCredits.length > 0 ? (
             <RadioGroup
               value={creditId}
@@ -120,7 +121,7 @@ export function RedeemCreditForm({
                 <Label
                   key={credit.id}
                   htmlFor={credit.id}
-                  className={`group flex min-h-24 cursor-pointer items-center gap-4 px-1 py-5 transition-colors duration-300 hover:bg-muted/45 has-[[data-state=checked]]:bg-primary/5 ${
+                  className={`group flex min-h-20 cursor-pointer items-center gap-4 px-1 py-4 transition-colors duration-200 hover:bg-muted/45 has-[[data-state=checked]]:bg-primary/5 ${
                     index > 0 ? "border-t border-border/70" : ""
                   }`}
                 >
@@ -138,12 +139,12 @@ export function RedeemCreditForm({
               ))}
             </RadioGroup>
           ) : (
-            <p className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
+            <p className="rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
               Belum ada Kredit Kesempatan aktif yang dapat digunakan.
             </p>
           )}
 
-          <div className="mt-8 grid gap-3 border-t border-border/70 pt-7 sm:grid-cols-[10rem_1fr] sm:items-center">
+          <div className="mt-6 grid gap-3 border-t border-border/70 pt-5 sm:grid-cols-[10rem_1fr] sm:items-center">
             <Label htmlFor="boost-job">Pekerjaan terbit</Label>
             <Select value={jobId} onValueChange={setJobId}>
               <SelectTrigger id="boost-job" className="h-11 w-full">
@@ -161,21 +162,18 @@ export function RedeemCreditForm({
         </div>
       </section>
 
-      <aside className="rounded-[1.5rem] bg-foreground p-6 text-background shadow-[0_28px_70px_-44px_rgb(15_23_42/0.7)] lg:sticky lg:top-24">
-        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-background/70">
+      <aside className="rounded-xl border border-border bg-card p-5 lg:sticky lg:top-24">
+        <p className="flex items-center gap-2 text-sm font-semibold text-primary">
           <ShieldCheck className="size-4" aria-hidden="true" />
-          Ringkasan boost
+          Boost 24 jam
         </p>
-        <p className="mt-5 text-5xl font-semibold tracking-[-0.06em]">24</p>
-        <p className="mt-1 text-sm text-background/70">jam sejak aktivasi</p>
-
-        <p className="mt-5 text-base leading-7 text-background/65">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Boost yang sudah aktif tidak dapat ditumpuk. Jika server menemukan
           konflik, kredit tidak digunakan.
         </p>
         <Button
           type="button"
-          className="theme-static-light mt-6 h-11 w-full bg-background text-foreground hover:bg-background/90"
+          className="mt-5 h-11 w-full"
           disabled={!creditId || !jobId || isPending}
           onClick={handleRedeem}
         >
@@ -189,12 +187,12 @@ export function RedeemCreditForm({
           )}
         </Button>
         {error ? (
-          <p className="mt-4 rounded-xl border border-red-300/30 bg-red-300/10 p-3 text-sm text-red-100" role="alert">
+          <p className="mt-4 rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
             {error}
           </p>
         ) : null}
         {success ? (
-          <p className="mt-4 rounded-xl border border-green-300/30 bg-green-300/10 p-3 text-sm text-green-100" role="status">
+          <p className="mt-4 rounded-xl border border-success/25 bg-success/10 p-3 text-sm text-success" role="status">
             {success}
           </p>
         ) : null}

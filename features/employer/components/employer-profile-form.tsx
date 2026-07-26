@@ -107,8 +107,8 @@ export function EmployerProfileForm({
       ) : null}
 
       {success ? (
-        <Alert className="border-green-600/20 bg-green-50 text-green-900 dark:bg-green-900/10 dark:text-green-300">
-          <CheckCircle2 className="text-green-600 dark:text-green-400" aria-hidden="true" />
+        <Alert className="border-green-600/20 bg-green-50 text-green-900">
+          <CheckCircle2 className="text-green-600" aria-hidden="true" />
           <AlertTitle>Profil diperbarui</AlertTitle>
           <AlertDescription>Profil bisnis Anda berhasil disimpan.</AlertDescription>
         </Alert>
@@ -229,7 +229,6 @@ export function EmployerProfileForm({
       <div className="flex justify-end gap-3 pt-2">
         <Button
           type="submit"
-          className="rounded-full"
           disabled={isPending || noAreaAvailable}
         >
           {isPending ? "Menyimpan…" : "Simpan Perubahan"}

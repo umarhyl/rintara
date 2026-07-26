@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Filter, LoaderCircle, Search } from "lucide-react";
+import { Filter, LoaderCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  formatRupiahInput,
+  normalizeRupiahDigits,
+} from "@/lib/format-rupiah";
 
 export type JobFilterValues = {
   search: string;
@@ -37,6 +41,7 @@ type FilterFieldsProps = JobFilterValues & {
   prefix: string;
   categories: { id: string; name: string }[];
   areas: { id: string; name: string }[];
+  wageRangeError: string | null;
   onSearchChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onAreaChange: (value: string) => void;
@@ -55,6 +60,7 @@ function FilterFields({
   minimumWage,
   maximumWage,
   opportunity,
+  wageRangeError,
   onSearchChange,
   onCategoryChange,
   onAreaChange,
@@ -65,10 +71,12 @@ function FilterFields({
   const categorySelectId = `${prefix}-category`;
   const areaSelectId = `${prefix}-area`;
   const opportunityId = `${prefix}-opportunity`;
+  const minimumWageDisplay = formatRupiahInput(minimumWage);
+  const maximumWageDisplay = formatRupiahInput(maximumWage);
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-1.5">
         <Label htmlFor={`${prefix}-search`}>Cari judul atau tugas</Label>
         <div className="relative">
           <Search
@@ -79,15 +87,19 @@ function FilterFields({
             id={`${prefix}-search`}
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            className="h-12 rounded-xl pl-10"
-            placeholder="Misalnya event helper"
+            maxLength={120}
+            className="h-11 rounded-lg pl-10"
+            placeholder="Contoh: kru acara"
           />
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-1.5">
         <Label htmlFor={categorySelectId}>Kategori</Label>
         <Select value={categoryId} onValueChange={onCategoryChange}>
-          <SelectTrigger id={categorySelectId} className="h-12 w-full rounded-xl">
+          <SelectTrigger
+            id={categorySelectId}
+            className="h-11 w-full min-w-0 max-w-full rounded-lg"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -100,14 +112,17 @@ function FilterFields({
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={areaSelectId}>Lokasi</Label>
+      <div className="min-w-0 space-y-1.5">
+        <Label htmlFor={areaSelectId}>Area umum</Label>
         <Select value={areaId} onValueChange={onAreaChange}>
-          <SelectTrigger id={areaSelectId} className="h-12 w-full rounded-xl">
+          <SelectTrigger
+            id={areaSelectId}
+            className="h-11 w-full min-w-0 max-w-full rounded-lg"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Semua lokasi</SelectItem>
+            <SelectItem value="all">Semua area</SelectItem>
             {areas.map((area) => (
               <SelectItem key={area.id} value={area.id}>
                 {area.name}
@@ -116,34 +131,60 @@ function FilterFields({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor={`${prefix}-min-wage`}>Upah min.</Label>
-          <Input
-            id={`${prefix}-min-wage`}
-            value={minimumWage}
-            onChange={(event) => onMinimumWageChange(event.target.value)}
-            inputMode="numeric"
-            className="h-12 rounded-xl"
-            placeholder="0"
-          />
+      <div className="min-w-0">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor={`${prefix}-min-wage`}>Upah min.</Label>
+            <Input
+              id={`${prefix}-min-wage`}
+              value={minimumWageDisplay}
+              onChange={(event) => onMinimumWageChange(event.target.value)}
+              inputMode="numeric"
+              maxLength={18}
+              title={minimumWageDisplay || undefined}
+              aria-invalid={wageRangeError ? true : undefined}
+              aria-describedby={
+                wageRangeError ? `${prefix}-wage-error` : undefined
+              }
+              className="h-11 rounded-lg px-2.5 tabular-nums"
+              placeholder="Rp 0"
+            />
+          </div>
+          <div className="min-w-0 space-y-1.5">
+            <Label htmlFor={`${prefix}-max-wage`}>Upah maks.</Label>
+            <Input
+              id={`${prefix}-max-wage`}
+              value={maximumWageDisplay}
+              onChange={(event) => onMaximumWageChange(event.target.value)}
+              inputMode="numeric"
+              maxLength={18}
+              title={maximumWageDisplay || undefined}
+              aria-invalid={wageRangeError ? true : undefined}
+              aria-describedby={
+                wageRangeError ? `${prefix}-wage-error` : undefined
+              }
+              className="h-11 rounded-lg px-2.5 tabular-nums"
+              placeholder="Rp 500.000"
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${prefix}-max-wage`}>Upah maks.</Label>
-          <Input
-            id={`${prefix}-max-wage`}
-            value={maximumWage}
-            onChange={(event) => onMaximumWageChange(event.target.value)}
-            inputMode="numeric"
-            className="h-12 rounded-xl"
-            placeholder="500000"
-          />
-        </div>
+        {wageRangeError ? (
+          <p
+            id={`${prefix}-wage-error`}
+            className="mt-2 text-sm leading-5 text-destructive"
+            role="alert"
+          >
+            {wageRangeError}
+          </p>
+        ) : null}
       </div>
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-1.5">
         <Label htmlFor={opportunityId}>Jenis kesempatan</Label>
         <Select value={opportunity} onValueChange={onOpportunityChange}>
-          <SelectTrigger id={opportunityId} className="h-12 w-full rounded-xl">
+          <SelectTrigger
+            id={opportunityId}
+            className="h-11 w-full min-w-0 max-w-full rounded-lg"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -174,6 +215,13 @@ export function JobFilters({
   const [minimumWage, setMinimumWage] = useState(initialValues.minimumWage);
   const [maximumWage, setMaximumWage] = useState(initialValues.maximumWage);
   const [opportunity, setOpportunity] = useState(initialValues.opportunity);
+  const hasInvalidWageRange =
+    minimumWage.length > 0 &&
+    maximumWage.length > 0 &&
+    Number(minimumWage) > Number(maximumWage);
+  const wageRangeError = hasInvalidWageRange
+    ? "Upah maksimum harus sama dengan atau lebih besar dari upah minimum."
+    : null;
 
   function navigate(nextValues: JobFilterValues) {
     const query = new URLSearchParams();
@@ -200,6 +248,8 @@ export function JobFilters({
   }
 
   function applyFilters() {
+    if (hasInvalidWageRange) return;
+
     navigate({
       search,
       categoryId,
@@ -236,11 +286,14 @@ export function JobFilters({
     minimumWage,
     maximumWage,
     opportunity,
+    wageRangeError,
     onSearchChange: setSearch,
     onCategoryChange: setCategoryId,
     onAreaChange: setAreaId,
-    onMinimumWageChange: setMinimumWage,
-    onMaximumWageChange: setMaximumWage,
+    onMinimumWageChange: (value: string) =>
+      setMinimumWage(normalizeRupiahDigits(value)),
+    onMaximumWageChange: (value: string) =>
+      setMaximumWage(normalizeRupiahDigits(value)),
     onOpportunityChange: setOpportunity,
   };
   const activeFilterCount =
@@ -251,32 +304,144 @@ export function JobFilters({
     Number(maximumWage.trim().length > 0) +
     Number(opportunity !== "all");
 
+  type FilterKey =
+    | "search"
+    | "categoryId"
+    | "areaId"
+    | "minimumWage"
+    | "maximumWage"
+    | "opportunity";
+
+  const activeFilters: Array<{ key: FilterKey; label: string }> = [
+    ...(search.trim()
+      ? [{ key: "search" as const, label: `Cari: ${search.trim()}` }]
+      : []),
+    ...(categoryId !== "all"
+      ? [
+          {
+            key: "categoryId" as const,
+            label:
+              categories.find((category) => category.id === categoryId)?.name ??
+              "Kategori",
+          },
+        ]
+      : []),
+    ...(areaId !== "all"
+      ? [
+          {
+            key: "areaId" as const,
+            label:
+              areas.find((area) => area.id === areaId)?.name ?? "Area",
+          },
+        ]
+      : []),
+    ...(minimumWage.trim()
+      ? [
+          {
+            key: "minimumWage" as const,
+            label: `Min. ${formatRupiahInput(minimumWage)}`,
+          },
+        ]
+      : []),
+    ...(maximumWage.trim()
+      ? [
+          {
+            key: "maximumWage" as const,
+            label: `Maks. ${formatRupiahInput(maximumWage)}`,
+          },
+        ]
+      : []),
+    ...(opportunity !== "all"
+      ? [
+          {
+            key: "opportunity" as const,
+            label:
+              opportunity === "first"
+                ? "Kesempatan Pertama"
+                : "Pekerjaan umum",
+          },
+        ]
+      : []),
+  ];
+
+  function clearFilter(key: FilterKey) {
+    const nextValues: JobFilterValues = {
+      search,
+      categoryId,
+      areaId,
+      minimumWage,
+      maximumWage,
+      opportunity,
+    };
+
+    if (key === "search") {
+      nextValues.search = "";
+      setSearch("");
+    }
+    if (key === "categoryId") {
+      nextValues.categoryId = "all";
+      setCategoryId("all");
+    }
+    if (key === "areaId") {
+      nextValues.areaId = "all";
+      setAreaId("all");
+    }
+    if (key === "minimumWage") {
+      nextValues.minimumWage = "";
+      setMinimumWage("");
+    }
+    if (key === "maximumWage") {
+      nextValues.maximumWage = "";
+      setMaximumWage("");
+    }
+    if (key === "opportunity") {
+      nextValues.opportunity = "all";
+      setOpportunity("all");
+    }
+    navigate(nextValues);
+  }
+
   return (
-    <section aria-label="Filter pekerjaan">
+    <section
+      aria-label="Filter pekerjaan"
+      className="min-w-0 lg:sticky lg:top-24 lg:self-start"
+    >
       <form
-        className="hidden rounded-[1.6rem] border border-border/75 bg-card/92 p-5 shadow-[0_26px_65px_-38px_rgb(15_23_42/0.55)] backdrop-blur-2xl lg:grid lg:grid-cols-[minmax(16rem,1fr)_13rem_13rem_16rem_13rem_auto] lg:items-end lg:gap-4"
+        className="hidden min-w-0 grid-cols-[minmax(0,1fr)] rounded-xl bg-[#eef4ef] p-5 lg:grid lg:gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
         }}
       >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">Filter hasil</h2>
+          {activeFilterCount > 0 ? (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="min-h-11 rounded-lg px-2 text-sm font-semibold text-primary transition-colors duration-200 hover:bg-secondary hover:text-secondary-foreground"
+            >
+              Atur ulang
+            </button>
+          ) : null}
+        </div>
         <FilterFields prefix="desktop-job" {...filterFieldProps} />
         <Button
           type="submit"
-          className="h-12 rounded-full px-5"
-          disabled={isPending}
+          className="h-11 w-full px-5"
+          disabled={isPending || hasInvalidWageRange}
         >
           {isPending ? (
             <LoaderCircle className="animate-spin" aria-hidden="true" />
           ) : (
             <Filter aria-hidden="true" />
           )}
-          {isPending ? "Memuat" : "Terapkan"}
+          {isPending ? "Memuat hasil" : "Terapkan filter"}
         </Button>
       </form>
 
       <form
-        className="flex gap-2 rounded-[1.35rem] border border-border/75 bg-card/92 p-2 shadow-[0_20px_50px_-34px_rgb(15_23_42/0.55)] backdrop-blur-2xl lg:hidden"
+        className="flex gap-2 rounded-xl bg-[#eef4ef] p-2 lg:hidden"
         onSubmit={(event) => {
           event.preventDefault();
           applyFilters();
@@ -291,8 +456,9 @@ export function JobFilters({
             aria-label="Cari pekerjaan"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="h-12 rounded-xl border-transparent bg-muted/55 pl-10 shadow-none"
-            placeholder="Cari pekerjaan"
+            maxLength={120}
+            className="h-11 bg-card pl-10"
+            placeholder="Cari judul atau tugas"
           />
         </div>
         <Sheet>
@@ -300,11 +466,11 @@ export function JobFilters({
             <Button
               type="button"
               variant="outline"
-              className="h-12 shrink-0 rounded-xl px-3"
+              className="h-11 shrink-0 px-3"
             >
               <Filter aria-hidden="true" />
               Filter
-              <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">
+              <span className="min-w-4 text-center text-xs tabular-nums">
                 {activeFilterCount}
               </span>
             </Button>
@@ -313,10 +479,10 @@ export function JobFilters({
             <SheetHeader className="border-b text-left">
               <SheetTitle>Filter pekerjaan</SheetTitle>
               <SheetDescription>
-                Persempit hasil berdasarkan kategori dan jenis kesempatan.
+                Pilih kategori, area, upah, dan jenis kesempatan.
               </SheetDescription>
             </SheetHeader>
-            <div className="grid gap-5 overflow-y-auto px-4">
+            <div className="grid gap-4 overflow-y-auto px-4">
               <FilterFields prefix="mobile-job" {...filterFieldProps} />
             </div>
             <SheetFooter>
@@ -324,7 +490,7 @@ export function JobFilters({
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full"
+                  className="min-h-11"
                   onClick={resetFilters}
                 >
                   Atur ulang
@@ -333,9 +499,9 @@ export function JobFilters({
               <SheetClose asChild>
                 <Button
                   type="button"
-                  className="rounded-full"
+                  className="min-h-11"
                   onClick={applyFilters}
-                  disabled={isPending}
+                  disabled={isPending || hasInvalidWageRange}
                 >
                   Tampilkan hasil
                 </Button>
@@ -344,6 +510,23 @@ export function JobFilters({
           </SheetContent>
         </Sheet>
       </form>
+
+      {activeFilters.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2" aria-label="Filter aktif">
+          {activeFilters.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              onClick={() => clearFilter(filter.key)}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-secondary/70 px-3 text-xs font-semibold text-secondary-foreground transition-colors duration-200 hover:bg-secondary"
+              aria-label={`Hapus filter ${filter.label}`}
+            >
+              {filter.label}
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

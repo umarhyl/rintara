@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useMemo } from "react";
-import { Eye, Info, LockKeyhole, ShieldCheck, CircleAlert } from "lucide-react";
+import {
+  CircleAlert,
+  Info,
+  LoaderCircle,
+} from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -63,30 +67,25 @@ function FormSection({
   number,
   title,
   description,
-  icon,
   children,
 }: {
   number: string;
   title: string;
   description: string;
-  icon: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="scroll-mt-32 rounded-3xl border border-border/60 bg-card p-6 shadow-sm sm:p-10">
-      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="flex items-center gap-3 text-2xl font-semibold tracking-[-0.02em] text-foreground">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-              {number}
-            </span>
-            {title}
-          </h2>
-          <p className="mt-2 max-w-xl text-base text-muted-foreground">{description}</p>
-        </div>
-        <div className="hidden rounded-2xl bg-muted/50 p-3 text-muted-foreground sm:block">
-          {icon}
-        </div>
+    <section className="scroll-mt-24 rounded-xl bg-card p-5 shadow-sm sm:p-6">
+      <div className="mb-5">
+        <h2 className="flex items-center gap-3 text-xl font-semibold tracking-[-0.02em] text-foreground">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
+            {number}
+          </span>
+          {title}
+        </h2>
+        <p className="mt-2 max-w-[62ch] text-base leading-6 text-muted-foreground">
+          {description}
+        </p>
       </div>
       {children}
     </section>
@@ -110,9 +109,23 @@ function Field({
         {label}
       </Label>
       {children}
-      {error && <p className="text-sm text-destructive">{error[0]}</p>}
+      {error?.length ? (
+        <p id={`${id}-error`} className="text-sm text-destructive">
+          {error[0]}
+        </p>
+      ) : null}
     </div>
   );
+}
+
+function fieldA11y(id: string, error?: string[]) {
+  const invalid = Boolean(error?.length);
+
+  return {
+    id,
+    "aria-invalid": invalid,
+    "aria-describedby": invalid ? `${id}-error` : undefined,
+  };
 }
 
 export function JobForm({
@@ -126,6 +139,7 @@ export function JobForm({
 }) {
   const router = useRouter();
   const submittingRef = useRef(false);
+  const persistedJobIdRef = useRef(jobId);
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -149,6 +163,10 @@ export function JobForm({
 
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [submissionIntent, setSubmissionIntent] = useState<
+    "draft" | "publish" | null
+  >(null);
+  const isSubmitting = submissionIntent !== null;
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -208,17 +226,19 @@ export function JobForm({
   const onSaveDraft = async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
+    setSubmissionIntent("draft");
     setErrors({});
     setGlobalError(null);
 
     try {
       const payload = prepareInput();
       
-      if (jobId) {
-        await updateJobDraft(jobId, payload);
+      if (persistedJobIdRef.current) {
+        await updateJobDraft(persistedJobIdRef.current, payload);
         router.push("/employer/jobs");
       } else {
-        await createJobDraft(payload);
+        const result = await createJobDraft(payload);
+        persistedJobIdRef.current = result.jobId;
         router.push("/employer/jobs");
       }
     } catch (error: unknown) {
@@ -229,24 +249,27 @@ export function JobForm({
       }
     } finally {
       submittingRef.current = false;
+      setSubmissionIntent(null);
     }
   };
 
   const onPublish = async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
+    setSubmissionIntent("publish");
     setErrors({});
     setGlobalError(null);
 
     try {
       const payload = prepareInput();
       
-      let currentJobId = jobId;
+      let currentJobId = persistedJobIdRef.current;
       if (currentJobId) {
         await updateJobDraft(currentJobId, payload);
       } else {
         const res = await createJobDraft(payload);
         currentJobId = res.jobId;
+        persistedJobIdRef.current = currentJobId;
       }
       
       await publishJob(currentJobId!);
@@ -259,12 +282,17 @@ export function JobForm({
       }
     } finally {
       submittingRef.current = false;
+      setSubmissionIntent(null);
     }
   };
 
   return (
-    <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_360px] lg:gap-16 xl:grid-cols-[1fr_400px]">
-      <div className="grid gap-10 sm:gap-12">
+    <form
+      className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8"
+      aria-busy={isSubmitting}
+      onSubmit={(event) => event.preventDefault()}
+    >
+      <div className="grid gap-7">
         {globalError && (
           <Alert variant="destructive">
             <CircleAlert className="size-4" />
@@ -274,20 +302,29 @@ export function JobForm({
         )}
 
         <FormSection
-          number="01"
+          number="1"
           title="Informasi publik"
           description="Akan tampil di halaman pencarian dan dilihat oleh seluruh pekerja."
-          icon={<Eye className="size-4" aria-hidden="true" />}
         >
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Field label="Judul pekerjaan" id="title" error={errors.title}>
-                <Input name="title" value={formData.title} onChange={handleTextChange} placeholder="Contoh: Kru Event Pameran Buku" className="h-11" />
+                <Input
+                  {...fieldA11y("title", errors.title)}
+                  name="title"
+                  value={formData.title}
+                  onChange={handleTextChange}
+                  placeholder="Contoh: Kru Event Pameran Buku"
+                  className="h-11 rounded-xl"
+                />
               </Field>
             </div>
             <Field label="Kategori" id="category" error={errors.categoryId}>
               <Select value={formData.categoryId} onValueChange={(val) => handleSelectChange("categoryId", val)}>
-                <SelectTrigger className="h-11 w-full">
+                <SelectTrigger
+                  {...fieldA11y("category", errors.categoryId)}
+                  className="h-11 w-full rounded-xl"
+                >
                   <SelectValue placeholder="Pilih kategori" />
                 </SelectTrigger>
                 <SelectContent>
@@ -299,7 +336,10 @@ export function JobForm({
             </Field>
             <Field label="Area umum" id="area" error={errors.areaId}>
               <Select value={formData.areaId} onValueChange={(val) => handleSelectChange("areaId", val)}>
-                <SelectTrigger className="h-11 w-full">
+                <SelectTrigger
+                  {...fieldA11y("area", errors.areaId)}
+                  className="h-11 w-full rounded-xl"
+                >
                   <SelectValue placeholder="Pilih area" />
                 </SelectTrigger>
                 <SelectContent>
@@ -311,65 +351,142 @@ export function JobForm({
             </Field>
             <div className="sm:col-span-2">
               <Field label="Deskripsi pekerjaan" id="description" error={errors.description}>
-                <Textarea name="description" value={formData.description} onChange={handleTextChange} placeholder="Tujuan pekerjaan..." className="min-h-32" />
+                <Textarea
+                  {...fieldA11y("description", errors.description)}
+                  name="description"
+                  value={formData.description}
+                  onChange={handleTextChange}
+                  placeholder="Tujuan pekerjaan..."
+                  className="min-h-24 rounded-xl"
+                />
               </Field>
             </div>
             <div className="sm:col-span-2">
               <Field label="Ruang lingkup tugas" id="taskScope" error={errors.taskScope}>
-                <Textarea name="taskScope" value={formData.taskScope} onChange={handleTextChange} placeholder="Rincian tugas spesifik..." className="min-h-32" />
+                <Textarea
+                  {...fieldA11y("taskScope", errors.taskScope)}
+                  name="taskScope"
+                  value={formData.taskScope}
+                  onChange={handleTextChange}
+                  placeholder="Rincian tugas spesifik..."
+                  className="min-h-24 rounded-xl"
+                />
               </Field>
             </div>
             <div className="sm:col-span-2">
               <Field label="Label lokasi publik" id="publicLocationLabel" error={errors.publicLocationLabel}>
-                <Input name="publicLocationLabel" value={formData.publicLocationLabel} onChange={handleTextChange} placeholder="Kecamatan, kota" className="h-11" />
+                <Input
+                  {...fieldA11y(
+                    "publicLocationLabel",
+                    errors.publicLocationLabel,
+                  )}
+                  name="publicLocationLabel"
+                  value={formData.publicLocationLabel}
+                  onChange={handleTextChange}
+                  placeholder="Kecamatan, kota"
+                  className="h-11 rounded-xl"
+                />
               </Field>
             </div>
             <Field label="Mulai kerja" id="startsAt" error={errors.startsAt}>
-              <Input type="datetime-local" name="startsAt" value={formData.startsAt} onChange={handleTextChange} className="h-11" />
+              <Input
+                {...fieldA11y("startsAt", errors.startsAt)}
+                type="datetime-local"
+                name="startsAt"
+                value={formData.startsAt}
+                onChange={handleTextChange}
+                className="h-11 rounded-xl"
+              />
             </Field>
             <Field label="Estimasi durasi (Menit)" id="estimatedMinutes" error={errors.estimatedMinutes}>
-              <Input type="number" name="estimatedMinutes" value={formData.estimatedMinutes} onChange={handleTextChange} className="h-11" />
+              <Input
+                {...fieldA11y("estimatedMinutes", errors.estimatedMinutes)}
+                type="number"
+                name="estimatedMinutes"
+                value={formData.estimatedMinutes}
+                onChange={handleTextChange}
+                className="h-11 rounded-xl"
+              />
             </Field>
             <Field label="Batas waktu lamaran" id="applicationDeadline" error={errors.applicationDeadline}>
-              <Input type="datetime-local" name="applicationDeadline" value={formData.applicationDeadline} onChange={handleTextChange} className="h-11" />
+              <Input
+                {...fieldA11y(
+                  "applicationDeadline",
+                  errors.applicationDeadline,
+                )}
+                type="datetime-local"
+                name="applicationDeadline"
+                value={formData.applicationDeadline}
+                onChange={handleTextChange}
+                className="h-11 rounded-xl"
+              />
             </Field>
           </div>
         </FormSection>
 
         <FormSection
-          number="02"
+          number="2"
           title="Detail privat"
           description="Alamat lengkap baru terbuka setelah satu pekerja diterima."
-          icon={<LockKeyhole className="size-4" aria-hidden="true" />}
         >
           <div className="grid gap-5">
             <Field label="Alamat lengkap" id="fullAddress" error={errors.fullAddress}>
-              <Textarea name="fullAddress" value={formData.fullAddress} onChange={handleTextChange} placeholder="Alamat tempat kerja lengkap" className="min-h-24" />
+              <Textarea
+                {...fieldA11y("fullAddress", errors.fullAddress)}
+                name="fullAddress"
+                value={formData.fullAddress}
+                onChange={handleTextChange}
+                placeholder="Alamat tempat kerja lengkap"
+                className="min-h-24 rounded-xl"
+              />
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Peralatan disediakan" id="providedTools" error={errors.toolsProvided}>
-                <Input name="providedTools" value={formData.providedTools} onChange={handleTextChange} placeholder="Meja registrasi" className="h-11" />
+                <Input
+                  {...fieldA11y("providedTools", errors.toolsProvided)}
+                  name="providedTools"
+                  value={formData.providedTools}
+                  onChange={handleTextChange}
+                  placeholder="Meja registrasi"
+                  className="h-11 rounded-xl"
+                />
               </Field>
               <Field label="Peralatan dibawa" id="requiredTools" error={errors.toolsRequired}>
-                <Input name="requiredTools" value={formData.requiredTools} onChange={handleTextChange} placeholder="Tidak ada" className="h-11" />
+                <Input
+                  {...fieldA11y("requiredTools", errors.toolsRequired)}
+                  name="requiredTools"
+                  value={formData.requiredTools}
+                  onChange={handleTextChange}
+                  placeholder="Tidak ada"
+                  className="h-11 rounded-xl"
+                />
               </Field>
             </div>
           </div>
         </FormSection>
 
         <FormSection
-          number="03"
+          number="3"
           title="Upah & kelayakan"
           description="Ketentuan pembayaran dicatat dalam Kesepakatan Kerja."
-          icon={<ShieldCheck className="size-4" aria-hidden="true" />}
         >
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Nominal upah (Rupiah)" id="wageAmount" error={errors.wageAmount}>
-              <Input type="number" name="wageAmount" value={formData.wageAmount} onChange={handleTextChange} className="h-11" />
+              <Input
+                {...fieldA11y("wageAmount", errors.wageAmount)}
+                type="number"
+                name="wageAmount"
+                value={formData.wageAmount}
+                onChange={handleTextChange}
+                className="h-11 rounded-xl"
+              />
             </Field>
             <Field label="Satuan" id="wageUnit" error={errors.wageUnit}>
               <Select value={formData.wageUnit} onValueChange={(val) => handleSelectChange("wageUnit", val)}>
-                <SelectTrigger className="h-11 w-full">
+                <SelectTrigger
+                  {...fieldA11y("wageUnit", errors.wageUnit)}
+                  className="h-11 w-full rounded-xl"
+                >
                   <SelectValue placeholder="Pilih satuan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -380,10 +497,24 @@ export function JobForm({
               </Select>
             </Field>
             <Field label="Metode pembayaran" id="paymentMethod" error={errors.paymentMethod}>
-              <Input name="paymentMethod" value={formData.paymentMethod} onChange={handleTextChange} placeholder="Transfer BCA / Tunai" className="h-11" />
+              <Input
+                {...fieldA11y("paymentMethod", errors.paymentMethod)}
+                name="paymentMethod"
+                value={formData.paymentMethod}
+                onChange={handleTextChange}
+                placeholder="Transfer BCA / Tunai"
+                className="h-11 rounded-xl"
+              />
             </Field>
             <Field label="Waktu pembayaran" id="paymentTiming" error={errors.paymentTiming}>
-              <Input name="paymentTiming" value={formData.paymentTiming} onChange={handleTextChange} placeholder="Setelah selesai" className="h-11" />
+              <Input
+                {...fieldA11y("paymentTiming", errors.paymentTiming)}
+                name="paymentTiming"
+                value={formData.paymentTiming}
+                onChange={handleTextChange}
+                placeholder="Setelah selesai"
+                className="h-11 rounded-xl"
+              />
             </Field>
 
             {activeGuideline ? (
@@ -409,21 +540,22 @@ export function JobForm({
 
             {wageWarning && (
               <div className="sm:col-span-2">
-                <Alert className="border-amber-300/70 bg-amber-50/80 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+                <Alert className="border-amber-300/70 bg-amber-50/80 text-amber-950">
                   <Info aria-hidden="true" />
                   <AlertTitle>Perhatian Upah</AlertTitle>
-                  <AlertDescription className="dark:text-amber-100/70">
+                  <AlertDescription>
                     {wageWarning}
                   </AlertDescription>
                 </Alert>
               </div>
             )}
 
-            <div className="flex items-start gap-3 border-t border-border/70 pt-5 sm:col-span-2">
+            <div className="flex items-start gap-3 rounded-xl bg-secondary/70 p-4 sm:col-span-2">
               <Checkbox 
                 id="isFirstOpportunity" 
                 checked={formData.isFirstOpportunity} 
                 onCheckedChange={(c) => setFormData(p => ({ ...p, isFirstOpportunity: !!c }))}
+                aria-describedby="isFirstOpportunity-help"
                 disabled={Boolean(
                   !selectedCategory?.firstOpportunityAllowed ||
                     !activeGuideline ||
@@ -433,7 +565,7 @@ export function JobForm({
               />
               <div>
                 <Label htmlFor="isFirstOpportunity">Jadikan Kesempatan Pertama</Label>
-                <p className="mt-1 max-w-2xl text-base leading-7 text-muted-foreground">
+                <p id="isFirstOpportunity-help" className="mt-1 max-w-2xl text-base leading-7 text-muted-foreground">
                   Hanya bisa dicentang jika sesuai Panduan Upah dan kategori ini mendukung Kesempatan Pertama.
                 </p>
               </div>
@@ -442,32 +574,64 @@ export function JobForm({
         </FormSection>
       </div>
 
-      <aside className="rounded-[1.75rem] bg-foreground p-6 text-background shadow-[0_28px_70px_-42px_rgb(15_23_42/0.7)] xl:sticky xl:top-24">
-        <p className="text-xs font-semibold tracking-[0.16em] text-background/70">LANGKAH BERIKUTNYA</p>
-        <h2 className="mt-3 text-xl font-semibold tracking-[-0.02em]">Periksa sebelum terbit</h2>
-        <ol className="mt-6 grid gap-5 text-base leading-7 text-background/70">
+      <aside className="h-fit rounded-xl bg-primary/[0.07] p-5 text-foreground sm:p-6 xl:sticky xl:top-20">
+        <p className="text-sm font-semibold text-primary">Langkah berikutnya</p>
+        <h2 className="mt-1 text-xl font-semibold tracking-[-0.02em]">
+          Periksa sebelum terbit
+        </h2>
+        <ol className="mt-4 grid gap-3 text-base leading-6 text-muted-foreground">
           <li className="grid grid-cols-[1.5rem_1fr] gap-3">
-            <span className="text-background/65">01</span>
+            <span className="font-semibold text-primary">01</span>
             <span>Pastikan informasi publik tidak memuat alamat lengkap.</span>
           </li>
           <li className="grid grid-cols-[1.5rem_1fr] gap-3">
-            <span className="text-background/65">02</span>
+            <span className="font-semibold text-primary">02</span>
             <span>Kategori, risiko, dan upah akan diperiksa ketika diterbitkan.</span>
           </li>
           <li className="grid grid-cols-[1.5rem_1fr] gap-3">
-            <span className="text-background/65">03</span>
+            <span className="font-semibold text-primary">03</span>
             <span>Ketentuan terbit tidak dapat diedit. Batalkan dan buat draft baru jika perlu perubahan.</span>
           </li>
         </ol>
-        <div className="mt-7 grid gap-3 border-t border-background/15 pt-6 [&>button]:w-full">
-          <Button type="button" onClick={onPublish} className="w-full text-foreground bg-background hover:bg-background/90">
-            Terbitkan pekerjaan
+        <div className="mt-6 grid gap-3 [&>button]:w-full">
+          <Button
+            type="button"
+            onClick={onPublish}
+            disabled={isSubmitting}
+            className="w-full rounded-xl"
+          >
+            {submissionIntent === "publish" ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+            ) : null}
+            {submissionIntent === "publish"
+              ? "Menerbitkan pekerjaan..."
+              : "Terbitkan pekerjaan"}
           </Button>
-          <Button type="button" onClick={onSaveDraft} variant="outline" className="h-11 border-background/20 bg-transparent text-background hover:border-background/35 hover:bg-background/10 hover:text-background">
-            Simpan draft
+          <Button
+            type="button"
+            onClick={onSaveDraft}
+            disabled={isSubmitting}
+            variant="outline"
+            className="h-11 rounded-xl border-primary/25 bg-card text-foreground hover:border-primary/40 hover:bg-primary/5"
+          >
+            {submissionIntent === "draft" ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+            ) : null}
+            {submissionIntent === "draft" ? "Menyimpan draft..." : "Simpan draft"}
           </Button>
+          <p
+            className={submissionIntent ? "text-sm text-muted-foreground" : "sr-only"}
+            role="status"
+            aria-live="polite"
+          >
+            {submissionIntent === "publish"
+              ? "Sedang memeriksa dan menerbitkan pekerjaan."
+              : submissionIntent === "draft"
+                ? "Sedang menyimpan perubahan draft."
+                : ""}
+          </p>
         </div>
       </aside>
-    </div>
+    </form>
   );
 }

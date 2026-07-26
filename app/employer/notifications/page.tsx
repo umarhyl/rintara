@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { ArrowUpRight, Bell, CheckCheck } from "lucide-react";
+import { ArrowUpRight, Bell } from "lucide-react";
 
 import { EmptyState } from "@/components/rintara/empty-state";
 import { PageHeader } from "@/features/dashboard/components/page-header";
-import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { listMyNotifications } from "@/server/queries/notifications";
 
@@ -20,26 +19,19 @@ export default async function EmployerNotificationsPage() {
   const notificationPage = await listMyNotifications();
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Pusat aktivitas"
-        title="Yang perlu perhatianmu"
-        description="Pembaruan pelamar, kesepakatan, pekerjaan, dan Kredit Kesempatan tersusun berdasarkan waktu."
-        action={
-          <Button variant="outline" type="button" disabled>
-            <CheckCheck aria-hidden="true" />
-            Tandai semua dibaca
-          </Button>
-        }
+        title="Notifikasi"
+        description="Pembaruan tentang pelamar, kesepakatan, pekerjaan, dan Kredit Kesempatan."
       />
 
       <section aria-labelledby="latest-notifications">
-        <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="mb-4 flex items-center justify-between gap-4 border-y border-border/75 py-4">
           <h2
             id="latest-notifications"
-            className="text-xs font-semibold uppercase tracking-[0.14em] text-primary"
+            className="text-lg font-semibold tracking-tight"
           >
-            Terbaru
+            Pembaruan terbaru
           </h2>
           <p className="text-sm text-muted-foreground">
             {notificationPage.unreadCount} belum dibaca
@@ -47,12 +39,12 @@ export default async function EmployerNotificationsPage() {
         </div>
 
         {notificationPage.items.length > 0 ? (
-          <ol className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/70 backdrop-blur-sm">
+          <ol className="overflow-hidden rounded-xl border border-border bg-card">
             {notificationPage.items.map((item, index) => {
               const content = (
                 <>
                   <span
-                    className={`grid size-11 place-items-center rounded-full border ${
+                    className={`grid size-11 place-items-center rounded-xl border ${
                       item.readAt
                         ? "border-border bg-background text-muted-foreground"
                         : "border-primary/25 bg-primary/8 text-primary"
@@ -63,7 +55,7 @@ export default async function EmployerNotificationsPage() {
 
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-lg font-semibold tracking-[-0.02em]">
+                      <span className="font-semibold tracking-tight">
                         {item.title}
                       </span>
                       {!item.readAt ? (
@@ -73,7 +65,7 @@ export default async function EmployerNotificationsPage() {
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-1.5 block max-w-2xl text-base leading-7 text-muted-foreground">
+                    <span className="mt-1 block max-w-2xl text-sm leading-6 text-muted-foreground">
                       {item.body}
                     </span>
                     <span className="mt-2 block text-xs text-muted-foreground">
@@ -98,12 +90,12 @@ export default async function EmployerNotificationsPage() {
                   {item.href ? (
                     <Link
                       href={item.href}
-                      className="group grid min-h-32 gap-5 px-5 py-6 outline-none transition-colors duration-300 hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/30 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center sm:px-7"
+                      className="group grid min-h-20 gap-4 p-4 outline-none transition-colors duration-200 hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/30 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center sm:p-5"
                     >
                       {content}
                     </Link>
                   ) : (
-                    <div className="grid min-h-32 gap-5 px-5 py-6 sm:grid-cols-[3rem_minmax(0,1fr)] sm:items-center sm:px-7">
+                    <div className="grid min-h-20 gap-4 p-4 sm:grid-cols-[3rem_minmax(0,1fr)] sm:items-center sm:p-5">
                       {content}
                     </div>
                   )}
@@ -114,7 +106,7 @@ export default async function EmployerNotificationsPage() {
         ) : (
           <EmptyState
             title="Belum ada notifikasi"
-            description="Pembaruan agreement dan pekerjaan akan muncul di sini."
+            description="Pembaruan Mini Agreement dan pekerjaan akan muncul di sini."
           />
         )}
       </section>

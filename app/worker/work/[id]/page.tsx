@@ -64,11 +64,10 @@ export default async function WorkerWorkPage({
   }
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow={work.title}
-        title="Langkah pekerjaan"
-        description="Selesaikan aksi yang tersedia pada status saat ini."
+        title={work.title}
+        description="Kelola check-in dan check-out sesuai status pekerjaan."
       />
 
       <ol className="grid border-y border-border/75 sm:grid-cols-4" aria-label="Tahapan pekerjaan">
@@ -103,17 +102,13 @@ export default async function WorkerWorkPage({
         })}
       </ol>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:items-start">
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.9fr)] lg:items-start">
         <section
-          className="relative isolate overflow-hidden rounded-[1.5rem] bg-[#0a1c3f] p-6 text-white shadow-[0_30px_78px_-44px_rgb(15_42_104/0.92)] sm:p-8"
+          className="rounded-xl border border-border bg-card p-5 sm:p-6"
           aria-labelledby="worker-action-title"
         >
           <div className="max-w-xl">
-            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200/70">
-              <span className="soft-pulse size-2 rounded-full bg-amber-400" aria-hidden="true" />
-              Aksi tersedia
-            </p>
-            <h2 id="worker-action-title" className="mt-6 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+            <h2 id="worker-action-title" className="text-2xl font-semibold tracking-tight">
               {work.allowedActions.checkIn
                 ? "Masukkan kode check-in"
                 : work.allowedActions.checkOut
@@ -122,7 +117,7 @@ export default async function WorkerWorkPage({
                     ? "Pekerjaan terverifikasi"
                     : "Menunggu langkah berikutnya"}
             </h2>
-            <p className="mt-3 text-base leading-7 text-blue-100/75">
+            <p className="mt-2 text-base leading-7 text-muted-foreground">
               {work.allowedActions.checkIn
                 ? "Minta kode enam digit langsung dari pemberi kerja. Kode berlaku selama 15 menit."
                 : work.allowedActions.checkOut
@@ -130,7 +125,7 @@ export default async function WorkerWorkPage({
                   : "Tidak ada aksi pekerja yang tersedia pada status ini."}
             </p>
 
-            <div className="theme-static-light mt-8 rounded-2xl bg-white p-4 text-slate-950 dark:bg-white dark:text-slate-950">
+            <div className="mt-6 border-t border-border/75 pt-5">
               {work.allowedActions.checkIn ? (
                 <CheckInForm agreementId={work.agreementId} />
               ) : work.allowedActions.checkOut ? (
@@ -142,8 +137,8 @@ export default async function WorkerWorkPage({
               )}
             </div>
 
-            <div className="mt-5 flex gap-3 border-t border-white/15 pt-5 text-base leading-7 text-blue-100/70">
-              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-blue-300" aria-hidden="true" />
+            <div className="mt-5 flex gap-3 border-t border-border/75 pt-5 text-sm leading-6 text-muted-foreground">
+              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <p>
                 Rintara tidak mengumpulkan GPS berkelanjutan atau foto bukti
                 kerja. Kode check-in tidak pernah ditampilkan ulang.
@@ -181,11 +176,11 @@ export default async function WorkerWorkPage({
               Kehadiran
             </h2>
             <dl className="mt-4 grid gap-3">
-              <div className="rounded-2xl border border-border bg-card p-4">
+              <div className="rounded-xl border border-border bg-card p-4">
                 <dt className="text-sm text-muted-foreground">Check-in</dt>
                 <dd className="mt-1 font-medium">{formatDateTime(work.session.checkedInAt)}</dd>
               </div>
-              <div className="rounded-2xl border border-border bg-card p-4">
+              <div className="rounded-xl border border-border bg-card p-4">
                 <dt className="text-sm text-muted-foreground">Check-out</dt>
                 <dd className="mt-1 font-medium">{formatDateTime(work.session.checkedOutAt)}</dd>
               </div>

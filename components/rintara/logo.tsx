@@ -4,26 +4,66 @@ import { cn } from "@/lib/utils";
 export function RintaraLogo({
   className,
   prefetch,
+  tone = "default",
 }: {
   className?: string;
   prefetch?: boolean;
+  tone?: "default" | "inverse";
 }) {
   return (
     <Link
       href="/"
       prefetch={prefetch}
-      className={cn("group/logo inline-flex min-h-11 items-center gap-2.5 font-semibold tracking-tight", className)}
+      className={cn(
+        "group/logo inline-flex min-h-11 items-center gap-2 font-semibold tracking-tight",
+        className,
+      )}
       aria-label="Rintara, kembali ke beranda"
     >
-      <span className="relative grid size-9 place-items-center overflow-hidden rounded-[0.8rem] bg-primary text-primary-foreground shadow-[0_8px_22px_-10px_rgb(30_79_214/0.72)] transition-[transform,box-shadow] duration-500 ease-out group-hover/logo:scale-[1.025] group-hover/logo:shadow-[0_10px_26px_-10px_rgb(30_79_214/0.82)]">
-        <svg viewBox="0 0 36 36" className="size-6" fill="none" aria-hidden="true">
-          <path d="M7 27.5C11.2 25.7 10.2 18.6 15.1 17.4C19.4 16.3 20.6 21.2 24.5 19.7C27.4 18.6 27.5 13.5 30 8.5" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
-          <circle cx="7" cy="27.5" r="2.4" fill="currentColor" />
-          <circle cx="15.1" cy="17.4" r="2.4" fill="var(--primary)" stroke="currentColor" strokeWidth="1.8" />
-          <circle cx="30" cy="8.5" r="2.4" fill="currentColor" />
+      <span
+        className={cn(
+          "grid size-9 place-items-center transition-colors duration-150",
+          tone === "inverse"
+            ? "text-[#73e2a7]"
+            : "text-primary group-hover/logo:text-[#1b512d]",
+        )}
+      >
+        <svg
+          viewBox="0 0 36 36"
+          className="size-8"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M8.5 29V10.5A3.5 3.5 0 0 1 12 7h16"
+            stroke="currentColor"
+            strokeWidth="3.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M15 15h6.2a4.4 4.4 0 0 1 0 8.8H15"
+            stroke="currentColor"
+            strokeWidth="3.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="m21 23.8 7.2 6.2"
+            stroke="currentColor"
+            strokeWidth="3.25"
+            strokeLinecap="round"
+          />
         </svg>
       </span>
-      <span className="text-xl font-semibold text-foreground">Rintara</span>
+      <span
+        className={cn(
+          "text-xl font-bold tracking-[-0.025em]",
+          tone === "inverse" ? "text-white" : "text-[#1b512d]",
+        )}
+      >
+        Rintara
+      </span>
     </Link>
   );
 }

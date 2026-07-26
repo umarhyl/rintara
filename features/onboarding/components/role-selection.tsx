@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, BriefcaseBusiness, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  UserRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,31 +17,29 @@ type Role = "worker" | "employer";
 const roles = [
   {
     value: "worker",
-    number: "01",
     title: "Saya mencari pekerjaan",
-    description: "Temukan pekerjaan pemula, kirim catatan lamaran, dan bangun Paspor Rintara.",
+    description:
+      "Cari pekerjaan, kirim lamaran, dan simpan Bukti Kerja di Paspor.",
     icon: UserRound,
-    accent: "text-primary",
   },
   {
     value: "employer",
-    number: "02",
     title: "Saya memberi pekerjaan",
-    description: "Terbitkan pekerjaan yang jelas dan bantu seseorang memulai pengalaman pertamanya.",
+    description:
+      "Terbitkan pekerjaan, tinjau pelamar, dan kelola penyelesaian.",
     icon: BriefcaseBusiness,
-    accent: "text-opportunity",
   },
 ] as const;
 
 export function RoleSelection({ nextPath }: { nextPath?: string }) {
-  const [role, setRole] = useState<Role>("worker");
+  const [role, setRole] = useState<Role | null>(null);
 
   return (
-    <div className="grid gap-7">
+    <div className="grid gap-5">
       <RadioGroup
-        value={role}
+        value={role ?? ""}
         onValueChange={(value) => setRole(value as Role)}
-        className="divide-y divide-border border-y border-border"
+        className="grid gap-3"
         aria-label="Pilih peran aktif Rintara"
       >
         {roles.map((item) => {
@@ -49,31 +51,60 @@ export function RoleSelection({ nextPath }: { nextPath?: string }) {
               key={item.value}
               htmlFor={item.value}
               className={cn(
-                "group relative grid min-h-32 cursor-pointer grid-cols-[2.5rem_1fr_auto] items-start gap-4 py-6 font-normal transition-[background-color,color] duration-500 sm:grid-cols-[3rem_1fr_auto] sm:px-2",
-                selected ? "bg-secondary/55" : "hover:bg-muted/45",
+                "group grid min-h-24 cursor-pointer grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-4 py-4 font-normal outline-none transition-[background-color,border-color] duration-200",
+                selected
+                  ? "border-primary bg-primary/8"
+                  : "border-border bg-background hover:border-primary/40 hover:bg-muted/45",
               )}
             >
-              <span className={cn("font-mono text-xs", selected ? item.accent : "text-muted-foreground")}>{item.number}</span>
-              <span>
-                <span className="flex items-center gap-3">
-                  <Icon className={cn("size-5 transition-colors duration-500", selected ? item.accent : "text-muted-foreground")} aria-hidden="true" />
-                  <span className="text-base font-semibold text-foreground">{item.title}</span>
-                </span>
-                <span className="mt-3 block max-w-sm text-base leading-7 text-muted-foreground">{item.description}</span>
+              <span
+                className={cn(
+                  "grid size-11 place-items-center rounded-lg border border-border bg-card text-muted-foreground",
+                  selected &&
+                    "border-primary bg-primary text-primary-foreground",
+                )}
+              >
+                <Icon className="size-5" aria-hidden="true" />
               </span>
-              <RadioGroupItem id={item.value} value={item.value} className="mt-0.5" />
-              {selected ? <span className="absolute inset-y-4 left-0 w-0.5 rounded-r-full bg-primary" aria-hidden="true" /> : null}
+              <span className="min-w-0">
+                <span className="block text-base font-semibold leading-6 text-foreground">
+                  {item.title}
+                </span>
+                <span className="mt-1 block text-sm leading-6 text-muted-foreground">
+                  {item.description}
+                </span>
+              </span>
+              <RadioGroupItem id={item.value} value={item.value} />
             </Label>
           );
         })}
       </RadioGroup>
 
-      <Button className="h-12 rounded-full" asChild>
-        <Link href={nextPath ? { pathname: `/onboarding/${role}`, query: { next: nextPath } } : `/onboarding/${role}`}>
-          Lanjut sebagai {role === "worker" ? "pekerja" : "pemberi kerja"}
-          <ArrowRight className="group-hover/button:translate-x-0.5" aria-hidden="true" />
-        </Link>
-      </Button>
+      <p className="text-sm leading-6 text-muted-foreground">
+        Peran tidak dapat diubah setelah profil disimpan.
+      </p>
+
+      {role ? (
+        <Button className="h-12" asChild>
+          <Link
+            href={
+              nextPath
+                ? {
+                    pathname: `/onboarding/${role}`,
+                    query: { next: nextPath },
+                  }
+                : `/onboarding/${role}`
+            }
+          >
+            Lanjut sebagai {role === "worker" ? "pekerja" : "pemberi kerja"}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      ) : (
+        <Button type="button" className="h-12" disabled>
+          Pilih satu peran untuk melanjutkan
+        </Button>
+      )}
     </div>
   );
 }

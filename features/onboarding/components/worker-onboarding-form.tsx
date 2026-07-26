@@ -162,7 +162,7 @@ export function WorkerProfileForm({
   const noAreaAvailable = areas.length === 0;
 
   return (
-    <form className="grid gap-7" aria-busy={isPending} onSubmit={handleSubmit}>
+    <form className="grid gap-6" aria-busy={isPending} onSubmit={handleSubmit}>
       {error ? (
         <Alert variant="destructive">
           <CircleAlert aria-hidden="true" />
@@ -204,8 +204,8 @@ export function WorkerProfileForm({
         </Alert>
       ) : null}
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="grid gap-2 sm:col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
           <Label htmlFor="worker-display-name">Nama tampilan</Label>
           <Input
             id="worker-display-name"
@@ -230,7 +230,7 @@ export function WorkerProfileForm({
           ) : null}
         </div>
 
-        <div className="grid gap-2 sm:col-span-2">
+        <div className="grid gap-2">
           <Label htmlFor="worker-area">Area domisili</Label>
           <Select
             value={areaId}
@@ -321,10 +321,10 @@ export function WorkerProfileForm({
         <div className="mt-1 flex items-end justify-between gap-4">
           <p
             id="category-interest-help"
-            className="text-base leading-7 text-muted-foreground"
+            className="text-sm leading-6 text-muted-foreground"
           >
-            Pilihan ini hanya menunjukkan minatmu. Status pengalaman untuk
-            Kesempatan Pertama dihitung per kategori dari Bukti Kerja.
+            Pilih kategori yang ingin kamu kerjakan. Kelayakan Kesempatan
+            Pertama tetap dihitung dari Bukti Kerja.
           </p>
           {categories.length > 0 ? (
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
@@ -334,7 +334,7 @@ export function WorkerProfileForm({
         </div>
 
         {categories.length > 0 ? (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
             {categories.map((category) => {
               const checked = categoryInterestIds.includes(category.id);
               const reachedLimit =
@@ -348,10 +348,10 @@ export function WorkerProfileForm({
                   key={category.id}
                   htmlFor={`category-${category.id}`}
                   className={cn(
-                    "flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 font-normal transition-[background-color,border-color,color] duration-200",
+                    "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 font-normal transition-[background-color,border-color,color] duration-200",
                     checked
                       ? "border-primary/45 bg-primary/8 text-foreground"
-                      : "border-border bg-card/60 text-muted-foreground hover:border-primary/25 hover:bg-muted/55 hover:text-foreground",
+                      : "border-border bg-background text-muted-foreground hover:border-primary/25 hover:bg-muted/55 hover:text-foreground",
                     reachedLimit && !checked && "cursor-not-allowed opacity-45",
                   )}
                 >
@@ -403,7 +403,7 @@ export function WorkerProfileForm({
       <Button
         type="submit"
         size="lg"
-        className="w-full rounded-full"
+        className="h-12 w-full"
         disabled={isPending || noAreaAvailable}
       >
         {isPending

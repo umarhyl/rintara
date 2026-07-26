@@ -9,9 +9,10 @@ export function MobileApplyDock({ wage }: { wage: string }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const targets = [document.querySelector("#apply"), document.querySelector("footer")].filter(
-      (target): target is Element => target !== null,
-    );
+    const targets = [
+      document.querySelector("#apply"),
+      document.querySelector("footer"),
+    ].filter((target): target is Element => target !== null);
 
     if (targets.length === 0) return;
 
@@ -19,7 +20,10 @@ export function MobileApplyDock({ wage }: { wage: string }) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          intersecting.set(entry.target, entry.isIntersecting && entry.intersectionRatio > 0.08);
+          intersecting.set(
+            entry.target,
+            entry.isIntersecting && entry.intersectionRatio > 0.08,
+          );
         }
         setVisible(![...intersecting.values()].some(Boolean));
       },
@@ -37,8 +41,10 @@ export function MobileApplyDock({ wage }: { wage: string }) {
   return (
     <div
       className={cn(
-        "fixed inset-x-3 bottom-3 z-30 rounded-2xl border border-border/80 bg-card/90 p-3 shadow-[0_20px_55px_-28px_rgb(15_23_42/0.55)] backdrop-blur-2xl transition-[opacity,translate] duration-500 lg:hidden",
-        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-[calc(100%+1rem)] opacity-0",
+        "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-20px_rgb(16_37_27/0.6)] transition-[opacity,translate] duration-200 lg:hidden",
+        visible
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-[calc(100%+1rem)] opacity-0",
       )}
       aria-hidden={!visible}
       inert={!visible}
@@ -49,8 +55,8 @@ export function MobileApplyDock({ wage }: { wage: string }) {
           <p className="text-xs font-medium text-muted-foreground">Upah tetap</p>
           <p className="truncate font-semibold">{wage}</p>
         </div>
-        <Button className="rounded-full" asChild>
-          <Link href="#apply">Lamar sekarang</Link>
+        <Button className="h-11 shrink-0" asChild>
+          <Link href="#apply">Lamar</Link>
         </Button>
       </div>
     </div>

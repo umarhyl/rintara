@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, KeyRound, LoaderCircle } from "lucide-react";
 import {
@@ -69,16 +69,20 @@ export function GenerateCheckInCodeButton({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ code: string; expiresAt: string } | null>(null);
+  const submissionLockRef = useRef(false);
 
   function handleGenerate() {
-    if (disabled || isPending) return;
+    if (disabled || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
         const next = await generateCheckInCode(agreementId);
         setResult({ code: next.code, expiresAt: next.expiresAt });
         router.refresh();
+        submissionLockRef.current = false;
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });
@@ -100,11 +104,9 @@ export function GenerateCheckInCodeButton({
         )}
       </Button>
       {result ? (
-        <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
-            Tampilkan sekali
-          </p>
-          <p className="mt-2 font-mono text-4xl font-semibold tracking-[0.2em]">
+        <div className="rounded-xl border border-primary/25 bg-secondary/55 p-4 text-center">
+          <p className="text-sm font-semibold text-primary">Tampil satu kali</p>
+          <p className="mt-2 font-mono text-3xl font-semibold tracking-[0.16em]">
             {result.code}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -133,10 +135,19 @@ export function CheckInForm({
   const [code, setCode] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const submissionLockRef = useRef(false);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (disabled || isPending) return;
+    if (
+      disabled ||
+      isPending ||
+      code.length !== 6 ||
+      submissionLockRef.current
+    ) {
+      return;
+    }
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
@@ -144,6 +155,7 @@ export function CheckInForm({
         setCode("");
         router.refresh();
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });
@@ -165,7 +177,7 @@ export function CheckInForm({
           value={code}
           onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
           placeholder="000000"
-          className="h-16 rounded-2xl text-center font-mono text-2xl tracking-[0.35em]"
+          className="h-12 rounded-xl text-center font-mono text-xl tracking-[0.25em]"
           disabled={disabled || isPending}
         />
       </div>
@@ -200,9 +212,11 @@ export function CheckOutButton({
   const [completionNote, setCompletionNote] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const submissionLockRef = useRef(false);
 
   function handleCheckOut() {
-    if (disabled || isPending) return;
+    if (disabled || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
@@ -210,6 +224,7 @@ export function CheckOutButton({
         setOpen(false);
         router.refresh();
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });
@@ -279,9 +294,11 @@ export function VerifyCompletionButton({
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const submissionLockRef = useRef(false);
 
   function handleVerify() {
-    if (disabled || isPending) return;
+    if (disabled || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
@@ -289,6 +306,7 @@ export function VerifyCompletionButton({
         setOpen(false);
         router.refresh();
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });

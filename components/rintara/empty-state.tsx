@@ -14,13 +14,14 @@ export function EmptyState({
   actionHref?: string;
 }) {
   return (
-    <section className="relative overflow-hidden border-y border-border bg-card/38 px-6 py-12 text-center" aria-label={title}>
-      <span className="absolute left-1/2 top-0 h-px w-24 -translate-x-1/2 bg-primary" aria-hidden="true" />
-      <Inbox className="mx-auto size-6 text-primary" aria-hidden="true" />
-      <h2 className="mt-5 text-xl font-semibold tracking-[-0.025em]">{title}</h2>
-      <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">{description}</p>
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-center" aria-label={title}>
+      <Inbox className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <h2 className="font-semibold">{title}</h2>
+        <p className="mt-1 max-w-2xl text-base leading-6 text-muted-foreground">{description}</p>
+      </div>
       {actionLabel && actionHref ? (
-        <Button className="mt-6 h-11 rounded-full px-5" asChild>
+        <Button variant="outline" className="shrink-0" asChild>
           <Link href={actionHref}>{actionLabel}</Link>
         </Button>
       ) : null}

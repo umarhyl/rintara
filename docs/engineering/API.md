@@ -551,6 +551,14 @@ Access: active employer.
 
 Returns active credit count, lifetime non-revoked opportunity count, derived badge, and paginated credit history. No balance input is accepted.
 
+### `getMyCreditDashboardSummary()`
+
+Access: active employer.
+
+Returns only the current active-credit count and active-boost count needed by
+the Employer dashboard. It does not load credit history, target jobs, or accept
+caller-supplied ownership and balance fields.
+
 ### `redeemOpportunityCredit(input)`
 
 Access: active employer.

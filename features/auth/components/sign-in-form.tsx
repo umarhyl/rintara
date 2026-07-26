@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CircleAlert, LoaderCircle, Mail } from "lucide-react";
 import { submitSignIn } from "@/app/auth/actions";
 import { AuthPasswordField } from "@/features/auth/components/auth-password-field";
+import { useAuthSurfaceState } from "@/features/auth/components/auth-surface-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,16 +22,25 @@ export function SignInForm({
   const submittingRef = useRef(false);
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(initialErrorMessage);
+  const {
+    email,
+    setEmail,
+    signInPassword,
+    setSignInPassword,
+    setBusy,
+  } = useAuthSurfaceState();
 
   return (
     <form
-      className="mt-7 grid gap-5"
+      className="mt-6 grid gap-4"
+      aria-busy={pending}
       onSubmit={async (event) => {
         event.preventDefault();
         if (submittingRef.current) return;
 
         submittingRef.current = true;
         setPending(true);
+        setBusy(true);
         setErrorMessage(null);
 
         const form = new FormData(event.currentTarget);
@@ -55,6 +65,7 @@ export function SignInForm({
             "Koneksi terputus saat masuk. Periksa jaringan lalu coba lagi.",
           );
         } finally {
+          setBusy(false);
           if (!completed) {
             submittingRef.current = false;
             setPending(false);
@@ -66,21 +77,42 @@ export function SignInForm({
         <Label htmlFor="email">Email</Label>
         <div className="relative">
           <Mail className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <Input id="email" name="email" type="email" autoComplete="email" maxLength={320} placeholder="nama@contoh.id" className="h-12 pl-11" disabled={pending} required />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            maxLength={320}
+            placeholder="nama@contoh.id"
+            className="h-12 pl-11"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={pending}
+            required
+          />
         </div>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="password">Kata sandi</Label>
-        <AuthPasswordField id="password" name="password" autoComplete="current-password" maxLength={128} disabled={pending} required />
+        <AuthPasswordField
+          id="password"
+          name="password"
+          autoComplete="current-password"
+          maxLength={128}
+          value={signInPassword}
+          onChange={(event) => setSignInPassword(event.target.value)}
+          disabled={pending}
+          required
+        />
       </div>
       {errorMessage ? (
-        <div className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-base leading-7 text-red-800" role="alert">
+        <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/8 p-4 text-base leading-7 text-destructive" role="alert">
           <CircleAlert className="mt-0.5 size-4.5 shrink-0" aria-hidden="true" />
           <p>{errorMessage}</p>
         </div>
       ) : null}
-      <Button type="submit" size="lg" className="mt-1 h-12 rounded-full" disabled={pending}>
-        {pending ? <><LoaderCircle className="animate-spin" aria-hidden="true" />Memeriksa akun</> : <>Masuk ke Rintara <ArrowRight className="group-hover/button:translate-x-0.5" aria-hidden="true" /></>}
+      <Button type="submit" size="lg" className="mt-2 h-12" disabled={pending}>
+        {pending ? <><LoaderCircle className="animate-spin" aria-hidden="true" />Memeriksa akun</> : <>Masuk ke Rintara <ArrowRight aria-hidden="true" /></>}
       </Button>
     </form>
   );

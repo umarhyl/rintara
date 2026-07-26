@@ -1,14 +1,33 @@
-import { ArrowUpRight, BriefcaseBusiness, Search, SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { adminListJobs } from "@/server/queries/admin/moderation";
 
-function jobTone(status: string) {
+function jobTone(status: string, visibility: string) {
+  if (visibility === "hidden") return "warning";
   return status === "published" ? "success" : "info";
+}
+
+const jobStatusLabels: Record<string, string> = {
+  draft: "Draf",
+  published: "Terbit",
+  filled: "Terisi",
+  in_progress: "Sedang berjalan",
+  completed: "Selesai",
+  expired: "Kedaluwarsa",
+  cancelled: "Dibatalkan",
+};
+
+const visibilityLabels: Record<string, string> = {
+  visible: "Terlihat",
+  hidden: "Disembunyikan",
+};
+
+function jobStateLabel(status: string, visibility: string) {
+  return `${jobStatusLabels[status] ?? "Status lain"} · ${
+    visibilityLabels[visibility] ?? "Visibilitas lain"
+  }`;
 }
 
 export default async function AdminJobsPage() {
@@ -16,41 +35,30 @@ export default async function AdminJobsPage() {
   const jobs = await adminListJobs();
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Moderasi konten"
         title="Pekerjaan"
-        description="Pantau status terbit dan visibilitas moderasi. Alamat lengkap tidak pernah ditampilkan pada daftar ini."
+        description="Pantau status terbit dan visibilitas. Alamat lengkap tidak ditampilkan."
       />
 
-      <section aria-label="Pencarian dan filter pekerjaan" className="grid gap-4 border-y border-border/70 py-5 lg:grid-cols-[minmax(18rem,1fr)_auto_auto] lg:items-center">
-        <div className="relative max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <Input aria-label="Cari pekerjaan" placeholder="Cari judul atau pemberi kerja" className="h-12 rounded-full bg-card/75 pl-11" />
-        </div>
-        <Button variant="outline" type="button" className="rounded-full">
-          <SlidersHorizontal aria-hidden="true" />
-          Filter status
-        </Button>
-        <p className="text-sm text-muted-foreground lg:pl-2">
+      <section aria-label="Ringkasan daftar pekerjaan" className="border-y border-border/70 py-5">
+        <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{jobs.length}</span> pekerjaan
         </p>
       </section>
 
-      <section aria-labelledby="jobs-list-title" className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/72 backdrop-blur-sm">
+      <section aria-labelledby="jobs-list-title" className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center justify-between gap-4 border-b border-border/70 px-5 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Daftar aktif</p>
-            <h2 id="jobs-list-title" className="mt-1 text-lg font-semibold">Pekerjaan terbaru</h2>
-          </div>
-          <BriefcaseBusiness className="size-5 text-muted-foreground" aria-hidden="true" />
+          <h2 id="jobs-list-title" className="text-lg font-semibold">
+            Daftar pekerjaan
+          </h2>
         </div>
 
         <div className="divide-y divide-border/70 md:hidden">
           {jobs.map((job, index) => (
             <article key={job.id} className="grid gap-5 px-5 py-5">
               <div className="grid grid-cols-[2.5rem_1fr] gap-3">
-                <span className="grid size-9 place-items-center rounded-full border border-border font-mono text-xs text-muted-foreground" aria-hidden="true">
+                <span className="grid size-9 place-items-center rounded-xl border border-border font-mono text-xs text-muted-foreground" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
@@ -58,17 +66,18 @@ export default async function AdminJobsPage() {
                   <p className="mt-1 text-sm text-muted-foreground">{job.employerDisplayName}</p>
                 </div>
               </div>
-              <div className="flex items-center justify-between gap-3 pl-[3.25rem]">
-                <StatusBadge status={jobTone(job.status)}>
-                  {job.status} · {job.visibility}
+              <div className="pl-[3.25rem]">
+                <StatusBadge status={jobTone(job.status, job.visibility)}>
+                  {jobStateLabel(job.status, job.visibility)}
                 </StatusBadge>
-                <Button variant="ghost" type="button" className="h-11">
-                  Tinjau
-                  <ArrowUpRight aria-hidden="true" />
-                </Button>
               </div>
             </article>
           ))}
+          {jobs.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground">
+              Belum ada pekerjaan untuk ditinjau.
+            </p>
+          ) : null}
         </div>
 
         <div className="hidden overflow-x-auto md:block">
@@ -78,7 +87,6 @@ export default async function AdminJobsPage() {
                 <TableHead className="pl-6">Pekerjaan</TableHead>
                 <TableHead>Pemberi kerja</TableHead>
                 <TableHead>Status internal</TableHead>
-                <TableHead className="pr-6 text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -87,27 +95,23 @@ export default async function AdminJobsPage() {
                   <TableCell className="pl-6 font-medium">{job.title}</TableCell>
                   <TableCell className="text-muted-foreground">{job.employerDisplayName}</TableCell>
                   <TableCell>
-                    <StatusBadge status={jobTone(job.status)}>
-                      {job.status} · {job.visibility}
+                    <StatusBadge status={jobTone(job.status, job.visibility)}>
+                      {jobStateLabel(job.status, job.visibility)}
                     </StatusBadge>
-                  </TableCell>
-                  <TableCell className="pr-6 text-right">
-                    <Button variant="ghost" type="button" className="h-11">
-                      Tinjau
-                      <ArrowUpRight aria-hidden="true" />
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
+              {jobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                    Belum ada pekerjaan untuk ditinjau.
+                  </TableCell>
+                </TableRow>
+              ) : null}
             </TableBody>
           </Table>
         </div>
       </section>
-
-      <p className="flex items-start gap-3 text-base leading-7 text-muted-foreground">
-        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-        Daftar ini hanya memuat informasi yang diperlukan untuk moderasi. Detail privat dibuka melalui konteks yang berwenang.
-      </p>
     </div>
   );
 }

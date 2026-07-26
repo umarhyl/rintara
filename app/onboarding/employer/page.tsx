@@ -17,8 +17,7 @@ export default async function EmployerOnboardingPage({ searchParams }: { searchP
   return (
     <AuthShell
       title="Lengkapi profil pemberi kerja"
-      description="Bantu pekerja mengenali siapa yang menawarkan pekerjaan dan di area mana kegiatan berlangsung."
-      eyebrow="Profil pemberi kerja"
+      description="Isi identitas dan area kegiatan yang akan dilihat pekerja."
       stage={3}
     >
       <EmployerOnboardingForm areas={areas} nextPath={nextPath} />

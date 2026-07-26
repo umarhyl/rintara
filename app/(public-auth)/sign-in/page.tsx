@@ -1,5 +1,5 @@
 import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
-import { AuthShell } from "@/features/auth/components/auth-shell";
+import { AuthPanel } from "@/features/auth/components/auth-shell";
 import { SignInForm } from "@/features/auth/components/sign-in-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
@@ -15,12 +15,18 @@ export default async function SignInPage({
   const nextPath = safeApplicationPath(typeof query.next === "string" ? query.next : null, "/account/continue");
 
   return (
-    <AuthShell title="Lanjutkan jejakmu" description="Masuk untuk menemukan kesempatan berikutnya atau mengelola pekerjaan yang sedang berjalan." eyebrow="Selamat datang kembali">
-      <AuthRouteSwitch active="sign-in" nextPath={nextPath !== "/account/continue" ? nextPath : undefined} />
+    <AuthPanel
+      title="Masuk ke Rintara"
+      description="Lanjutkan pekerjaan, lamaran, dan kesepakatanmu."
+    >
+      <AuthRouteSwitch
+        active="sign-in"
+        nextPath={nextPath !== "/account/continue" ? nextPath : undefined}
+      />
       <SignInForm
         initialErrorMessage={authenticationFailed ? "Tautan masuk tidak dapat diproses atau sudah kedaluwarsa. Silakan masuk kembali." : null}
         nextPath={nextPath}
       />
-    </AuthShell>
+    </AuthPanel>
   );
 }

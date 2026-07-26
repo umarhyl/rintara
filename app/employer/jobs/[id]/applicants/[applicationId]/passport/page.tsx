@@ -51,11 +51,10 @@ export default async function ApplicantPassportPage({
   const { applicant, proofEntries } = passport;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow={passport.job.title}
         title={`Paspor ${applicant.workerDisplayName}`}
-        description="Riwayat Bukti Kerja terverifikasi yang boleh dilihat selama lamaran ini masih ditinjau."
+        description={`Bukti Kerja untuk lamaran ${passport.job.title}. Akses tersedia selama peninjauan.`}
         action={
           <StatusBadge
             tone={applicant.isEligibleForJobCategoryNow ? "success" : "warning"}
@@ -67,7 +66,7 @@ export default async function ApplicantPassportPage({
         }
       />
 
-      <section className="grid gap-6 rounded-[1.5rem] border border-border/75 bg-card/78 p-5 sm:p-7">
+      <section className="grid gap-5 rounded-xl border border-border bg-card p-5 sm:p-6">
         <div>
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="size-4 text-primary" aria-hidden="true" />
@@ -83,7 +82,7 @@ export default async function ApplicantPassportPage({
         <dl className="grid overflow-hidden border-y border-border/70 sm:grid-cols-3">
           <div className="py-4 sm:px-4">
             <dt className="text-sm text-muted-foreground">Bukti Kerja</dt>
-            <dd className="mt-1 text-2xl font-semibold">
+            <dd className="mt-1 text-lg font-semibold tabular-nums">
               {applicant.completedJobs}
             </dd>
           </div>
@@ -91,7 +90,7 @@ export default async function ApplicantPassportPage({
             <dt className="text-sm text-muted-foreground">
               Kategori terverifikasi
             </dt>
-            <dd className="mt-1 text-2xl font-semibold">
+            <dd className="mt-1 text-lg font-semibold tabular-nums">
               {applicant.verifiedCategoryCount}
             </dd>
           </div>
@@ -114,7 +113,7 @@ export default async function ApplicantPassportPage({
               applicant.skillInterests.map((skill) => (
                 <span
                   key={skill.id}
-                  className="inline-flex min-h-8 items-center rounded-full border border-border px-3 text-sm"
+                  className="inline-flex min-h-8 items-center rounded-lg border border-border px-3 text-sm"
                 >
                   {skill.name}
                 </span>

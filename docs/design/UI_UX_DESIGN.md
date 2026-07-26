@@ -1,8 +1,8 @@
 # Rintara UI/UX Design Guidelines
 
-> **Version:** 3.1
+> **Version:** 3.6
 >
-> **Date:** July 19, 2026
+> **Date:** July 26, 2026
 >
 > **Status:** MVP experience and interface baseline
 >
@@ -37,17 +37,17 @@ The MVP optimizes for successful completion of the golden path, not time spent i
 
 Repository documentation and code identifiers use English. Default end-user copy uses clear Indonesian unless the team approves another localization strategy.
 
-| Use | Avoid in user-facing copy |
-| --- | --- |
-| Employer / Pemberi kerja | Client |
-| Apply / Lamar | Bid, bidding |
-| Wage / Upah | Price offer |
-| First Opportunity / Kesempatan Pertama | Unpaid trial |
-| Mini Agreement / Kesepakatan Kerja | Escrow contract |
-| Work Proof / Bukti Kerja | Self-verified certificate |
-| Rintara Passport / Paspor Rintara | Editable portfolio |
-| Opportunity Credit / Kredit Kesempatan | Cash balance |
-| Boost | Guaranteed placement |
+| Use                                    | Avoid in user-facing copy |
+| -------------------------------------- | ------------------------- |
+| Employer / Pemberi kerja               | Client                    |
+| Apply / Lamar                          | Bid, bidding              |
+| Wage / Upah                            | Price offer               |
+| First Opportunity / Kesempatan Pertama | Unpaid trial              |
+| Mini Agreement / Kesepakatan Kerja     | Escrow contract           |
+| Work Proof / Bukti Kerja               | Self-verified certificate |
+| Rintara Passport / Paspor Rintara      | Editable portfolio        |
+| Opportunity Credit / Kredit Kesempatan | Cash balance              |
+| Boost                                  | Guaranteed placement      |
 
 Content rules:
 
@@ -59,69 +59,166 @@ Content rules:
 
 ## 4. Visual Direction
 
-Rintara's visual character is practical, optimistic, and credible. The product should avoid both corporate recruitment stiffness and gamified marketplace pressure.
+Rintara's visual character is a practical job-marketplace workspace: compact,
+credible, and ready to use. It avoids both corporate recruitment stiffness and
+gamified marketplace pressure.
 
-### Provisional color tokens
+### Color system
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `primary-700` | `#1D4ED8` | Primary action, active navigation |
-| `primary-50` | `#EFF6FF` | Informational backgrounds |
-| `opportunity-600` | `#B45309` | First Opportunity emphasis with accessible text treatment |
-| `opportunity-50` | `#FFFBEB` | Opportunity surface |
-| `success-700` | `#15803D` | Verified/completed status |
-| `danger-700` | `#B91C1C` | Destructive action and critical error |
-| `neutral-950` | `#0F172A` | Main text |
-| `neutral-600` | `#475569` | Secondary text |
-| `neutral-200` | `#E2E8F0` | Borders and dividers |
-| `surface` | `#FFFFFF` | Main surface |
+The brand palette is Forest `#1C7C54`, Mint `#73E2A7`, Chalk `#DEF4C6`,
+Deep Forest `#1B512D`, and Leaf `#B1CF5F`. Rintara intentionally ships one
+light appearance; there is no dark-mode or appearance switch.
 
-Validate actual text/background combinations for WCAG 2.2 AA. Do not use opportunity amber as the sole status signal or as small text on white without contrast verification.
+| Semantic role      | Value     | Use                                         |
+| ------------------ | --------- | ------------------------------------------- |
+| `background`       | `#F6F8F6` | Page canvas                                 |
+| `foreground`       | `#10251B` | Primary text                                |
+| `card`             | `#FFFFFF` | Solid panels and fields                     |
+| `muted`            | `#EEF2EE` | Secondary surfaces                          |
+| `muted-foreground` | `#4B6253` | Secondary text                              |
+| `primary`          | `#1C7C54` | Primary actions, active navigation, focus   |
+| `secondary`        | `#DEF4C6` | Calm supporting emphasis                    |
+| `border`           | `#D9E1DA` | Necessary separators and component outlines |
+| `input`            | `#AAB9AD` | Field boundaries                            |
+| `opportunity`      | `#B1CF5F` | First Opportunity emphasis                  |
+| `destructive`      | `#B42318` | Errors and destructive actions              |
+| `sidebar`          | `#FFFFFF` | Neutral role navigation                     |
+| `sidebar-accent`   | `#E7F3EB` | Current role destination                    |
+
+Validate actual text/background combinations for WCAG 2.2 AA. First
+Opportunity, boost, completion, warning, and error states always include
+readable text; color is never the only signal.
 
 ### Typography
 
-- Use a performant system or approved variable sans-serif font.
+- Use Figtree through `next/font` with system sans-serif fallbacks.
 - Base body text is at least 16 CSS pixels.
 - Body line height targets 1.5 or greater.
 - Use no more than four clear typographic levels per screen.
+- Route headings top out around 2.75rem; headings orient the task rather than
+  dominating the viewport.
 - Numeric wage receives strong emphasis near the job title.
+- Use tabular numerals for wages, times, counts, and check-in codes.
+- Do not introduce a decorative serif, mixed-family emphasis, or repeated
+  uppercase wide-tracked eyebrows.
 
 ### Shape and elevation
 
-- Moderate corner radius, consistent across fields, cards, and dialogs.
-- Use borders and spacing before shadows.
-- Reserve elevation for dialogs, menus, and sticky action surfaces.
-- Avoid decorative gradients or motion that competes with task information.
+- Use the implemented compact radius system: approximately 8 pixels for badges
+  and small controls, 10 pixels for buttons and fields, and 12 pixels for
+  cards, search groups, and panels.
+- Do not use 2xl/3xl radii for ordinary product surfaces. The landing's
+  editorial Forest silhouette is a deliberate branded exception.
+- Reserve full rounding for circular avatars. Status badges use the compact
+  radius rather than pills.
+- Use spacing and tonal layers before borders or shadows. Repeated ornamental
+  dividers are removed when a background shift can explain grouping.
+- Resting operational cards are flat. Reserve structural elevation for
+  dialogs, sheets, menus, the condensing header, the contained hero search
+  panel, sticky actions, and the selected leading surface inside a landing
+  composition.
+- Do not use glass panels, broad backdrop blur, luminous outer glow, or
+  decorative gradients to create hierarchy. The single condensed public
+  header is the only approved bounded translucent-blur surface.
 
-### Jejak visual system
+### Kerja Lokal dalam Pandangan visual system
 
-The product uses a restrained **Jejak/Rute** motif to connect Opportunity, Agreement, and Work Proof without turning the workflow into a game.
+The creative north star is **Kerja Lokal dalam Pandangan**: a marketplace
+workspace that makes local work tangible while keeping real opportunities,
+comparable terms, and the next action before unsupported promotion.
 
-- Prefer open editorial composition, dividers, and connected timelines over repeating equal cards on every screen.
-- Use elevation only for interactive or sticky surfaces; informational groups may sit directly on the page.
-- A custom three-node route mark represents the product. Do not substitute emoji or generic sparkle artwork.
-- Light and dark themes must preserve the same information hierarchy and expose an animated, accessible theme switch.
-- Desktop public navigation follows immediately after the Rintara identity instead of floating at the viewport center; account actions remain aligned at the opposite edge.
-- Hero and authentication backgrounds use a lightweight Canvas 2D field of dotted route orbits on capable devices. Light mode uses saturated ink-like particles while dark mode uses brighter cosmic particles, and both preserve readable space beneath text.
-- Fine pointers quickly displace and enlarge nearby particles with a bounded convex response. Coarse pointers, data-saving mode, `prefers-reduced-motion`, and very-low-power hardware receive a static CSS particle layer without allocating a canvas buffer; offscreen or hidden canvases pause entirely.
-- The landing eyebrow is a compact animated opportunity label without a leading rule or underline. Agreement and Passport proof artifacts sit in one non-overlapping row and remain readable at narrow widths.
-- Keep the particle field isolated to prominent hero/authentication surfaces. Its adaptive budget is at most 30 frames per second on a typical device and 24 frames per second on lower-power hardware; device-pixel density and particle count are capped further on compact or constrained devices. Do not add WebGL or a motion library solely for ambience.
-- Initial interface motion is finite and task feedback remains responsive at 260–360 ms. Do not fade the entire public page or dashboard on entry; authentication may use a 560 ms transform-only entrance. Do not add static decorative route-line SVG layers; the landing eyebrow sheen plays once, while continuous ambience is limited to the adaptive particle field and one subtle desktop-only hero-card float.
-- Content below the initial public viewport reveals once as it enters view, using a scoped observer and a 760 ms vertical-rise and opacity transition. Repeated items may stagger by 90 ms, capped at 270 ms, so a long list never feels delayed. Dashboards do not receive a broad automatic reveal; use explicit motion only when it clarifies a state change.
-- Scroll reveal is progressive enhancement: content is visible by default, keyboard focus reveals its containing section immediately, and an item stays visible after its first reveal. Do not hide primary content while waiting for JavaScript.
-- Animate `transform` and `opacity` for ambience. Do not continuously animate every status or notification marker.
-- On narrow viewports, slow-update displays, or when reduced transparency is requested, render translucent surfaces without backdrop-filter blur. Slow-update displays also skip non-essential authentication entrance and eyebrow motion. Keep the visual hierarchy intact when these effects are removed.
-- The theme slider remains functional on every tier, but its full-root reveal falls back to a simple color change for data-saving, slow-update, reduced-motion, or lower-power devices.
-- Under `prefers-reduced-motion`, remove drifting, drawing, floating, and theme-reveal animation while preserving all content and intended opacity.
+- The light-only public homepage is Persuade-mode and search-led. Its hero is
+  one joined split composition: a Deep Forest search panel on the left and a
+  documentary local-work photograph on the right.
+- The labeled task-and-area GET search sits inside the Forest panel and sends
+  visitors to `/jobs`.
+- The homepage then exposes factual information safeguards, active categories
+  and city/regency areas, a compact gateway to dedicated Worker and Employer
+  guides, an asymmetric explanation of Rintara's agreement-to-proof
+  mechanism, and role-aware actions.
+- Published-job rows appear only on `/jobs`. Do not duplicate the discovery
+  feed, counts, loading state, or empty state on the homepage.
+- The landing asset is `public/visuals/rintara-local-work-v2.webp`; its
+  reserved responsive frame and meaningful alt text prevent layout shift.
+- Job discovery is the signature utility layout. Desktop uses a sticky 20rem
+  filter rail beside compact job rows; mobile moves filters into a sheet and
+  keeps the list single-column.
+- Job rows prioritize category and semantic status, title, employer, area,
+  schedule, duration, wage, and one detail action. First Opportunity and boost
+  labels remain explicit; list position never creates a featured status. The
+  wage and unit sit directly in the row with typographic emphasis, without a
+  nested tonal panel, redundant fixed-wage label, or decorative direction
+  arrow.
+- Job detail uses a dense decision header. Title, employer, task summary, wage,
+  area, schedule, duration, deadline, and privacy context precede the
+  application action.
+- Sign-in and registration use the separate portrait asset
+  `public/visuals/rintara-auth-work-v1.webp` in a stable split layout. The
+  image is separate from a plain focused form column and becomes a short
+  reserved-height crop on mobile. Both entry routes share the same persistent
+  frame, so changing mode replaces only the form panel and never reinitializes
+  the documentary image.
+- Role selection and Worker/Employer profile onboarding remain operational:
+  they use the narrow 10.5rem Deep Forest identity rail and a centered bordered
+  form without documentary imagery.
+- Role dashboards use a neutral semantic sidebar on desktop, a four-item
+  bottom navigation on mobile, compact page headers, and calm rows or
+  timelines for work in progress.
+- The dashboard header stays compact and contains a notification control only
+  when that role has a notification route, followed by one circular account
+  menu. Profile and notification destinations are not repeated in the primary
+  sidebar. Nested workflow routes resolve to one longest matching parent so
+  two navigation rows are never highlighted together.
+- The Worker dashboard prioritizes an accepted application's Mini Agreement,
+  then recent public jobs and the Worker's latest application activity. The
+  Employer dashboard prioritizes one actionable owned job, then recent jobs
+  and Opportunity Credit context. These are operational summaries backed by
+  server data, not decorative metric cards.
+- Job create and edit screens use the workspace content padding only once.
+  Form sections stay in one column through laptop widths and gain a compact
+  review rail only on wide screens. Field borders communicate affordance;
+  section grouping uses tonal surfaces instead of repeated dividers.
+- The green geometric Rintara **R** is the product identity. It may use the
+  Mint inverse treatment on Deep Forest, but route vectors are not repeated as
+  decoration.
+- The public header begins as a centered lightly frosted row capped at the
+  public content width and progressively condenses into a stronger translucent
+  blurred floating bar across the first 220 CSS pixels of scroll. Its height,
+  maximum width, padding, radius, gap, background opacity, blur, border, and
+  shadow interpolate together without hiding the primary route or mobile menu.
+- Interaction feedback runs for roughly 150-300 ms and uses transform,
+  opacity, color, or border.
+- Documentary images do not enter automatically or drive parallax.
+- Pages, authentication forms, cards, and content below the viewport are
+  visible immediately. Do not add automatic entrance, list stagger,
+  scroll-reveal observers, parallax, infinite loops, pointer tracking, or
+  mouse-following effects.
+- Do not add particle fields, cosmic scenes, decorative canvas, WebGL
+  ambience, static route-vector backgrounds, or fake animated dashboards.
+- Under `prefers-reduced-motion`, collapse the header and other nonessential
+  transitions while preserving content, hierarchy, and focus behavior.
+
+### External layout references
+
+- The implemented `app/page.tsx` composition is the current approved landing
+  reference.
+- Upwork-like marketplace hierarchy informed information sequencing only.
+- Do not copy its brand, wording, ranking model, social mechanics, or features.
+- Do not add fake metrics, testimonials, customer/employer logos, availability
+  claims, or payment-processing features. Payment method and timing may be
+  recorded, but payment remains outside Rintara.
 
 ## 5. Information Architecture
 
 ### Public
 
 - `/`
+- `/for-workers`
+- `/for-employers`
+- `/categories`
+- `/why-rintara`
 - `/jobs`
 - `/jobs/[id]`
-- `/first-opportunity`
 - `/how-it-works`
 - authentication pages
 
@@ -161,21 +258,41 @@ Navigation is role-specific after sign-in. Do not show inaccessible role destina
 
 ### Mobile
 
-- Compact header with product identity and notification access.
+- Compact public header with the geometric Rintara identity, collapsible
+  audience groups for **Untuk pekerja** and **Untuk pemberi kerja**, then
+  direct access to **Kategori kerja**, **Cara kerja**, and **Mengapa Rintara**.
+- A signed-in account exposes the same circular profile dropdown beside the
+  public navigation sheet; the account dropdown is not nested inside that
+  sheet.
 - Role-specific bottom navigation with three to five destinations.
 - Primary page action may use a sticky bottom action area when it does not cover content.
 - Filters use a sheet/drawer with visible applied-filter count.
 
 ### Desktop
 
-- Persistent role navigation in header or side rail.
+- Public navigation remains on one line immediately after the Rintara
+  identity. **Untuk pekerja** and **Untuk pemberi kerja** are compact menu
+  triggers; **Kategori kerja**, **Cara kerja**, and **Mengapa Rintara** remain
+  direct links. Audience menus contain only canonical job filters, their
+  dedicated guide, or precise anchors owned by that guide. They do not repeat
+  the three direct destinations. Triggers and child links use visible active
+  states without routing through homepage query/hash navigation.
+- Across the opening scroll distance, the public header progressively
+  condenses into a centered translucent blurred floating bar. Signed-out
+  **Masuk** and **Daftar** remain reachable so condensation never removes a
+  focused control.
+- Once signed in, **Masuk** and **Daftar** become one 44px circular profile
+  trigger. Its menu is derived from trusted account role and profile state and
+  never exposes a different role's private destinations.
+- Persistent role navigation uses a neutral semantic sidebar with one clear
+  active row.
 - Main content uses a readable maximum width.
 - Employer and admin lists may use tables only when responsive alternatives exist.
 - Details and contextual actions may use a two-column layout without separating required information from the action.
 
 ## 7. Core Components
 
-### Job card
+### Job row
 
 Required information:
 
@@ -187,7 +304,8 @@ Required information:
 - active boost label when applicable; and
 - status only in authenticated owner contexts.
 
-The entire card may be clickable, but nested controls must remain keyboard and screen-reader safe.
+The title and detail action may link to the job. Do not create competing nested
+controls or make hover the only indication of interactivity.
 
 ### Status badge
 
@@ -221,6 +339,59 @@ Use only for consequential actions: publish, accept worker, cancel workflow, ver
 
 State what is empty and offer one relevant action. Avoid decorative illustrations that increase page weight without improving understanding.
 
+### Public navigation and identity
+
+Use the green geometric Rintara **R** with the wordmark. Public desktop
+navigation sits immediately after it with audience menu triggers for workers
+and employers, followed by direct links to `/categories`, `/how-it-works`, and
+`/why-rintara`. Worker and employer overview routes remain the first item in
+their respective menu. **Daftar** remains the sole registration destination
+in the header. Active state uses `aria-current` on destination links and a
+readable Chalk tonal fill on the active audience trigger rather than an
+ornamental bottom rule. The header may condense into a translucent blurred
+floating bar after scrolling. Mobile exposes the same audience groups as
+native disclosure sections inside the existing sheet, with the three direct
+destinations kept separate below them.
+
+For an authenticated account, replace the rectangular workspace action with a
+single 44px circular profile trigger. Use the current profile display name to
+derive at most two initials; if the profile is incomplete or unavailable, use
+the neutral account icon instead of inventing a photograph. The dropdown is a
+compact overlay aligned to the trigger and begins with display name plus the
+readable role/status. A ready Worker sees dashboard, applications, Passport,
+and profile. A ready Employer sees dashboard, job publishing, owned jobs,
+Opportunity Credit, and profile. Admin receives only its minimal operational
+shortcuts. Onboarding and restricted states expose only their safe recovery
+route. Keep **Keluar dari akun** separated at the end, show pending feedback,
+block duplicate activation, and retain a visible retryable error if it fails.
+On narrow screens the profile trigger sits beside—not inside—the public
+navigation sheet.
+
+### Authentication and onboarding shell
+
+Sign-in and registration use the portrait documentary split. The image remains
+separate from the form and has no overlay copy, links, testimonial, or fake
+interface. **Masuk** and **Daftar** are two focused states of one persistent
+authentication surface, selected through a compact segmented control above the
+form. One solid selection pill moves horizontally between the two labels using
+a 260 ms transform transition, then completes the prefetched route change;
+reduced-motion removes both the movement and its navigation delay without
+changing state clarity. Both segments retain the canonical `/sign-in` and
+`/register` URLs, while the shared layout preserves the image, email draft,
+validated destination, and native browser history. Current-password and
+new-password drafts remain separate, and the alternate segment is unavailable
+during submission. Role selection and profile onboarding use the image-free
+operational shell. Both preserve form recovery, duplicate-submission
+prevention, and registration progress.
+
+### Appearance and motion
+
+Rintara exposes one light appearance and no appearance switch. State feedback
+uses short color, border, opacity, or transform transitions. Public-header
+condensation is mapped to the first 220 CSS pixels of scroll and scheduled at
+most once per animation frame; it is disabled for reduced-motion users. No
+page, card, form, or below-fold section waits for an entrance animation.
+
 ## 8. Screen Specifications
 
 Employer jobs, My Applications, applicant lists, Passport history, and admin
@@ -230,23 +401,60 @@ the other active filters or list cursors.
 
 ### 8.1 Landing page
 
-Primary message: Rintara helps workers turn a fair first opportunity into verified experience.
+Primary task: persuade a visitor that Rintara represents tangible local work,
+then send a task-and-area query into the dedicated `/jobs` discovery route.
 
 Required sections:
 
-- worker and employer value propositions;
-- how the opportunity-to-proof loop works;
-- visible link to current jobs;
-- explanation that payments occur outside the platform;
-- safety/privacy summary; and
-- distinct calls to find work or post work.
+- a joined responsive hero with a left Forest search panel and a documentary
+  image beside it;
+- a labeled task-and-area GET search inside the Forest panel;
+- a concise factual safeguard row for visible terms, address privacy, and Work
+  Proof;
+- active category and area entry links when reference data is available;
+- one joined static gateway linking to the dedicated Worker and Employer
+  guides;
+- an asymmetric three-part explanation of comparison, Mini Agreement, and
+  Work Proof;
+- Worker and role-aware Employer actions; and
+- footer disclosure that payment occurs outside the platform.
 
 Do not display invented impact metrics.
+
+The landing uses `public/visuals/rintara-local-work-v2.webp`; do not turn it
+into a gallery or replace real reference data with invented content. Published
+jobs and their loading, empty, error, filtering, and pagination states appear
+only on `/jobs`. The homepage has no decorative preview, fake job, particle
+field, fake dashboard, social-proof block, or scroll cue.
+
+#### Public guidance and directory pages
+
+- `/for-workers` shows comparable pre-application information, the
+  application-to-proof sequence, paid First Opportunity rules with
+  category-specific eligibility, and private-address behavior.
+- `/for-employers` shows publishing requirements, acceptance of exactly one
+  worker, Mini Agreement, completion verification, qualifying Opportunity
+  Credit behavior, and payment outside Rintara. It never offers direct worker
+  search.
+- `/categories` renders only active categories and pilot city/regency areas
+  returned by public reference queries. Links preserve their filters in
+  `/jobs`; empty and recoverable error states remain explicit.
+- `/why-rintara` explains verified product facts and boundaries without
+  testimonials, metrics, guarantees, or invented evidence.
 
 ### 8.2 Job discovery
 
 - Search/filter controls are easy to clear.
 - Active filters appear as removable chips or a readable summary.
+- The desktop filter rail contains long category labels and both wage fields
+  within its 20rem track; no control may overlap the results column.
+- Wage inputs format clean digits as Indonesian Rupiah while typing, for
+  example `500000` becomes `Rp 500.000`. Navigation and server queries continue
+  to receive digit-only values.
+- An inverted wage range is rejected beside the two wage fields without
+  discarding either value; invalid filter URLs expose a clear-filter recovery.
+- Desktop uses a sticky 20rem filter rail and compact job rows; mobile moves the
+  filters into a sheet without changing their query meaning.
 - Sort behavior is understandable; boost is labeled, not disguised as organic ranking.
 - Pagination/loading does not duplicate or reorder cards unexpectedly.
 - The next-results action preserves search and every active filter.
@@ -254,7 +462,9 @@ Do not display invented impact metrics.
 
 ### 8.3 Job detail
 
-Above the primary action, show title, wage, unit, area, schedule, task scope, employer summary, and First Opportunity eligibility context.
+Use a dense decision header. Above the primary action, show title, employer,
+wage and unit, general area, schedule, duration, application deadline, a task
+summary, and First Opportunity context when applicable.
 
 Full address is replaced with a privacy notice such as “The complete address is shown only to the accepted worker.”
 
@@ -385,6 +595,10 @@ Admin marketplace configuration provides:
 - Visible focus with sufficient contrast.
 - Semantic headings with one logical page title.
 - Programmatic labels and described errors.
+- Static copy and non-editable surfaces use the default cursor with no visible
+  text caret. The text cursor and visible caret appear only on text-entry
+  controls or explicitly editable content; links and other actionable controls
+  retain the appropriate pointer cursor.
 - Status changes announced through appropriate live regions without excessive interruption.
 - Dialog focus trap, initial focus, escape behavior, and focus return.
 - Touch targets at least 44 by 44 CSS pixels where practical.
@@ -397,6 +611,8 @@ Admin marketplace configuration provides:
 - Design and test at narrow mobile width first, then tablet and desktop.
 - Avoid horizontal scrolling except intentional data tables with an accessible alternative.
 - Use responsive images only where images add product value.
+- Keep the landing and authentication images route-specific and optimized;
+  neither is required to understand or operate its adjacent form.
 - Do not require profile images or proof images for the golden path.
 - Prefer Server Components and limit client JavaScript to interactive islands.
 - Avoid autoplay media and large animation libraries.

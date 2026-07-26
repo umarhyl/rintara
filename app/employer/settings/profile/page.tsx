@@ -1,14 +1,13 @@
 import { Metadata } from "next";
 import { getOnboardingAreaOptions } from "@/server/queries/onboarding-reference-data";
 import { EmployerProfileForm } from "@/features/employer/components/employer-profile-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Award, Briefcase } from "lucide-react";
+import { PageHeader } from "@/features/dashboard/components/page-header";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 
 export const metadata: Metadata = {
   title: "Profil Pemberi Kerja | Rintara",
-  description: "Kelola profil bisnis dan lihat status verifikasi Anda.",
+  description: "Kelola profil bisnis dan status pemberi kesempatan.",
 };
 
 export default async function EmployerProfileSettingsPage() {
@@ -24,76 +23,53 @@ export default async function EmployerProfileSettingsPage() {
   const profile = await getEmployerProfile();
 
   return (
-    <div className="grid gap-8 max-w-4xl mx-auto py-8 px-4 sm:px-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Profil Bisnis</h1>
-        <p className="text-muted-foreground mt-2">
-          Kelola informasi bisnis yang akan ditampilkan kepada pekerja.
-        </p>
-      </div>
+    <div className="mx-auto grid max-w-5xl gap-7">
+      <PageHeader
+        title="Profil pemberi kerja"
+        description="Kelola informasi yang ditampilkan pada pekerjaan terbit."
+      />
 
-      <div className="grid md:grid-cols-[1fr_300px] gap-8">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informasi Profil</CardTitle>
-              <CardDescription>
-                Informasi ini akan muncul pada setiap lowongan yang Anda publikasikan.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EmployerProfileForm areas={areas} profile={profile} />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+        <section className="rounded-xl border border-border bg-card p-5 sm:p-6" aria-labelledby="profile-form-title">
+          <h2 id="profile-form-title" className="text-lg font-semibold">
+            Informasi profil
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Informasi ini muncul pada setiap pekerjaan yang kamu terbitkan.
+          </p>
+          <div className="mt-5 border-t border-border/75 pt-5">
+            <EmployerProfileForm areas={areas} profile={profile} />
+          </div>
+        </section>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Status Verifikasi</CardTitle>
-              <CardDescription>
-                Pencapaian dari riwayat lowongan Anda.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Briefcase className="h-5 w-5 text-primary" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Lowongan Selesai</p>
-                  <p className="text-2xl font-bold">{profile.completedJobsCount}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
-                  <Award className="h-5 w-5 text-amber-500" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Pemberi Peluang</p>
-                  <div className="mt-1">
-                    {profile.isOpportunityGiver ? (
-                      <Badge variant="default" className="bg-amber-500 hover:bg-amber-600">
-                        Terverifikasi
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        Belum Terverifikasi
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {!profile.isOpportunityGiver ? (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Dapatkan lencana Pemberi Peluang dengan menyelesaikan lowongan Peluang Pertama secara patuh.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
+        <aside className="border-y border-border/75 py-5 lg:sticky lg:top-24">
+          <h2 className="font-semibold">Status akun</h2>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Dihitung otomatis dari pekerjaan yang selesai.
+          </p>
+          <dl className="mt-4 divide-y divide-border/70 border-y border-border/70">
+            <div className="flex items-center justify-between gap-4 py-3">
+              <dt className="text-sm text-muted-foreground">Pekerjaan selesai</dt>
+              <dd className="font-semibold tabular-nums">{profile.completedJobsCount}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-3">
+              <dt className="text-sm text-muted-foreground">Pemberi kesempatan</dt>
+              <dd>
+                {profile.isOpportunityGiver ? (
+                  <Badge variant="default">Aktif</Badge>
+                ) : (
+                  <Badge variant="secondary">Belum aktif</Badge>
+                )}
+              </dd>
+            </div>
+          </dl>
+          {!profile.isOpportunityGiver ? (
+            <p className="mt-4 text-xs leading-5 text-muted-foreground">
+              Status aktif setelah pekerjaan Kesempatan Pertama selesai sesuai
+              ketentuan.
+            </p>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Clock3, FileText, Handshake } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/rintara/empty-state";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
@@ -45,7 +45,7 @@ function statusTone(status: WorkerApplicationListItem["status"]) {
 
 function ApplicationCard({ application }: { application: WorkerApplicationListItem }) {
   return (
-    <article className="grid gap-5 border-y border-border bg-card/45 px-5 py-6 sm:grid-cols-[1fr_auto] sm:items-start sm:px-6">
+    <article className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-start sm:p-5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={statusTone(application.status)}>
@@ -55,7 +55,7 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
             <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge>
           ) : null}
         </div>
-        <h2 className="mt-4 text-xl font-semibold tracking-[-0.025em]">
+        <h2 className="mt-3 text-lg font-semibold tracking-tight">
           <Link href={`/jobs/${application.jobId}`} className="hover:underline">
             {application.jobTitle}
           </Link>
@@ -63,7 +63,7 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
         <p className="mt-1 text-sm text-muted-foreground">
           {application.employerDisplayName} · {application.publicLocationLabel}
         </p>
-        <dl className="mt-5 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+        <dl className="mt-4 grid gap-3 border-t border-border/70 pt-4 text-sm text-muted-foreground sm:grid-cols-3">
           <div>
             <dt className="text-xs">Kategori</dt>
             <dd className="mt-1 font-medium text-foreground">{application.categoryName}</dd>
@@ -79,7 +79,7 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
             </dd>
           </div>
         </dl>
-        <p className="mt-4 text-xs leading-5 text-muted-foreground">
+        <p className="mt-3 text-xs leading-5 text-muted-foreground">
           Dikirim {formatDate(application.submittedAt)}
         </p>
       </div>
@@ -88,7 +88,7 @@ function ApplicationCard({ application }: { application: WorkerApplicationListIt
           <WithdrawApplicationButton applicationId={application.id} />
         ) : null}
         {application.status === "accepted" && application.agreementId ? (
-          <Button className="h-10 rounded-full" asChild>
+          <Button className="min-h-11" asChild>
             <Link href={`/worker/agreements/${application.agreementId}`}>
               Buka Mini Agreement <ArrowRight aria-hidden="true" />
             </Link>
@@ -126,13 +126,12 @@ export default async function ApplicationsPage({
   ).length;
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Jejak lamaran"
-        title="Lamaran saya"
-        description="Pantau setiap kabar dan lanjutkan langkah yang sudah siap."
+        title="Lamaran"
+        description="Pantau status lamaran dan lanjutkan yang sudah diterima."
         action={
-          <Button className="rounded-full px-5" asChild>
+          <Button className="px-5" asChild>
             <Link href="/jobs">
               Cari pekerjaan <ArrowRight aria-hidden="true" />
             </Link>
@@ -140,28 +139,21 @@ export default async function ApplicationsPage({
         }
       />
 
-      <section className="grid overflow-hidden border-y border-border/75 bg-card/40 sm:grid-cols-3" aria-label="Ringkasan lamaran">
-        <div className="px-1 py-5 sm:px-6">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <FileText className="size-4 text-primary" aria-hidden="true" /> Aktif
-            di halaman ini
-          </p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{activeApplications.length}</p>
-        </div>
-        <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock3 className="size-4 text-primary" aria-hidden="true" /> Menunggu
-            di halaman ini
-          </p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{submittedCount}</p>
-        </div>
-        <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Handshake className="size-4 text-success" aria-hidden="true" /> Diterima
-            di halaman ini
-          </p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">{acceptedCount}</p>
-        </div>
+      <section className="border-y border-border/75 py-3" aria-label="Ringkasan lamaran">
+        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Aktif</dt>
+            <dd className="font-semibold tabular-nums">{activeApplications.length}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Menunggu</dt>
+            <dd className="font-semibold tabular-nums">{submittedCount}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Diterima</dt>
+            <dd className="font-semibold tabular-nums">{acceptedCount}</dd>
+          </div>
+        </dl>
       </section>
 
       <Tabs defaultValue="active">
