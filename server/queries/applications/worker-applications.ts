@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Buffer } from "node:buffer";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, or, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { requireActiveUser } from "@/server/auth/identity";
 import { assertActiveUser, assertRole } from "@/server/auth/policies";
@@ -23,7 +23,10 @@ type WorkerApplicationsDatabase = PostgresJsDatabase<typeof schema>;
 export type WorkerApplicationListInput = {
   cursor?: string;
   limit?: number;
+  view?: WorkerApplicationListView;
 };
+
+export type WorkerApplicationListView = "active" | "history";
 
 export type WorkerApplicationListItem = {
   id: string;
@@ -44,12 +47,10 @@ export type WorkerApplicationListItem = {
   withdrawnAt: Date | null;
   firstOpportunityEligibleAtSubmission: boolean;
   isFirstOpportunity: boolean;
+  publicDetailAvailable: boolean;
 };
 
-type WorkerApplicationRow = Omit<
-  WorkerApplicationListItem,
-  "wageAmount"
-> & {
+type WorkerApplicationRow = Omit<WorkerApplicationListItem, "wageAmount"> & {
   wageAmount: bigint;
 };
 
@@ -120,10 +121,23 @@ function toWorkerApplicationItem(row: WorkerApplicationRow) {
   } satisfies WorkerApplicationListItem;
 }
 
+function applicationViewCondition(view: WorkerApplicationListView | undefined) {
+  if (view === "active") {
+    return inArray(applications.status, ["submitted", "accepted"]);
+  }
+
+  if (view === "history") {
+    return inArray(applications.status, ["rejected", "withdrawn"]);
+  }
+
+  return undefined;
+}
+
 export async function listMyApplications(
   input: WorkerApplicationListInput = {},
   context?: RequestContext,
   database: WorkerApplicationsDatabase = db,
+  now: Date = new Date(),
 ) {
   const actor = assertRole(
     assertActiveUser(context ?? (await requireActiveUser())),
@@ -131,6 +145,11 @@ export async function listMyApplications(
   );
   const limit = normalizeLimit(input.limit);
   const cursor = decodeCursor(input.cursor);
+  const publicDetailAvailable = sql<boolean>`${and(
+    eq(jobs.status, "published"),
+    eq(jobs.visibility, "visible"),
+    gt(jobs.applicationDeadline, now),
+  )}`;
   const rows = await database
     .select({
       id: applications.id,
@@ -152,6 +171,7 @@ export async function listMyApplications(
       firstOpportunityEligibleAtSubmission:
         applications.firstOpportunityEligibleAtSubmission,
       isFirstOpportunity: jobs.isFirstOpportunity,
+      publicDetailAvailable,
     })
     .from(applications)
     .leftJoin(agreements, eq(agreements.applicationId, applications.id))
@@ -162,6 +182,7 @@ export async function listMyApplications(
     .where(
       and(
         eq(applications.workerId, actor.userId),
+        applicationViewCondition(input.view),
         cursor
           ? or(
               lt(applications.submittedAt, cursor.submittedAt),
