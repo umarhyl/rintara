@@ -12,6 +12,7 @@
 | First Opportunity | A published job open to workers with no non-revoked verified Work Proof in its category, provided the job passes category, risk, and wage rules |
 | Beginner worker | A worker with no qualifying Work Proof in the relevant category; this is calculated, never self-declared |
 | Wage Guideline | A reference value by area, category, and unit; it is not presented as a legal minimum unless legally validated |
+| Selection cutoff | The fixed point 24 hours before `starts_at`; the last boundary for accepting an existing submitted application |
 | Mini Agreement | The immutable operational terms snapshot created when one application is accepted |
 | Work Session | The single attendance and completion record for an agreement |
 | Work Proof | System-issued evidence of a verified completed job |
@@ -118,8 +119,21 @@ Rules:
 - A job becomes `filled` only through successful application acceptance.
 - A job becomes `in_progress` only through valid check-in.
 - A job becomes `completed` only through verified completion.
-- A scheduled task or authorized operation may expire a published job after its application deadline.
+- A job may be published only when `application_deadline` is strictly earlier
+  than the selection cutoff at `starts_at - 24 hours`.
+- `application_deadline` closes public discovery and new applications only.
+  Existing submitted applications remain reviewable and selectable by the
+  owner until the selection cutoff.
 - Public discovery treats a deadline-passed published job as unavailable even if the persisted expiry transition has not run yet.
+- Application acceptance uses server time as the cutoff and is permitted only
+  while `now < starts_at - 24 hours`. At or after that selection cutoff,
+  `acceptApplication` returns `JOB_NOT_AVAILABLE` without changing the job,
+  applications, agreement, notifications, or audit records, even if the
+  persisted job status is still `published`.
+- At or after the selection cutoff, a scheduled task or authorized operation
+  expires an unfilled published job, rejects its remaining submitted
+  applications, notifies affected workers, and writes audit history in one
+  transaction.
 - Employer may cancel a draft or unfilled published job. Filled or in-progress cancellation requires an authorized administrative workflow and reason.
 - Cancelling an unfilled published job rejects its submitted applications and creates notifications and audit history in the same transaction.
 - Moderation visibility is separate from lifecycle status. A hidden job remains available to its owner/admin but is excluded from public discovery and new applications.
@@ -189,7 +203,8 @@ An active report blocks only the relevant risky transitions; it does not add amb
 - An employer cannot apply to jobs through an employer account.
 - A worker cannot apply to a job that is not `published` or whose deadline has passed.
 - A worker cannot apply to their own resource under any role confusion scenario.
-- Only the job owner can view the full applicant list or accept an applicant.
+- Only the job owner can view the full applicant list or accept a submitted
+  applicant before the selection cutoff.
 - Acceptance creates exactly one agreement and never calls an external network service while holding database locks.
 - Terms used for hiring come from the accepted job snapshot, not future job reads.
 

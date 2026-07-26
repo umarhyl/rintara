@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, LoaderCircle } from "lucide-react";
 import { confirmAgreement } from "@/server/domain/agreements/actions";
@@ -48,9 +48,11 @@ export function ConfirmAgreementButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const submissionLockRef = useRef(false);
 
   function handleConfirm() {
-    if (disabled || isPending) return;
+    if (disabled || isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
 
     startTransition(async () => {
@@ -59,6 +61,7 @@ export function ConfirmAgreementButton({
         setOpen(false);
         router.refresh();
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });

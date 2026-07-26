@@ -47,7 +47,7 @@ function statusTone(status: EmployerJobListItem["status"]) {
 
 function JobCard({ job }: { job: EmployerJobListItem }) {
   return (
-    <article className="grid gap-5 border-y border-border bg-card/45 px-5 py-6 sm:grid-cols-[1fr_auto] sm:items-start sm:px-6">
+    <article className="grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-start sm:p-5">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge tone={statusTone(job.status)}>
@@ -57,7 +57,7 @@ function JobCard({ job }: { job: EmployerJobListItem }) {
             <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge>
           ) : null}
         </div>
-        <h2 className="mt-4 text-xl font-semibold tracking-[-0.025em]">
+        <h2 className="mt-3 text-lg font-semibold tracking-tight">
           <Link href={`/employer/jobs/${job.id}`} className="hover:underline">
             {job.title}
           </Link>
@@ -65,7 +65,7 @@ function JobCard({ job }: { job: EmployerJobListItem }) {
         <p className="mt-1 text-sm text-muted-foreground">
           {job.categoryName} · {job.publicLocationLabel}
         </p>
-        <dl className="mt-5 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+        <dl className="mt-4 grid gap-3 border-t border-border/70 pt-4 text-sm text-muted-foreground sm:grid-cols-3">
           <div>
             <dt className="flex items-center gap-1.5 text-xs">
               <CalendarDays className="size-3.5" aria-hidden="true" />
@@ -92,17 +92,17 @@ function JobCard({ job }: { job: EmployerJobListItem }) {
             </dd>
           </div>
         </dl>
-        <p className="mt-4 text-sm font-medium">
+        <p className="mt-3 text-sm font-medium">
           {formatWage(job.wageAmount, job.wageUnit)}
         </p>
       </div>
       <div className="flex flex-wrap gap-2 sm:justify-end">
         {job.status === "draft" ? (
-          <Button variant="outline" className="h-10 rounded-full" asChild>
+          <Button variant="outline" className="min-h-11" asChild>
             <Link href={`/employer/jobs/${job.id}/edit`}>Edit draft</Link>
           </Button>
         ) : null}
-        <Button className="h-10 rounded-full" asChild>
+        <Button className="min-h-11" asChild>
           <Link href={`/employer/jobs/${job.id}`}>
             Kelola <ArrowRight aria-hidden="true" />
           </Link>
@@ -129,13 +129,12 @@ export default async function EmployerJobsPage({
   const draftCount = jobs.filter((job) => job.status === "draft").length;
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Pekerjaan saya"
-        title="Kelola pekerjaan"
-        description="Pantau draft, pekerjaan terbit, lamaran aktif, dan pekerjaan yang sudah ditutup."
+        title="Pekerjaan"
+        description="Kelola draft, pekerjaan terbit, pelamar, dan pekerjaan yang sudah ditutup."
         action={
-          <Button className="rounded-full px-5" asChild>
+          <Button className="px-5" asChild>
             <Link href="/employer/jobs/new">
               <Plus aria-hidden="true" />
               Buat pekerjaan
@@ -144,28 +143,21 @@ export default async function EmployerJobsPage({
         }
       />
 
-      <section
-        className="grid overflow-hidden border-y border-border/75 bg-card/40 sm:grid-cols-3"
-        aria-label="Ringkasan pekerjaan"
-      >
-        <div className="px-1 py-5 sm:px-6">
-          <p className="text-sm text-muted-foreground">Di halaman ini</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
-            {jobs.length}
-          </p>
-        </div>
-        <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="text-sm text-muted-foreground">Aktif di halaman</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
-            {activeCount}
-          </p>
-        </div>
-        <div className="border-t border-border/70 px-1 py-5 sm:border-l sm:border-t-0 sm:px-6">
-          <p className="text-sm text-muted-foreground">Draft di halaman</p>
-          <p className="mt-2 text-3xl font-semibold tracking-[-0.05em]">
-            {draftCount}
-          </p>
-        </div>
+      <section className="border-y border-border/75 py-3" aria-label="Ringkasan pekerjaan">
+        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Tampil</dt>
+            <dd className="font-semibold tabular-nums">{jobs.length}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Aktif</dt>
+            <dd className="font-semibold tabular-nums">{activeCount}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="text-muted-foreground">Draft</dt>
+            <dd className="font-semibold tabular-nums">{draftCount}</dd>
+          </div>
+        </dl>
       </section>
 
       {jobs.length > 0 ? (

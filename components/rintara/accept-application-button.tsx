@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, LoaderCircle, UserCheck } from "lucide-react";
 import { acceptApplication } from "@/server/domain/applications/actions";
@@ -54,10 +54,12 @@ export function AcceptApplicationButton({
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const submissionLockRef = useRef(false);
   const disabled = Boolean(disabledReason) || isPending;
 
   function handleAccept() {
-    if (disabled) return;
+    if (disabled || submissionLockRef.current) return;
+    submissionLockRef.current = true;
     setError(null);
 
     startTransition(async () => {
@@ -66,6 +68,7 @@ export function AcceptApplicationButton({
         setOpen(false);
         router.push(`/employer/agreements/${result.agreementId}`);
       } catch (caughtError) {
+        submissionLockRef.current = false;
         setError(messageFor(caughtError));
       }
     });

@@ -58,6 +58,8 @@ Do not silently resolve contradictions. Report the conflict and update all affec
 - Applications contain a short note; there is no wage bidding.
 - Job wage and terms are visible before application.
 - One job accepts exactly one worker in the MVP.
+- `applicationDeadline` closes new applications only; employer selection closes
+  24 hours before `startsAt`.
 - Acceptance creates an immutable agreement snapshot.
 - Payment method/timing is recorded, but payment happens outside Rintara.
 - One agreement has at most one work session and one Work Proof.
@@ -243,13 +245,15 @@ Must execute in one PostgreSQL transaction:
 
 1. validate employer and ownership;
 2. lock/conditionally protect the published job;
-3. re-evaluate First Opportunity category eligibility;
-4. accept one submitted application;
-5. reject remaining submitted applications;
-6. transition job to `filled`;
-7. create one agreement snapshot;
-8. write notifications and audit;
-9. commit.
+3. require a submitted application and server time strictly before
+   `startsAt - 24 hours`;
+4. re-evaluate First Opportunity category eligibility;
+5. accept one submitted application;
+6. reject remaining submitted applications;
+7. transition job to `filled`;
+8. create one agreement snapshot;
+9. write notifications and audit;
+10. commit.
 
 The database partial unique index for one accepted application per job is mandatory. A disabled button is not concurrency control.
 

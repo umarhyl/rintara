@@ -375,6 +375,7 @@ Important rules:
 | Invariant | Database/domain enforcement |
 | --- | --- |
 | Positive wage | `CHECK (jobs.wage_amount > 0)` |
+| Application deadline leaves preparation time | `CHECK (jobs.application_deadline < jobs.starts_at - interval '24 hours')` |
 | One application per worker/job | `UNIQUE (job_id, worker_id)` |
 | One accepted worker per job | Partial unique index on accepted applications |
 | One agreement per application and job | Unique constraints on both foreign keys |
@@ -403,6 +404,8 @@ Do not create editable Passport rows, stored beginner flags, mutable credit coun
 ## 8. Transaction Boundaries
 
 - `acceptApplication` accepts one worker, rejects remaining applications, fills the job, and creates one agreement snapshot atomically.
+- Expiring an unfilled job rejects its submitted applications and writes
+  notifications and audit history atomically.
 - The second agreement confirmation activates it and creates one work session atomically.
 - `verifyCompletion` completes session/agreement/job, creates one Work Proof, and conditionally creates one credit atomically and idempotently.
 - `redeemOpportunityCredit` consumes one credit and creates one 24-hour boost atomically and idempotently.

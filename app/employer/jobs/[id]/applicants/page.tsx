@@ -81,20 +81,17 @@ export default async function ApplicantsPage({
   ).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow={job.title}
-        title="Pelamar pekerjaan"
-        description="Tinjau catatan lamaran, ringkasan pekerja, dan Paspor Rintara yang berwenang sebelum memilih satu pekerja."
+        title="Pelamar"
+        description={`Tinjau pelamar untuk ${job.title} sebelum menerima satu pekerja.`}
         action={
-          <div className="text-left sm:text-right">
-            <p className="text-3xl font-semibold tracking-[-0.04em]">
-              {activeApplicantCount.toString().padStart(2, "0")}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              pelamar aktif di halaman ini
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            <strong className="font-semibold tabular-nums text-foreground">
+              {activeApplicantCount}
+            </strong>{" "}
+            pelamar aktif
+          </p>
         }
       />
 
@@ -106,13 +103,13 @@ export default async function ApplicantsPage({
           actionHref={`/employer/jobs/${job.id}`}
         />
       ) : (
-        <section className="grid gap-5" aria-label="Daftar pelamar">
+        <section className="grid gap-4" aria-label="Daftar pelamar">
           {applicants.map((applicant) => (
             <article
               key={applicant.id}
-              className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/78 backdrop-blur-sm"
+              className="overflow-hidden rounded-xl border border-border bg-card"
             >
-              <div className="grid gap-6 border-b border-border/70 px-5 py-6 sm:px-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+              <div className="border-b border-border/70 p-5 sm:p-6">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge tone={statusTones[applicant.status]}>
@@ -132,7 +129,7 @@ export default async function ApplicantsPage({
                       </StatusBadge>
                     ) : null}
                   </div>
-                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">
+                  <h2 className="mt-3 text-xl font-semibold tracking-tight">
                     {applicant.workerDisplayName}
                   </h2>
                   <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -146,37 +143,17 @@ export default async function ApplicantsPage({
                   ) : null}
                 </div>
 
-                <dl className="grid grid-cols-3 overflow-hidden rounded-2xl border border-border/70 bg-background/65 text-center sm:min-w-80">
-                  <div className="px-3 py-4">
-                    <dt className="text-xs text-muted-foreground">Selesai</dt>
-                    <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
-                      {applicant.completedJobs}
-                    </dd>
-                  </div>
-                  <div className="border-l border-border/70 px-3 py-4">
-                    <dt className="text-xs text-muted-foreground">Kategori</dt>
-                    <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
-                      {applicant.verifiedCategoryCount}
-                    </dd>
-                  </div>
-                  <div className="border-l border-border/70 px-3 py-4">
-                    <dt className="text-xs text-muted-foreground">Reputasi</dt>
-                    <dd className="mt-1 text-sm font-semibold leading-7 text-success">
-                      {applicant.completedJobs > 0 ? "Terverifikasi" : "Baru"}
-                    </dd>
-                  </div>
-                </dl>
               </div>
 
-              <div className="grid gap-7 px-5 py-6 sm:px-7 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+              <div className="grid gap-7 p-5 sm:p-6 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
                 <section aria-labelledby={`application-${applicant.id}`}>
-                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-primary">
                     <BriefcaseBusiness className="size-4" aria-hidden="true" />
                     Catatan lamaran
                   </p>
                   <h3
                     id={`application-${applicant.id}`}
-                    className="mt-3 text-lg font-semibold tracking-[-0.02em]"
+                    className="mt-3 text-lg font-semibold tracking-tight"
                   >
                     Ringkasan pelamar
                   </h3>
@@ -201,29 +178,29 @@ export default async function ApplicantsPage({
                 <section aria-labelledby={`passport-${applicant.id}`}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-primary">
                         <FileCheck2 className="size-4" aria-hidden="true" />
                         Paspor Rintara
                       </p>
                       <h3
                         id={`passport-${applicant.id}`}
-                        className="mt-3 text-lg font-semibold tracking-[-0.02em]"
+                        className="mt-3 text-lg font-semibold tracking-tight"
                       >
                         Bukti Kerja terverifikasi
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2 rounded-full border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">
+                    <div className="flex items-center gap-2 rounded-lg border border-success/25 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">
                       <ShieldCheck className="size-3.5" aria-hidden="true" />
                       Data privat terlindungi
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2" aria-label="Keahlian">
+                  <div className="mt-4 flex flex-wrap gap-2" aria-label="Keahlian">
                     {applicant.skillInterests.length > 0 ? (
                       applicant.skillInterests.map((skill) => (
                         <span
                           key={skill.id}
-                          className="inline-flex min-h-8 items-center rounded-full border border-border bg-background px-3 text-sm font-medium"
+                          className="inline-flex min-h-8 items-center rounded-lg border border-border bg-background px-3 text-sm font-medium"
                         >
                           {skill.name}
                         </span>
@@ -235,12 +212,12 @@ export default async function ApplicantsPage({
                     )}
                   </div>
 
-                  <dl className="mt-6 grid grid-cols-2 overflow-hidden rounded-2xl border border-border/70 bg-background/65 text-center">
+                  <dl className="mt-5 grid grid-cols-2 border-y border-border/70">
                     <div className="px-3 py-4">
                       <dt className="text-xs text-muted-foreground">
                         Bukti Kerja
                       </dt>
-                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
+                      <dd className="mt-1 text-lg font-semibold tabular-nums">
                         {applicant.completedJobs}
                       </dd>
                     </div>
@@ -248,7 +225,7 @@ export default async function ApplicantsPage({
                       <dt className="text-xs text-muted-foreground">
                         Kategori terverifikasi
                       </dt>
-                      <dd className="mt-1 text-2xl font-semibold tracking-[-0.04em]">
+                      <dd className="mt-1 text-lg font-semibold tabular-nums">
                         {applicant.verifiedCategoryCount}
                       </dd>
                     </div>

@@ -1,8 +1,8 @@
 # Rintara User Flows
 
-> **Version:** 3.1
+> **Version:** 3.6
 >
-> **Date:** July 19, 2026
+> **Date:** July 26, 2026
 >
 > **Status:** MVP experience baseline
 >
@@ -19,18 +19,41 @@
 - Explain why an action is unavailable and what the user can do next.
 - Preserve entered form data after recoverable validation or network errors.
 - Use plain product language instead of technical terms such as transaction, escrow, or state machine.
-- Keep the next action visually dominant. Supporting totals and history use open rails or timelines so they do not compete with the current step.
-- On the public landing screen, the compact navigation stays beside the Rintara identity, while the opportunity, agreement, and Work Proof preview remains one clear visual sequence without overlapping artifacts.
-- Public sections below the first viewport may reveal once as the visitor scrolls. The effect never blocks content, repeats on reverse scrolling, or overrides reduced-motion preferences.
+- Keep the next action visually dominant. Supporting totals and history use
+  compact rows, description lists, or timelines so they do not compete with
+  the current step.
+- On public screens, compact navigation stays beside the geometric Rintara
+  **R**. **Untuk pekerja** and **Untuk pemberi kerja** open concise audience
+  menus with useful destinations inside their dedicated flows. **Kategori
+  kerja**, **Cara kerja**, and **Mengapa Rintara** remain direct routes.
+  Audience menus may use canonical job filters or anchors owned by the
+  dedicated guide pages, but they do not duplicate unrelated top-level
+  destinations. The header begins as a contained lightly frosted row and
+  gradually condenses into a stronger translucent blurred floating bar across
+  the opening scroll distance.
+- The light-only homepage opens with one joined split hero: a Deep Forest
+  search panel beside a documentary local-work photograph. Its native GET
+  search sends task and area filters to `/jobs`.
+- The homepage introduces information safeguards, active categories and areas,
+  a compact gateway to the dedicated Worker and Employer guides, and Rintara's
+  agreement-to-proof mechanism. Published-job rows belong only to `/jobs`; the
+  homepage does not duplicate the discovery list.
+- Public and authenticated routes use one light appearance and expose no
+  appearance switch.
+- Public content is visible immediately. Do not gate pages, forms, cards, or
+  ordinary sections behind automatic entrance, list stagger, scroll-reveal,
+  pointer-tracking, particle, or decorative canvas effects.
+- Documentary images never add a step before the relevant task or become a
+  gallery, parallax scene, or heavy motion system.
 
 ## 2. Actors
 
-| Actor | Main objective |
-| --- | --- |
-| Visitor | Understand Rintara and browse safe public job information |
-| Worker | Find work, apply, complete an agreement, and build a verified Passport |
+| Actor    | Main objective                                                                       |
+| -------- | ------------------------------------------------------------------------------------ |
+| Visitor  | Understand Rintara and browse safe public job information                            |
+| Worker   | Find work, apply, complete an agreement, and build a verified Passport               |
 | Employer | Publish a transparent job, hire one worker, verify completion, and use earned credit |
-| Admin | Maintain trusted reference data and process safety or integrity issues |
+| Admin    | Maintain trusted reference data and process safety or integrity issues               |
 
 ## 3. Golden Path
 
@@ -54,6 +77,51 @@ sequenceDiagram
     E->>K: Redeem credit for 24-hour boost
 ```
 
+### 3.1 Public homepage gateway
+
+1. Visitor sees the Rintara proposition in a Forest editorial panel beside a
+   documentary local-work scene.
+2. Visitor may open `/jobs` directly or submit the task-and-area search inside
+   the Forest panel. The form uses GET so the resulting discovery URL remains
+   shareable.
+3. Visitor may narrow discovery through active category or city/regency links.
+   These options come from public reference data and never imply unsupported
+   popularity or demand.
+4. Visitor sees concise factual safeguards: terms are visible before
+   application, the full address stays private until acceptance, and verified
+   completion becomes Work Proof.
+5. Visitor can open `/for-workers` or `/for-employers` from one compact
+   audience gateway. Each dedicated page owns the deeper role-specific steps
+   and action.
+6. `/for-workers` explains First Opportunity as paid work with
+   category-specific system-calculated eligibility and links to filtered job
+   discovery.
+7. Visitor can review the concise compare, agree, attend, verify, and Work
+   Proof mechanism before opening the complete **Cara kerja** page.
+
+The legacy `/first-opportunity` route resolves directly to
+`/jobs?opportunity=first`. The homepage contains no published-job list,
+testimonial, employer logo, marketplace metric, direct worker search, ranking
+claim, or payment feature.
+All published-job browsing and empty/loading/error states remain owned by
+`/jobs`.
+
+### 3.2 Public guidance and directory pages
+
+1. **Untuk pekerja** opens `/for-workers`, where a visitor can review visible
+   job information, the application-to-proof path, First Opportunity rules,
+   and address privacy before opening `/jobs`.
+2. **Untuk pemberi kerja** opens `/for-employers`, where a visitor can review
+   publishing requirements, the one-worker lifecycle, private-address
+   handling, external payment, and qualifying Opportunity Credit behavior
+   before starting the role-aware publish action.
+3. **Kategori kerja** opens `/categories`, which renders active category and
+   city/regency reference data. Each item opens `/jobs` with one shareable
+   filter; the page never invents demand, popularity, or job counts.
+4. **Mengapa Rintara** opens `/why-rintara`, which explains the factual chain
+   from visible terms to Mini Agreement, Work Proof, Passport, and qualifying
+   credit, together with the limits of Rintara's data and payment role.
+
 ## 4. Registration and Onboarding
 
 ### 4.1 New worker
@@ -65,7 +133,9 @@ sequenceDiagram
 5. Worker enters display name, selects an active city/regency, and may add a short biography, an availability note, and up to eight category interests.
 6. The interface explains that interests are self-declared and are never treated as Work Proof or First Opportunity eligibility.
 7. Server revalidates the active area and categories, then creates the account, worker profile, and interests together while fixing the active role as `worker`.
-8. Worker lands on the worker dashboard with suggested next steps: complete profile, browse jobs, or learn about First Opportunity.
+8. Worker lands on the worker dashboard. An accepted application is shown
+   first when it needs agreement confirmation; otherwise the page leads with
+   recent jobs and the Worker's latest application activity.
 
 Recovery and rules:
 
@@ -86,7 +156,9 @@ Recovery and rules:
 2. User selects **Offer work**.
 3. Employer enters display/business name, type, an active city/regency, and optional description.
 4. Server revalidates the active area and creates the employer profile and role together.
-5. Employer lands on the employer dashboard with a **Post a job** primary action.
+5. Employer lands on the employer dashboard with a **Post a job** primary
+   action. The dashboard surfaces one real next action from the Employer's
+   jobs, recent owned jobs, and a compact Opportunity Credit summary.
 
 If the selected area becomes unavailable or saving is interrupted, keep the
 entered values on screen, explain the recoverable problem, and allow retry.
@@ -99,12 +171,48 @@ can be stored.
 - A suspended user sees a neutral account-restricted page and cannot execute protected operations.
 - A deleted account cannot re-enter product flows through an old session.
 - Admin accounts are provisioned through an internal operational process and use the common sign-in flow; public onboarding never offers the `admin` role.
+- On public pages, a ready authenticated account replaces **Masuk** and
+  **Daftar** with one circular profile control. Its dropdown shows only the
+  current role's dashboard shortcuts: applications and Passport for a Worker;
+  job publishing, owned jobs, and Opportunity Credit for an Employer; and a
+  minimal operational fallback for an Admin. Incomplete and restricted
+  accounts receive only their safe recovery destination. Every authenticated
+  state retains **Keluar dari akun**, with duplicate activation prevented and
+  a recoverable error shown in place if sign-out fails.
+- Inside a role workspace, notifications remain a dedicated header control for
+  Workers and Employers. A circular profile control beside it exposes the
+  current role's profile and secondary destinations plus sign-out. Admin has
+  no fake notification control. The desktop sidebar and mobile bottom
+  navigation contain only the role's four core destinations, and exactly one
+  destination is marked current for nested routes.
 
 Shared authentication presentation:
 
-- Sign-in, registration, role selection, and profile setup use one visible three-stage journey: Account, Role, Profile.
-- Authentication errors remain on the sign-in screen with safe recovery copy; provider messages are not exposed.
-- Switching light or dark appearance does not reset entered fields or change the active authentication route.
+- Registration, role selection, and profile setup retain the visible
+  three-stage journey: Akun, Peran, Profil.
+- Sign-in and registration use a stable split composition on large screens:
+  the separate portrait documentary asset
+  `public/visuals/rintara-auth-work-v1.webp` occupies the visual panel and the
+  focused form remains in a plain readable column. On narrow screens, the
+  image becomes a short reserved-height crop before the form.
+- `/sign-in` and `/register` remain valid entry URLs, but share one persistent
+  authentication frame. Moving between **Masuk** and **Daftar** changes only
+  the focused form panel; the documentary image, header, and shared field
+  state remain mounted. Browser history and refresh continue to restore the
+  mode represented by the URL.
+- The mode change uses a compact two-option segmented control above the active
+  form. A single selected pill slides between **Masuk** and **Daftar** to make
+  the state change continuous. Each option retains the canonical URL, and the
+  alternate option is unavailable while a credential request is pending.
+  Email is shared across modes, while current-password and new-password drafts
+  remain separate.
+- Role selection and Worker/Employer profile onboarding remain operational:
+  they use the narrow 10.5rem Deep Forest identity rail and centered bordered
+  form without a documentary image.
+- Authentication errors remain on the sign-in screen with safe recovery copy;
+  provider messages are not exposed.
+- Rintara uses one light appearance; authentication exposes no appearance
+  switch and never resets entered fields during route changes or recovery.
 - When authentication starts from a protected public action, sign-in, registration, and onboarding preserve the validated internal destination and return the completed user there.
 
 ### 4.4 Admin configures the marketplace
@@ -130,7 +238,8 @@ not reset the other two.
    3. schedule and estimated duration;
    4. wage amount, unit, payment method, and payment timing;
    5. tools and risk questions;
-   6. application deadline and First Opportunity option.
+   6. application deadline and First Opportunity option; Rintara derives and
+      displays the employer selection cutoff 24 hours before the start time.
 3. The interface shows the applicable Wage Guideline with source/simulation label.
 4. Employer saves a draft or selects **Review job**.
 5. Review screen clearly distinguishes public information from details visible only after acceptance.
@@ -143,17 +252,27 @@ Alternative paths:
 - Below-guideline wage: explain the reference and block the First Opportunity option. A normal job may continue with a visible warning if product policy allows it.
 - No guideline: block First Opportunity publishing and explain that reference data is unavailable.
 - Restricted category/risk: disable First Opportunity and show a safety explanation.
-- Past schedule/deadline: highlight the field and retain all other input.
+- Past schedule/deadline, or an application deadline that is not earlier than
+  the selection cutoff: highlight the field and retain all other input.
 - Published terms need change: employer cancels the job and creates a new draft; published terms are not silently edited.
 
 ## 6. Worker Discovers and Applies to a Job
 
-1. Worker opens job discovery.
+1. Worker opens `/jobs`, the only public route that lists published jobs.
+   Homepage search, category, area, and First Opportunity links resolve here.
 2. Worker optionally searches or filters by category, general area, wage range,
-   and First Opportunity.
-3. Job cards show title, category, area, wage, schedule, First Opportunity label, and boost label when active.
+   and First Opportunity. Wage fields format input as Indonesian Rupiah while
+   retaining digit-only values in the shareable query.
+3. Desktop places filters in a sticky 20rem side rail that contains long
+   category labels and wage fields without crossing into the results column;
+   mobile opens the same filters in a sheet. Compact job rows show title,
+   category, employer, area, wage, schedule, duration, First Opportunity label,
+   and boost label when active. List position never creates a featured status.
 4. Worker opens a job detail.
-5. Rintara shows full public terms, employer summary, Wage Guideline status, and application deadline; the full address remains hidden.
+5. Rintara presents a dense decision header with title, employer, task
+   summary, wage, general area, schedule, duration, application deadline, and
+   applicable semantic status before the action. Payment/tool terms and the
+   privacy notice follow; the full address remains hidden.
 6. For a First Opportunity job, the server checks the worker's category proof.
 7. Eligible worker selects **Apply**, writes a short note, reviews the fixed wage, and submits.
 8. Worker sees the submitted status in **My applications**.
@@ -165,6 +284,9 @@ opaque cursor as user-facing content.
 
 Alternative paths:
 
+- Minimum wage exceeds maximum wage: keep both values, show an inline field
+  error, and do not run the search until the range is corrected. A malformed
+  filter URL offers a direct return to the unfiltered job list.
 - Anonymous visitor sees a sign-in gate instead of an editable application form. Selecting it opens sign-in and returns the completed user to the same job after any required registration and onboarding.
 - On narrow screens, a compact application action may remain docked while the application section is offscreen; it leaves the accessibility tree when that section or the footer becomes visible.
 - Employer account selects a worker action: show role-appropriate guidance, not an application form.
@@ -180,15 +302,22 @@ Alternative paths:
 3. Applicant cards show display name, general area, application note, category eligibility, and verified proof summary.
 4. While the application remains `submitted`, employer may open the applicant's
    separately paginated authorized Passport view.
-5. Employer selects **Accept worker** and reviews the fixed terms.
-6. Confirmation explains that one worker will be accepted, other submitted applications will be rejected, and terms will become an agreement snapshot.
-7. Employer confirms.
-8. Server runs the atomic acceptance operation.
-9. On success, employer goes to the pending agreement; selected worker receives an acceptance notification and other applicants receive a rejection notification.
+5. The applicant view shows when new applications close and the employer
+   selection cutoff 24 hours before the start time.
+6. Employer selects **Accept worker** and reviews the fixed terms.
+7. Confirmation explains that one worker will be accepted, other submitted applications will be rejected, and terms will become an agreement snapshot.
+8. Employer confirms.
+9. Server runs the atomic acceptance operation.
+10. On success, employer goes to the pending agreement; selected worker receives an acceptance notification and other applicants receive a rejection notification.
 
 Alternative paths:
 
 - Worker gained relevant proof after applying: acceptance is blocked with a clear eligibility explanation.
+- Application deadline passes: close new applications, but keep existing
+  submitted applications reviewable and selectable until the selection cutoff.
+- Selection cutoff passes before the employer confirms: show that selection is
+  closed and create no agreement. The expiry workflow then expires the job and
+  rejects remaining submitted applications.
 - Another acceptance request wins first: show the job as already filled and refresh applicant statuses.
 - Employer opens another employer's applicant URL: respond with not found/forbidden behavior without leaking applicant data.
 - Employer revisits Passport after the application leaves `submitted`: close
@@ -307,12 +436,12 @@ User opens notification to the authorized destination. If the destination is no 
 
 ## 14. Privacy Flow Rules
 
-| Stage | Worker can see | Employer can see | Public can see |
-| --- | --- | --- | --- |
-| Published job | Public terms, general area | Own full draft/details | Public terms, general area |
-| Submitted application | Own application | Applicant and authorized Passport | Nothing about applicants |
-| Accepted/pending agreement | Full accepted terms and address | Full accepted terms and address | Job no longer in discovery |
-| Completed | Own agreement and proof | Own agreement and completion | No private completion data |
+| Stage                      | Worker can see                  | Employer can see                  | Public can see             |
+| -------------------------- | ------------------------------- | --------------------------------- | -------------------------- |
+| Published job              | Public terms, general area      | Own full draft/details            | Public terms, general area |
+| Submitted application      | Own application                 | Applicant and authorized Passport | Nothing about applicants   |
+| Accepted/pending agreement | Full accepted terms and address | Full accepted terms and address   | Job no longer in discovery |
+| Completed                  | Own agreement and proof         | Own agreement and completion      | No private completion data |
 
 Opening a guessed URL never bypasses these rules.
 

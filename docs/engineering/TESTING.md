@@ -115,6 +115,19 @@ Use stable lookup labels in tests instead of relying on insertion order.
 
 ### Acceptance transaction
 
+Assert that a submission immediately before `applicationDeadline` succeeds,
+while submissions exactly at or after it return `JOB_NOT_AVAILABLE`. An
+existing submitted application remains selectable before the selection cutoff.
+
+Assert that acceptance immediately before `startsAt - 24 hours` succeeds, while
+attempts exactly at or after that selection cutoff return
+`JOB_NOT_AVAILABLE` and leave the job, applications, agreement, notifications,
+and audit rows unchanged.
+
+Assert that the expiry workflow at or after the selection cutoff expires an
+unfilled job, rejects remaining submitted applications, and writes each
+notification and audit effect once.
+
 Run two concurrent acceptance requests for different applications to one job. Assert:
 
 - one request succeeds;

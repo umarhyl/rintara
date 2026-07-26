@@ -33,6 +33,55 @@ export type BoostTargetJob = {
   hasActiveBoost: boolean;
 };
 
+export type EmployerCreditDashboardSummary = {
+  activeCreditCount: number;
+  activeBoostCount: number;
+};
+
+export async function getMyCreditDashboardSummary(
+  context?: RequestContext,
+  database: CreditsDatabase = db,
+): Promise<EmployerCreditDashboardSummary> {
+  const actor = assertRole(
+    assertActiveUser(context ?? (await requireActiveUser())),
+    "employer",
+  );
+  const now = new Date();
+
+  const [activeCreditRows, activeBoostRows] = await Promise.all([
+    database
+      .select({ value: count() })
+      .from(opportunityCredits)
+      .where(
+        and(
+          eq(opportunityCredits.employerId, actor.userId),
+          eq(opportunityCredits.status, "earned"),
+          or(
+            isNull(opportunityCredits.expiresAt),
+            gt(opportunityCredits.expiresAt, now),
+          ),
+        ),
+      ),
+    database
+      .select({ value: count() })
+      .from(jobBoosts)
+      .innerJoin(jobs, eq(jobBoosts.jobId, jobs.id))
+      .where(
+        and(
+          eq(jobs.employerId, actor.userId),
+          eq(jobBoosts.status, "active"),
+          sql`${jobBoosts.startsAt} <= now()`,
+          sql`${jobBoosts.endsAt} > now()`,
+        ),
+      ),
+  ]);
+
+  return {
+    activeCreditCount: activeCreditRows[0]?.value ?? 0,
+    activeBoostCount: activeBoostRows[0]?.value ?? 0,
+  };
+}
+
 export async function getMyCreditSummary(
   context?: RequestContext,
   database: CreditsDatabase = db,

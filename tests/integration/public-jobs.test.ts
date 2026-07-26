@@ -51,8 +51,8 @@ databaseTest(
       const creditId = randomUUID();
 
       const futureStart = new Date("2030-01-10T08:00:00.000Z");
-      const futureDeadline = new Date("2030-01-09T08:00:00.000Z");
-      const pastDeadline = new Date("2020-01-09T08:00:00.000Z");
+      const futureDeadline = new Date("2030-01-08T08:00:00.000Z");
+      const pastDeadline = new Date("2020-01-08T08:00:00.000Z");
       const olderPublishedAt = new Date("2030-01-01T08:00:00.000Z");
       const newerPublishedAt = new Date("2030-01-02T08:00:00.000Z");
       const boostStartsAt = new Date(Date.now() - 60 * 60 * 1000);

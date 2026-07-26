@@ -1,8 +1,5 @@
-import { ArrowUpRight, Search, ShieldCheck, UserRound } from "lucide-react";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { adminListUsers } from "@/server/queries/admin/moderation";
 
@@ -15,35 +12,40 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+const roleLabels: Record<string, string> = {
+  worker: "Pekerja",
+  employer: "Pemberi kerja",
+  admin: "Admin",
+};
+
+const accountStatusLabels: Record<string, string> = {
+  active: "Aktif",
+  suspended: "Ditangguhkan",
+  deleted: "Dihapus",
+};
+
 export default async function UsersPage() {
   await requireDashboardPageRole("admin", "/admin/users");
   const users = await adminListUsers();
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Akses & akun"
         title="Pengguna"
-        description="Tinjau peran dan status akun secara eksplisit. Setiap pembatasan memerlukan alasan serta jejak audit."
+        description="Tinjau peran dan status akun. Setiap pembatasan dicatat dalam audit."
       />
 
-      <section className="grid gap-4 border-y border-border/70 py-5 lg:grid-cols-[minmax(18rem,1fr)_auto] lg:items-center" aria-label="Pencarian pengguna">
-        <div className="relative max-w-xl">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <Input aria-label="Cari pengguna" placeholder="Cari nama atau referensi akun" className="h-12 rounded-full bg-card/75 pl-11" />
-        </div>
+      <section className="border-y border-border/70 py-5" aria-label="Ringkasan daftar pengguna">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{users.length}</span> akun
         </p>
       </section>
 
-      <section aria-labelledby="user-list-title" className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/72 backdrop-blur-sm">
+      <section aria-labelledby="user-list-title" className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex items-center justify-between gap-4 border-b border-border/70 px-5 py-5 sm:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Direktori akun</p>
-            <h2 id="user-list-title" className="mt-1 text-lg font-semibold">Status terbaru</h2>
-          </div>
-          <UserRound className="size-5 text-muted-foreground" aria-hidden="true" />
+          <h2 id="user-list-title" className="text-lg font-semibold">
+            Daftar akun
+          </h2>
         </div>
 
         <div className="divide-y divide-border/70">
@@ -51,35 +53,31 @@ export default async function UsersPage() {
             const displayName =
               user.workerDisplayName || user.employerDisplayName || user.id;
             return (
-            <article key={user.id} className="group grid gap-4 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:px-6">
-              <span className="grid size-11 place-items-center rounded-full border border-border bg-background/70 text-xs font-semibold text-primary" aria-hidden="true">
-                {initials(displayName)}
-              </span>
-              <div className="min-w-0">
-                <h3 className="font-semibold leading-6">{displayName}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{user.role}</p>
-              </div>
-              <div>
-                <StatusBadge status={user.status === "active" ? "success" : "danger"}>{user.status}</StatusBadge>
-              </div>
-              <Button variant="outline" type="button" className="w-full sm:w-auto">
-                Tinjau akun
-                <ArrowUpRight aria-hidden="true" />
-              </Button>
-            </article>
-          );})}
+              <article key={user.id} className="group grid gap-4 px-5 py-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:px-6">
+                <span className="grid size-11 place-items-center rounded-xl border border-border bg-background text-xs font-semibold text-primary" aria-hidden="true">
+                  {initials(displayName)}
+                </span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold leading-6">{displayName}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {roleLabels[user.role] ?? "Peran lain"}
+                  </p>
+                </div>
+                <div>
+                  <StatusBadge status={user.status === "active" ? "success" : "danger"}>
+                    {accountStatusLabels[user.status] ?? "Status lain"}
+                  </StatusBadge>
+                </div>
+              </article>
+            );
+          })}
+          {users.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
+              Belum ada akun untuk ditampilkan.
+            </p>
+          ) : null}
         </div>
       </section>
-
-      <aside className="grid gap-4 rounded-[1.5rem] bg-slate-950 px-5 py-6 text-white sm:grid-cols-[auto_1fr] sm:items-start sm:px-6">
-        <ShieldCheck className="size-5 text-blue-300" aria-hidden="true" />
-        <div>
-          <h2 className="font-semibold">Peran dan status berasal dari data tepercaya</h2>
-          <p className="mt-2 max-w-3xl text-base leading-7 text-slate-400">
-            Pemeriksaan wewenang tetap dilakukan untuk setiap tindakan. Pembatasan akun tidak menghapus riwayat pekerjaan atau audit.
-          </p>
-        </div>
-      </aside>
     </div>
   );
 }

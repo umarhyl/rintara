@@ -1,40 +1,19 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BriefcaseBusiness,
-  FileCheck2,
-  Send,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { EmptyState } from "@/components/rintara/empty-state";
 import { JobCard } from "@/components/rintara/job-card";
+import { StatusBadge } from "@/components/rintara/status-badge";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import {
+  listMyApplications,
+  type WorkerApplicationListItem,
+} from "@/server/queries/applications/worker-applications";
+import {
   listPublishedJobs,
   type PublicJobCard,
 } from "@/server/queries/jobs/public-jobs";
-
-const workerSummary = [
-  {
-    label: "Lamaran aktif",
-    value: "0",
-    detail: "Belum ada data lamaran",
-    icon: Send,
-  },
-  {
-    label: "Kesepakatan",
-    value: "0",
-    detail: "Belum ada kesepakatan",
-    icon: BriefcaseBusiness,
-  },
-  {
-    label: "Bukti Kerja",
-    value: "0",
-    detail: "Belum ada bukti kerja",
-    icon: FileCheck2,
-  },
-] as const;
 
 function formatWage(amount: number, unit: PublicJobCard["wageUnit"]) {
   const unitLabel = unit === "hour" ? "jam" : unit === "day" ? "hari" : "pekerjaan";
@@ -77,22 +56,52 @@ function toJobCardView(job: PublicJobCard) {
   };
 }
 
-export default async function WorkerDashboardPage() {
-  const account = await requireDashboardPageRole(
-    "worker",
-    "/worker/dashboard",
+function applicationStatusLabel(
+  status: WorkerApplicationListItem["status"],
+) {
+  if (status === "submitted") return "Menunggu";
+  if (status === "accepted") return "Diterima";
+  if (status === "rejected") return "Ditolak";
+  return "Ditarik";
+}
+
+function applicationStatusTone(
+  status: WorkerApplicationListItem["status"],
+) {
+  if (status === "submitted") return "info" as const;
+  if (status === "accepted") return "success" as const;
+  if (status === "rejected") return "warning" as const;
+  return "neutral" as const;
+}
+
+function applicationDestination(application: WorkerApplicationListItem) {
+  return application.status === "accepted" && application.agreementId
+    ? `/worker/agreements/${application.agreementId}`
+    : "/worker/applications";
+}
+
+export function WorkerDashboardContent({
+  displayName,
+  jobs,
+  applications,
+}: {
+  displayName: string;
+  jobs: ReturnType<typeof toJobCardView>[];
+  applications: WorkerApplicationListItem[];
+}) {
+  const acceptedApplication = applications.find(
+    (application) =>
+      application.status === "accepted" && application.agreementId,
   );
-  const jobPage = await listPublishedJobs({ limit: 4 });
-  const jobs = jobPage.items.map(toJobCardView);
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-6">
       <PageHeader
-        eyebrow="Jejak kerjamu"
-        title={`Halo, ${account.displayName}`}
-        description="Selesaikan langkah terdekat, lalu lanjutkan membangun pengalaman yang bisa dipercaya."
+        title={`Halo, ${displayName}`}
+        description="Lanjutkan lamaranmu atau temukan pekerjaan berikutnya."
+        className="border-b-0 pb-0"
         action={
-          <Button className="h-11 rounded-full px-5" asChild>
+          <Button className="h-11 px-5" asChild>
             <Link href="/jobs">
               Cari pekerjaan <ArrowRight aria-hidden="true" />
             </Link>
@@ -100,137 +109,163 @@ export default async function WorkerDashboardPage() {
         }
       />
 
-      <section
-        className="overflow-hidden border-y border-border/70 bg-card/45 backdrop-blur-sm"
-        aria-label="Ringkasan akun"
-      >
-        <dl className="grid grid-cols-3">
-          {workerSummary.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={item.label}
-                className={`relative min-h-28 px-3 py-5 sm:min-h-32 sm:px-6 sm:py-6 ${
-                  index > 0 ? "border-l border-border/70" : ""
-                }`}
-              >
-                <dt className="pr-7 text-xs font-medium leading-5 text-muted-foreground sm:text-sm">{item.label}</dt>
-                <dd className="mt-2 text-3xl font-semibold tracking-[-0.055em] sm:mt-3 sm:text-4xl">{item.value}</dd>
-                <dd className="sr-only text-muted-foreground sm:not-sr-only sm:mt-2 sm:block sm:text-xs">
-                  {item.detail}
-                </dd>
-                <Icon className="absolute right-3 top-5 hidden size-5 text-primary/70 sm:right-6 sm:top-6 sm:block" aria-hidden="true" />
-              </div>
-            );
-          })}
-        </dl>
-      </section>
-
-      <section
-        className="relative isolate overflow-hidden rounded-[2rem] bg-[#0a1c3f] text-white shadow-[0_28px_75px_-42px_rgb(15_42_104/0.85)]"
-        aria-labelledby="worker-next-action"
-      >
-        <div className="pointer-events-none absolute -left-28 -top-36 size-96 rounded-full bg-blue-500/15 blur-3xl" aria-hidden="true" />
-        <div className="relative grid lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="px-6 py-8 sm:px-9 sm:py-10 lg:px-12 lg:py-12">
-            <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.15em] text-blue-200">
-              <span className="soft-pulse size-2 rounded-full bg-amber-400" aria-hidden="true" />
-              Langkah berikutnya
-            </p>
+      {acceptedApplication ? (
+        <section
+          aria-labelledby="worker-next-action"
+          className="flex flex-col gap-4 rounded-xl bg-success-soft p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div className="min-w-0">
+            <StatusBadge tone="success">Lamaran diterima</StatusBadge>
             <h2
               id="worker-next-action"
-              className="mt-7 max-w-2xl text-balance text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl"
+              className="mt-3 text-xl font-semibold tracking-[-0.02em]"
             >
-              Belum ada langkah kerja dari data backend.
+              {acceptedApplication.jobTitle}
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-blue-100/75">
-              Setelah lamaran, kesepakatan, dan bukti kerja tersambung ke operasi
-              backend, langkah terdekat akan muncul di sini.
+            <p className="mt-1 text-base leading-6 text-muted-foreground">
+              Buka Mini Agreement untuk melihat ketentuan dan langkah
+              berikutnya.
             </p>
-
-            <Button
-              className="theme-static-light mt-8 h-12 rounded-full bg-white px-5 text-slate-950 shadow-none hover:bg-blue-50"
-              asChild
-            >
-              <Link href="/jobs">
-                Cari pekerjaan <ArrowRight aria-hidden="true" />
-              </Link>
-            </Button>
-
-            <dl className="mt-10 grid gap-5 border-t border-white/15 pt-6 sm:grid-cols-3">
-              <div>
-                <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Pekerjaan</dt>
-                <dd className="mt-2 text-sm font-medium">Belum ada</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Jadwal</dt>
-                <dd className="mt-2 text-sm font-medium">Menunggu lamaran</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.13em] text-blue-200/65">Upah tetap</dt>
-                <dd className="mt-2 text-sm font-medium">Mengikuti pekerjaan</dd>
-              </div>
-            </dl>
           </div>
-
-          <aside className="border-t border-white/10 bg-white/[0.055] px-6 py-8 backdrop-blur-sm sm:px-9 lg:border-l lg:border-t-0 lg:py-12">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/65">
-                  Kabar terbaru
-                </p>
-                <h2 className="mt-2 text-xl font-semibold">Lamaranmu</h2>
-              </div>
-              <span className="text-sm text-blue-100/60">0 aktif</span>
-            </div>
-
-            <div className="mt-8 border-y border-white/10 py-6 text-sm leading-6 text-blue-100/70">
-              Belum ada lamaran dari backend. Data contoh sudah disembunyikan agar halaman tidak menampilkan status palsu.
-            </div>
-
-            <Button
-              variant="ghost"
-              className="mt-8 h-11 w-full justify-between rounded-full border border-white/10 text-white hover:bg-white/10 hover:text-white"
-              asChild
+          <Button className="h-11 w-full shrink-0 sm:w-auto" asChild>
+            <Link
+              href={`/worker/agreements/${acceptedApplication.agreementId}`}
             >
-              <Link href="/worker/applications">
-                Semua lamaran <ArrowRight aria-hidden="true" />
-              </Link>
-            </Button>
-          </aside>
-        </div>
-      </section>
-
-      <section aria-labelledby="worker-opportunities">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Lanjutkan jejakmu</p>
-            <h2 id="worker-opportunities" className="mt-2 text-2xl font-semibold tracking-[-0.035em]">
-              Kesempatan di dekatmu
-            </h2>
-            <p className="mt-2 text-muted-foreground">Pilih pekerjaan dengan tugas dan ketentuan yang jelas.</p>
-          </div>
-          <Button variant="link" className="w-fit px-0" asChild>
-            <Link href="/jobs">
-              Lihat semua <ArrowRight aria-hidden="true" />
+              Buka Mini Agreement
+              <ArrowRight aria-hidden="true" />
             </Link>
           </Button>
-        </div>
-        {jobs.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {jobs.map((job, index) => (
-              <JobCard key={job.id} job={job} featured={index === 0} />
-            ))}
+        </section>
+      ) : null}
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <section aria-labelledby="worker-opportunities">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2
+                id="worker-opportunities"
+                className="text-xl font-semibold tracking-[-0.02em]"
+              >
+                Pekerjaan terbaru
+              </h2>
+              <p className="mt-1 text-base leading-6 text-muted-foreground">
+                Bandingkan ketentuan sebelum melamar.
+              </p>
+            </div>
+            {jobs.length > 0 ? (
+              <Link
+                href="/jobs"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Lihat semua
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            ) : null}
           </div>
-        ) : (
-          <EmptyState
-            title="Belum ada pekerjaan terbuka"
-            description="Pekerjaan yang dipublikasikan pemberi kerja akan muncul di sini dari database."
-            actionLabel="Lihat daftar pekerjaan"
-            actionHref="/jobs"
-          />
-        )}
-      </section>
+
+          {jobs.length > 0 ? (
+            <div className="grid gap-3">
+              {jobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Belum ada pekerjaan terbuka"
+              description="Pekerjaan baru akan muncul setelah diterbitkan oleh pemberi kerja."
+              actionLabel="Buka pencarian"
+              actionHref="/jobs"
+            />
+          )}
+        </section>
+
+        <aside
+          aria-labelledby="worker-application-activity"
+          className="rounded-xl bg-muted p-5"
+        >
+          <h2
+            id="worker-application-activity"
+            className="text-lg font-semibold tracking-[-0.02em]"
+          >
+            Aktivitas lamaran
+          </h2>
+
+          {applications.length > 0 ? (
+            <>
+              <ul className="mt-3 grid gap-2">
+                {applications.map((application) => (
+                  <li key={application.id}>
+                    <Link
+                      href={applicationDestination(application)}
+                      className="group flex min-h-11 items-start justify-between gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <StatusBadge
+                            tone={applicationStatusTone(application.status)}
+                          >
+                            {applicationStatusLabel(application.status)}
+                          </StatusBadge>
+                          {application.isFirstOpportunity ? (
+                            <span className="text-xs font-medium text-opportunity-foreground">
+                              Kesempatan Pertama
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-2 block font-semibold leading-5 text-foreground">
+                          {application.jobTitle}
+                        </span>
+                        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                          {application.employerDisplayName}
+                        </span>
+                      </span>
+                      <ArrowRight
+                        className="mt-1 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/worker/applications"
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold text-primary transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Semua lamaran
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </>
+          ) : (
+            <div className="mt-4">
+              <p className="text-base leading-6 text-muted-foreground">
+                Belum ada lamaran yang dikirim.
+              </p>
+              <Button variant="outline" className="mt-4 h-11 w-full" asChild>
+                <Link href="/jobs">Cari pekerjaan</Link>
+              </Button>
+            </div>
+          )}
+        </aside>
+      </div>
     </div>
+  );
+}
+
+export default async function WorkerDashboardPage() {
+  const account = await requireDashboardPageRole(
+    "worker",
+    "/worker/dashboard",
+  );
+  const [jobPage, applicationPage] = await Promise.all([
+    listPublishedJobs({ limit: 3 }),
+    listMyApplications({ limit: 3 }),
+  ]);
+
+  return (
+    <WorkerDashboardContent
+      displayName={account.displayName}
+      jobs={jobPage.items.map(toJobCardView)}
+      applications={applicationPage.items}
+    />
   );
 }

@@ -304,12 +304,14 @@ export async function getPublicJobReferenceData(
       .select({ id: categories.id, name: categories.name })
       .from(categories)
       .where(eq(categories.isActive, true))
-      .orderBy(asc(categories.name), asc(categories.id)),
+      .orderBy(asc(categories.name), asc(categories.id))
+      .limit(50),
     database
       .select({ id: areas.id, name: areas.name })
       .from(areas)
       .where(and(eq(areas.level, "city_regency"), eq(areas.isActive, true)))
-      .orderBy(asc(areas.name), asc(areas.id)),
+      .orderBy(asc(areas.name), asc(areas.id))
+      .limit(50),
   ]);
 
   return { categories: categoryRows, areas: areaRows };

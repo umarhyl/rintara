@@ -41,7 +41,7 @@ const ids = {
 } as const;
 
 const seedTime = new Date("2026-07-20T02:00:00.000Z");
-const applicationDeadline = new Date("2026-07-29T10:00:00.000Z");
+const applicationDeadline = new Date("2026-07-28T10:00:00.000Z");
 const jobStart = new Date("2026-07-30T02:00:00.000Z");
 
 async function seed() {

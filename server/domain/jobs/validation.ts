@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { riskLevelEnum, wageUnitEnum } from "@/server/db/schema/enums";
+import { getJobSelectionCutoff } from "./selection-cutoff";
 
 export const jobDraftSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(160),
@@ -31,8 +32,8 @@ export const jobDraftSchema = z.object({
   
   isFirstOpportunity: z.boolean().default(false),
   riskLevel: z.enum(riskLevelEnum.enumValues),
-}).refine((data) => data.applicationDeadline < data.startsAt, {
-  message: "Application deadline must be before the start time",
+}).refine((data) => data.applicationDeadline < getJobSelectionCutoff(data.startsAt), {
+  message: "Application deadline must be earlier than 24 hours before the start time",
   path: ["applicationDeadline"],
 });
 

@@ -1,47 +1,82 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
-import { AmbientBackdrop } from "@/components/rintara/ambient-backdrop";
 import { RintaraLogo } from "@/components/rintara/logo";
 
-const footerLinks = [
-  { href: "/jobs", label: "Cari kerja" },
-  { href: "/first-opportunity", label: "Kesempatan Pertama" },
-  { href: "/how-it-works", label: "Cara kerja" },
-  { href: "/sign-in", label: "Masuk" },
+const footerGroups = [
+  {
+    title: "Jelajahi",
+    links: [
+      { href: "/jobs", label: "Cari pekerjaan" },
+      {
+        href: "/jobs?opportunity=first",
+        label: "Kesempatan Pertama",
+      },
+      { href: "/categories", label: "Kategori dan wilayah" },
+    ],
+  },
+  {
+    title: "Pelajari",
+    links: [
+      {
+        href: "/for-workers",
+        label: "Untuk pekerja",
+      },
+      {
+        href: "/for-employers",
+        label: "Untuk pemberi kerja",
+      },
+      { href: "/how-it-works", label: "Cara kerja Rintara" },
+      { href: "/why-rintara", label: "Mengapa Rintara" },
+    ],
+  },
+  {
+    title: "Akun",
+    links: [
+      { href: "/sign-in", label: "Masuk" },
+      { href: "/register", label: "Daftar" },
+      { href: "/account/continue", label: "Buka ruang kerja" },
+    ],
+  },
 ] as const;
 
 export function PublicFooter() {
   return (
-    <footer className="relative isolate overflow-hidden border-t border-white/10 bg-[#071020] text-white">
-      <AmbientBackdrop variant="dashboard" className="opacity-70" />
-      <div className="reveal-on-scroll relative mx-auto grid max-w-7xl gap-14 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
-        <div>
-          <RintaraLogo className="[&>span:last-child]:text-white" />
-          <p className="mt-9 max-w-2xl text-balance text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">
-            Setiap pekerjaan layak meninggalkan <span className="font-serif font-normal italic text-blue-300">jejak yang berarti.</span>
-          </p>
-          <p className="mt-5 max-w-xl text-base leading-7 text-slate-400">
-            Kesempatan kerja lokal dengan ketentuan terbuka dan Bukti Kerja yang dapat dipercaya.
+    <footer className="bg-[#143d24] text-white">
+      <div className="mx-auto grid max-w-[80rem] gap-10 px-4 py-11 sm:px-6 md:grid-cols-[minmax(18rem,1.3fr)_2fr] lg:px-8 lg:py-14">
+        <div className="max-w-md">
+          <RintaraLogo tone="inverse" />
+          <p className="mt-3 text-base leading-7 text-white/68">
+            Pekerjaan lokal dengan ketentuan terbuka dan jejak kerja yang diterbitkan sistem.
           </p>
         </div>
 
-        <nav className="divide-y divide-white/12 border-y border-white/12 lg:self-end" aria-label="Navigasi penutup">
-          {footerLinks.map((item, index) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group flex min-h-14 items-center gap-4 py-3 text-sm text-slate-300 transition-colors duration-300 hover:text-white"
-            >
-              <span className="font-mono text-xs text-slate-500" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <span className="flex-1 font-medium">{item.label}</span>
-              <ArrowUpRight className="size-4 transition-transform duration-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
-            </Link>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {footerGroups.map((group) => (
+            <nav key={group.title} aria-label={group.title}>
+              <h2 className="text-sm font-semibold text-white">
+                {group.title}
+              </h2>
+              <ul className="mt-3 grid gap-1">
+                {group.links.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      prefetch={false}
+                      className="inline-flex min-h-11 items-center text-sm font-medium text-white/68 outline-none transition-colors duration-150 hover:text-[#def4c6] focus-visible:ring-3 focus-visible:ring-white/35"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           ))}
-        </nav>
+        </div>
       </div>
 
-      <div className="relative border-t border-white/10 px-4 py-5 text-center text-xs leading-5 text-slate-400">
-        © 2026 Rintara · Pembayaran dilakukan di luar Rintara. Kami tidak menyimpan data rekening atau kartu.
+      <div className="mx-auto max-w-[80rem] px-4 pb-7 sm:px-6 lg:px-8">
+        <p className="rounded-xl bg-white/7 px-4 py-3 text-sm leading-6 text-white/68">
+          © 2026 Rintara. Pembayaran dilakukan langsung di luar platform. Rintara tidak menyimpan rekening atau kartu.
+        </p>
       </div>
     </footer>
   );

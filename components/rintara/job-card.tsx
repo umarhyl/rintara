@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, CalendarDays, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  CalendarDays,
+  Clock3,
+  MapPin,
+} from "lucide-react";
 import { StatusBadge } from "@/components/rintara/status-badge";
 
 export type JobCardView = {
@@ -19,42 +21,60 @@ export type JobCardView = {
 
 export function JobCard({
   job,
-  featured = false,
 }: {
   job: JobCardView;
-  featured?: boolean;
 }) {
   return (
-    <Card className={`card-lift group relative flex h-full flex-col overflow-hidden rounded-[1.65rem] bg-card/78 shadow-none backdrop-blur-sm ${featured ? "lg:col-span-2" : ""}`}>
-      {job.firstOpportunity ? <span className="absolute inset-y-7 left-0 w-0.5 rounded-r-full bg-opportunity" aria-hidden="true" /> : null}
-      <span className="pointer-events-none absolute -right-20 -top-24 size-52 rounded-full bg-primary/[0.055] transition-transform duration-700 ease-out group-hover:scale-110" aria-hidden="true" />
-      <CardHeader className="relative gap-5 p-6 sm:p-7">
+    <article className="group relative grid min-h-full gap-x-6 gap-y-4 overflow-hidden rounded-xl bg-card p-5 shadow-[0_16px_42px_-38px_rgb(27_81_45/0.75)] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_-34px_rgb(27_81_45/0.65)] focus-within:ring-3 focus-within:ring-ring/20 md:grid-cols-[minmax(0,1fr)_13.5rem]">
+      <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          {job.firstOpportunity ? <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge> : null}
-          {job.boosted ? <StatusBadge tone="info">Prioritas 24 jam</StatusBadge> : null}
-          <span className="ml-auto text-xs font-medium text-muted-foreground">{job.category}</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {job.category}
+          </span>
+          {job.firstOpportunity ? (
+            <StatusBadge tone="warning">Kesempatan Pertama</StatusBadge>
+          ) : null}
+          {job.boosted ? (
+            <StatusBadge tone="info">Diprioritaskan 24 jam</StatusBadge>
+          ) : null}
         </div>
-        <div className={featured ? "grid gap-6 sm:grid-cols-[1fr_auto] sm:items-end" : undefined}>
-          <div>
-            <h2 className={`${featured ? "text-2xl sm:text-3xl" : "text-xl"} font-semibold leading-tight tracking-[-0.035em] transition-colors duration-300 group-hover:text-primary`}>{job.title}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{job.employer}</p>
-          </div>
-          <div className={featured ? "sm:text-right" : ""}>
-            <p className="mt-5 text-xs font-medium text-muted-foreground sm:mt-0">UPAH TETAP</p>
-            <p className="mt-1 text-xl font-semibold tracking-[-0.025em] text-foreground">{job.wage}</p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className={`relative flex-1 gap-3 px-6 text-sm text-muted-foreground sm:px-7 ${featured ? "grid sm:grid-cols-3" : "space-y-3"}`}>
-        <p className="flex items-start gap-2"><MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{job.publicLocation}</p>
-        <p className="flex items-start gap-2"><CalendarDays className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{job.date}</p>
-        <p className="flex items-start gap-2"><BriefcaseBusiness className="mt-0.5 size-4 shrink-0" aria-hidden="true" />{job.duration}</p>
-      </CardContent>
-      <CardFooter className="relative border-t-0 bg-transparent px-4 pb-3 pt-2 sm:px-5">
-        <Button variant="ghost" className="h-11 w-full justify-between rounded-full px-3 [&_svg]:group-hover/button:translate-x-1" asChild>
-          <Link href={`/jobs/${job.id}`}>Lihat pekerjaan <ArrowRight aria-hidden="true" /></Link>
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <h2 className="mt-2 text-lg font-semibold leading-snug tracking-[-0.02em] text-foreground sm:text-xl">
+          <Link
+            href={`/jobs/${job.id}`}
+            className="inline-flex min-h-11 items-center rounded-sm transition-colors duration-150 after:absolute after:inset-0 hover:text-primary focus-visible:outline-none"
+          >
+            {job.title}
+          </Link>
+        </h2>
+        <p className="text-sm text-muted-foreground">{job.employer}</p>
+      </div>
+
+      <p className="tabular self-start text-lg font-bold leading-snug tracking-[-0.02em] text-foreground md:text-right md:text-xl">
+        <span className="sr-only">Upah: </span>
+        {job.wage}
+      </p>
+
+      <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm leading-6 text-muted-foreground md:col-span-2">
+        <span className="inline-flex items-center gap-2">
+          <MapPin className="size-4 shrink-0 text-primary" aria-hidden="true" />
+          {job.publicLocation}
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <CalendarDays
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          {job.date}
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <Clock3
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          {job.duration}
+        </span>
+      </div>
+    </article>
   );
 }

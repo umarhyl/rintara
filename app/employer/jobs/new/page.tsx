@@ -11,10 +11,10 @@ export default async function NewJobPage() {
   const referenceData = await getJobReferenceData();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto grid max-w-[70rem] gap-7">
       <PageHeader
-        title="Buat Pekerjaan Baru"
-        description="Pekerjaan akan ditinjau terlebih dahulu. Informasi alamat lengkap dirahasiakan sampai pelamar diterima."
+        title="Buat pekerjaan baru"
+        description="Isi ketentuan yang akan dilihat pekerja. Alamat lengkap hanya dibuka kepada pekerja yang diterima."
       />
       <JobForm referenceData={referenceData} />
     </div>

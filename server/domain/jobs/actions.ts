@@ -17,6 +17,7 @@ import {
 import { eq, and, desc, lte, or, isNull, gt } from "drizzle-orm";
 import { z } from "zod";
 import { jobDraftSchema } from "./validation";
+import { getJobSelectionCutoff } from "./selection-cutoff";
 import { assertJobTransition } from "../lifecycle";
 
 const cancelJobSchema = z
@@ -152,7 +153,6 @@ export async function publishJob(jobId: string) {
   }
 
   await db.transaction(async (tx) => {
-    const now = new Date();
     const [job] = await tx.select()
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
@@ -167,8 +167,18 @@ export async function publishJob(jobId: string) {
       throw new ApplicationError("JOB_NOT_DRAFT", "Job is not in draft state.");
     }
 
-    if (job.applicationDeadline >= job.startsAt) {
-      throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be before start time.");
+    const now = new Date();
+
+    if (job.applicationDeadline >= getJobSelectionCutoff(job.startsAt)) {
+      throw new ApplicationError(
+        "VALIDATION_FAILED",
+        "Application deadline must be earlier than 24 hours before start time.",
+        {
+          applicationDeadline: [
+            "Set the application deadline earlier than 24 hours before start time.",
+          ],
+        },
+      );
     }
     if (job.applicationDeadline <= now) {
       throw new ApplicationError("VALIDATION_FAILED", "Application deadline must be in the future.");

@@ -1,4 +1,5 @@
-import { AlertTriangle, Clock3, FileWarning, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, Clock3, FileWarning } from "lucide-react";
 import { AdminReportActions } from "@/components/rintara/admin-report-actions";
 import { DetailList } from "@/components/rintara/detail-list";
 import { PageHeader } from "@/features/dashboard/components/page-header";
@@ -38,41 +39,51 @@ function formatDate(value: Date) {
   }).format(value);
 }
 
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ report?: string | string[] }>;
+}) {
   await requireDashboardPageRole("admin", "/admin/reports");
+  const params = await searchParams;
   const reports = await adminListReports();
-  const selected = reports[0] ?? null;
+  const selectedReportId =
+    typeof params.report === "string" ? params.report : undefined;
+  const selected =
+    reports.find((report) => report.id === selectedReportId) ??
+    reports[0] ??
+    null;
   const activeCount = reports.filter(
     (report) => report.status === "open" || report.status === "reviewing",
   ).length;
 
   return (
-    <div className="grid gap-9">
+    <div className="grid gap-7">
       <PageHeader
-        eyebrow="Kepercayaan & keamanan"
-        title="Moderasi laporan"
-        description="Tinjau hubungan pihak, konteks pekerjaan, dan jejak tindakan sebelum membuat keputusan."
+        title="Laporan"
+        description="Tinjau konteks dan bukti sebelum menetapkan keputusan moderasi."
       />
 
       <div className="grid gap-7 xl:grid-cols-[19rem_minmax(0,1fr)]">
-        <aside className="h-fit overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/70 backdrop-blur-sm">
+        <aside className="h-fit overflow-hidden rounded-xl border border-border bg-card">
           <div className="border-b border-border/70 px-5 py-5">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Antrean</p>
+                <p className="text-sm font-semibold text-primary">Antrean</p>
                 <h2 className="mt-1 text-lg font-semibold">{activeCount} laporan aktif</h2>
               </div>
               <FileWarning className="size-5 text-muted-foreground" aria-hidden="true" />
             </div>
           </div>
           <nav aria-label="Daftar laporan" className="divide-y divide-border/70">
-            {reports.map((report, index) => (
-              <div
+            {reports.map((report) => (
+              <Link
                 key={report.id}
-                aria-current={index === 0 ? "true" : undefined}
-                className="relative px-5 py-5"
+                href={`/admin/reports?report=${encodeURIComponent(report.id)}`}
+                aria-current={report.id === selected?.id ? "page" : undefined}
+                className="relative block min-h-11 px-5 py-5 transition-colors hover:bg-muted/45 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               >
-                {index === 0 ? (
+                {report.id === selected?.id ? (
                   <span className="absolute inset-y-4 left-0 w-0.5 rounded-r-full bg-primary" aria-hidden="true" />
                 ) : null}
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -89,7 +100,7 @@ export default async function ReportsPage() {
                 <span className="mt-1 block text-sm leading-5 text-muted-foreground">
                   {report.targetTitle || report.jobId || report.agreementId || report.reportedUserId}
                 </span>
-              </div>
+              </Link>
             ))}
             {reports.length === 0 ? (
               <p className="px-5 py-6 text-sm text-muted-foreground">
@@ -101,7 +112,7 @@ export default async function ReportsPage() {
 
         {selected ? (
           <div className="min-w-0 space-y-7">
-            <section aria-labelledby="selected-report" className="overflow-hidden rounded-[1.5rem] border border-border/75 bg-card/82">
+            <section aria-labelledby="selected-report" className="overflow-hidden rounded-xl border border-border bg-card">
               <div className="flex flex-col gap-5 border-b border-border/70 px-5 py-6 sm:flex-row sm:items-start sm:justify-between sm:px-7">
                 <div>
                   <div className="flex flex-wrap items-center gap-2.5">
@@ -112,7 +123,7 @@ export default async function ReportsPage() {
                       {statusLabels[selected.status]}
                     </StatusBadge>
                   </div>
-                  <h2 id="selected-report" className="mt-3 text-2xl font-semibold tracking-[-0.035em]">
+                  <h2 id="selected-report" className="mt-3 text-2xl font-semibold tracking-tight">
                     {reasonLabels[selected.reason]}
                   </h2>
                   <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
@@ -134,25 +145,26 @@ export default async function ReportsPage() {
               </div>
             </section>
 
-            <Alert className="border-amber-300/70 bg-amber-50/80 text-amber-950 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-100">
+            <Alert className="border-amber-300/70 bg-amber-50/80 text-amber-950">
               <AlertTriangle aria-hidden="true" />
               <AlertTitle>Catatan privat moderator</AlertTitle>
-              <AlertDescription className="dark:text-amber-200/75">
+              <AlertDescription>
                 Catatan internal tidak boleh disertakan dalam notifikasi kepada pihak terkait.
               </AlertDescription>
             </Alert>
 
-            <section aria-labelledby="decision-title" className="rounded-[1.5rem] border border-border/75 bg-card/72 p-5 backdrop-blur-sm sm:p-7">
+            <section aria-labelledby="decision-title" className="rounded-xl border border-border bg-card p-5 sm:p-6">
               <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Tahap keputusan</p>
-                <h2 id="decision-title" className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
-                  Tindakan yang dapat diterapkan
+                <h2 id="decision-title" className="text-xl font-semibold tracking-tight">
+                  Keputusan moderasi
                 </h2>
-                <p className="mt-3 text-base leading-7 text-muted-foreground">
-                  Pilih hanya tindakan yang didukung bukti. Setiap perubahan akan ditambahkan ke jejak audit.
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Pilih tindakan yang didukung bukti. Setiap perubahan dicatat
+                  dalam audit.
                 </p>
               </div>
               <AdminReportActions
+                key={`${selected.id}:${selected.status}`}
                 reportId={selected.id}
                 status={selected.status}
                 hasJobTarget={Boolean(selected.jobId)}
@@ -160,19 +172,9 @@ export default async function ReportsPage() {
               />
             </section>
 
-            <section aria-labelledby="related-audit" className="grid gap-5 border-t border-border/70 pt-7 sm:grid-cols-[15rem_1fr]">
-              <div>
-                <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
-                <h2 id="related-audit" className="mt-3 text-lg font-semibold">Audit terkait</h2>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">Identitas ditampilkan dalam bentuk aman.</p>
-              </div>
-              <p className="text-base leading-7 text-muted-foreground">
-                Audit keputusan akan muncul di halaman audit log setelah tindakan disimpan.
-              </p>
-            </section>
           </div>
         ) : (
-          <section className="rounded-[1.5rem] border border-border/75 bg-card p-7">
+          <section className="rounded-xl border border-border bg-card p-6">
             <h2 className="text-xl font-semibold">Tidak ada laporan</h2>
             <p className="mt-2 text-muted-foreground">Antrean moderasi kosong.</p>
           </section>
