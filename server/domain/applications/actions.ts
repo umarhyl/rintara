@@ -665,6 +665,9 @@ export async function acceptApplication(
   revalidatePath("/employer/dashboard");
   revalidatePath("/jobs");
   revalidatePath("/worker/applications");
+  revalidatePath("/worker/dashboard");
+  revalidatePath("/worker/notifications");
+  revalidatePath("/employer/notifications");
   revalidatePath(`/worker/agreements/${result.agreementId}`);
 
   return result;

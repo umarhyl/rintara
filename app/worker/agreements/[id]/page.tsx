@@ -7,6 +7,8 @@ import {
   type AgreementView,
 } from "@/server/queries/agreements/get-agreement";
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkerAgreementPage({
   params,
 }: {

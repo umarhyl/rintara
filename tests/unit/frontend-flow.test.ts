@@ -634,6 +634,111 @@ describe("frontend flow surface", () => {
     expect(employer).toContain("submitEmployerOnboarding");
   });
 
+  test("completes the acceptance and two-party Mini Agreement interface", async () => {
+    const agreementView = await Bun.file(
+      "components/rintara/agreement-confirmation-view.tsx",
+    ).text();
+    const confirmationButton = await Bun.file(
+      "components/rintara/confirm-agreement-button.tsx",
+    ).text();
+    const acceptanceButton = await Bun.file(
+      "components/rintara/accept-application-button.tsx",
+    ).text();
+    const agreementAction = await Bun.file(
+      "server/domain/agreements/actions.ts",
+    ).text();
+    const acceptanceAction = await Bun.file(
+      "server/domain/applications/actions.ts",
+    ).text();
+    const employerDashboard = await Bun.file(
+      "app/employer/dashboard/page.tsx",
+    ).text();
+    const employerJobQuery = await Bun.file(
+      "server/queries/jobs/get-employer-job.ts",
+    ).text();
+
+    for (const path of [
+      "app/worker/agreements/[id]/page.tsx",
+      "app/employer/agreements/[id]/page.tsx",
+    ]) {
+      const page = await Bun.file(path).text();
+      expect(page, path).toContain('export const dynamic = "force-dynamic"');
+      expect(page, path).toContain("getAgreement(id)");
+      expect(page, path).toContain("<AgreementConfirmationView");
+    }
+
+    expect(acceptanceButton).toContain("acceptApplication(applicationId)");
+    expect(acceptanceButton).toContain("lamaran lain yang masih menunggu");
+    expect(acceptanceButton).toContain("snapshot Mini Agreement");
+    expect(acceptanceButton).toContain(
+      "router.push(`/employer/agreements/${result.agreementId}`)",
+    );
+
+    for (const snapshotField of [
+      "taskScope",
+      "generalArea",
+      "fullAddress",
+      "arrivalInstructions",
+      "startsAt",
+      "estimatedMinutes",
+      "wageAmount",
+      "wageStatus",
+      "paymentMethod",
+      "paymentTiming",
+      "toolsProvided",
+      "toolsRequired",
+      "cancellationWording",
+      "isFirstOpportunity",
+    ]) {
+      expect(agreementView, snapshotField).toContain(
+        `agreement.snapshot.${snapshotField}`,
+      );
+    }
+    expect(agreementView).toContain("workerConfirmedAt");
+    expect(agreementView).toContain("employerConfirmedAt");
+    expect(agreementView).toContain("Kesepakatan aktif");
+    expect(agreementView).toContain("Pekerjaan selesai");
+    expect(agreementView).toContain("Kesepakatan dibatalkan");
+    expect(agreementView).toContain("agreement.cancellation.reason");
+    expect(agreementView).not.toContain("<input");
+    expect(agreementView).not.toContain("<textarea");
+
+    expect(confirmationButton).toContain("confirmAgreement(agreementId)");
+    expect(confirmationButton).toContain("submissionLockRef.current");
+    expect(confirmationButton).toContain("aria-busy={isPending}");
+    expect(confirmationButton).toContain(
+      'errorCodeFor(caughtError) === "INVALID_STATE_TRANSITION"',
+    );
+    expect(confirmationButton).toContain("if (!isPending) setOpen(nextOpen)");
+    expect(confirmationButton).toContain(
+      "Setelah kedua pihak setuju, langkah kerja akan aktif.",
+    );
+
+    expect(agreementAction).toContain(
+      'revalidatePath("/worker/notifications")',
+    );
+    expect(agreementAction).toContain(
+      'revalidatePath("/employer/notifications")',
+    );
+    expect(agreementAction).toContain(
+      "revalidatePath(`/worker/work/${outcome.result.agreementId}`)",
+    );
+    expect(acceptanceAction).toContain(
+      'revalidatePath("/worker/dashboard")',
+    );
+    expect(acceptanceAction).toContain(
+      'revalidatePath("/worker/notifications")',
+    );
+
+    expect(employerJobQuery).toContain(
+      ".leftJoin(agreements, eq(agreements.jobId, jobs.id))",
+    );
+    expect(employerDashboard).toContain(
+      "`/employer/agreements/${job.agreementId}`",
+    );
+    expect(employerDashboard).toContain("Buka kesepakatan");
+  });
+
   test("wires the worker profile screen to private data and validated updates", async () => {
     const page = await Bun.file("app/worker/profile/page.tsx").text();
     const form = await Bun.file(

@@ -37,6 +37,15 @@ const statusTones: Record<
   cancelled: "danger",
 };
 
+const wageStatusLabels: Record<
+  AgreementView["snapshot"]["wageStatus"],
+  string
+> = {
+  compliant: "Sesuai panduan upah",
+  below: "Di bawah panduan upah",
+  unavailable: "Panduan upah belum tersedia",
+};
+
 function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("id-ID", {
     dateStyle: "medium",
@@ -65,6 +74,16 @@ function formatWage(amount: string, unit: AgreementView["snapshot"]["wageUnit"])
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(Number(amount))} / ${unitLabel}`;
+}
+
+function confirmationHeading(
+  status: AgreementView["status"],
+  ownConfirmed: boolean,
+) {
+  if (status === "active") return "Kesepakatan aktif";
+  if (status === "completed") return "Pekerjaan selesai";
+  if (status === "cancelled") return "Kesepakatan dibatalkan";
+  return ownConfirmed ? "Menunggu pihak lain" : "Konfirmasi ketentuan";
 }
 
 function ConfirmationItem({
@@ -166,6 +185,10 @@ export function AgreementConfirmationView({
       label: "Upah",
       value: formatWage(agreement.snapshot.wageAmount, agreement.snapshot.wageUnit),
     },
+    {
+      label: "Status upah",
+      value: wageStatusLabels[agreement.snapshot.wageStatus],
+    },
     { label: "Metode bayar", value: agreement.snapshot.paymentMethod },
     { label: "Waktu bayar", value: agreement.snapshot.paymentTiming },
     { label: "Pembatalan", value: agreement.snapshot.cancellationWording },
@@ -182,6 +205,32 @@ export function AgreementConfirmationView({
           </StatusBadge>
         }
       />
+
+      {agreement.cancellation ? (
+        <section
+          aria-labelledby="agreement-cancellation-title"
+          className="flex gap-3 rounded-xl bg-destructive/10 p-4 text-foreground sm:p-5"
+        >
+          <AlertTriangle
+            className="mt-0.5 size-5 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+          <div className="min-w-0">
+            <h2
+              id="agreement-cancellation-title"
+              className="font-semibold text-destructive"
+            >
+              Kesepakatan dibatalkan
+            </h2>
+            <p className="mt-1 break-words text-base leading-6">
+              {agreement.cancellation.reason}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Dicatat {formatDateTime(agreement.cancellation.cancelledAt)}
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid items-start gap-7 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <article className="overflow-hidden rounded-xl border border-border bg-card">
@@ -242,11 +291,7 @@ export function AgreementConfirmationView({
             Status konfirmasi
           </p>
           <h2 className="mt-3 text-xl font-semibold">
-            {agreement.status === "active"
-              ? "Kesepakatan aktif"
-              : ownConfirmed
-                ? "Menunggu pihak lain"
-                : "Konfirmasi ketentuan"}
+            {confirmationHeading(agreement.status, ownConfirmed)}
           </h2>
 
           <ol className="mt-6 grid gap-6">
@@ -265,11 +310,18 @@ export function AgreementConfirmationView({
           <div className="mt-6 border-t border-border/70 pt-5">
             {canConfirm ? (
               <ConfirmAgreementButton agreementId={agreement.id} />
-            ) : agreement.status === "active" ? (
+            ) : agreement.status === "active" ||
+              agreement.status === "completed" ? (
               <Button className="h-11 w-full" asChild>
                 <Link href={`/${role}/work/${agreement.id}`}>
-                  <MapPin aria-hidden="true" />
-                  Buka langkah kerja
+                  {agreement.status === "active" ? (
+                    <MapPin aria-hidden="true" />
+                  ) : (
+                    <Check aria-hidden="true" />
+                  )}
+                  {agreement.status === "active"
+                    ? "Buka langkah kerja"
+                    : "Lihat hasil pekerjaan"}
                 </Link>
               </Button>
             ) : (
