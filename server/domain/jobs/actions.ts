@@ -175,7 +175,7 @@ export async function publishJob(jobId: string) {
         "Application deadline must be earlier than 24 hours before start time.",
         {
           applicationDeadline: [
-            "Set the application deadline earlier than 24 hours before start time.",
+            "Atur batas lamaran lebih awal dari batas pemilihan pekerja.",
           ],
         },
       );

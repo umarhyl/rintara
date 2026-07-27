@@ -63,7 +63,7 @@ const backendRecordGuardedPages = [
     "app/employer/jobs/[id]/applicants/page.tsx",
     "employer",
     "/employer/jobs/${encodeURIComponent(id)}/applicants",
-    "getEmployerJob(id)",
+    "listJobApplicants(\n      id,",
     "JOB_NOT_FOUND",
   ],
   [

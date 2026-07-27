@@ -472,9 +472,19 @@ Worker action states:
 
 - apply;
 - view submitted application;
+- open the Mini Agreement for an accepted application;
+- view recorded rejected or withdrawn history without offering another form;
 - ineligible for this First Opportunity category;
 - job unavailable;
-- sign in to apply.
+- sign in to apply; and
+- loading plus a retryable read error while the private application state is
+  checked.
+
+**My applications** uses two server-driven segments: **Aktif** for submitted
+and accepted applications, and **Riwayat** for rejected and withdrawn
+applications. Filtering precedes cursor pagination, the next-page link retains
+the selected segment, and every displayed count is labeled as page-local. A
+job title is forward-linked only while its public detail remains available.
 
 ### 8.4 Job creation
 

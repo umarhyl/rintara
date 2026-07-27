@@ -41,6 +41,19 @@ function messageFor(error: unknown) {
   return "Koneksi terputus saat menerima lamaran. Coba lagi sebentar lagi.";
 }
 
+function errorCodeFor(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code;
+  }
+
+  return null;
+}
+
 export function AcceptApplicationButton({
   applicationId,
   workerDisplayName,
@@ -70,6 +83,15 @@ export function AcceptApplicationButton({
       } catch (caughtError) {
         submissionLockRef.current = false;
         setError(messageFor(caughtError));
+        if (
+          [
+            "APPLICATION_NOT_SUBMITTED",
+            "CONCURRENT_ACCEPTANCE_CONFLICT",
+            "JOB_NOT_AVAILABLE",
+          ].includes(errorCodeFor(caughtError) ?? "")
+        ) {
+          router.refresh();
+        }
       }
     });
   }

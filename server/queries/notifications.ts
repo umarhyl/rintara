@@ -8,6 +8,7 @@ import type { RequestContext } from "@/server/auth/types";
 import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 import { notifications } from "@/server/db/schema";
+import { getNotificationDestination } from "@/server/queries/notification-destination";
 
 type NotificationsDatabase = PostgresJsDatabase<typeof schema>;
 
@@ -53,17 +54,12 @@ export async function listMyNotifications(
 
   return {
     items: rows.map((row): NotificationListItem => {
-      const href =
-        row.entityType === "agreement" && row.entityId
-          ? `/${actor.role}/agreements/${row.entityId}`
-          : null;
-
       return {
         id: row.id,
         title: row.title,
         body: row.body,
         type: row.type,
-        href,
+        href: getNotificationDestination(actor.role, row),
         readAt: row.readAt,
         createdAt: row.createdAt,
       };

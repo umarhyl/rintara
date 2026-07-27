@@ -37,6 +37,19 @@ function messageFor(error: unknown) {
   return "Koneksi terputus saat mengonfirmasi. Coba lagi sebentar lagi.";
 }
 
+function errorCodeFor(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code;
+  }
+
+  return null;
+}
+
 export function ConfirmAgreementButton({
   agreementId,
   disabled = false,
@@ -63,13 +76,21 @@ export function ConfirmAgreementButton({
       } catch (caughtError) {
         submissionLockRef.current = false;
         setError(messageFor(caughtError));
+        if (errorCodeFor(caughtError) === "INVALID_STATE_TRANSITION") {
+          router.refresh();
+        }
       }
     });
   }
 
   return (
     <div className="grid gap-3">
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!isPending) setOpen(nextOpen);
+        }}
+      >
         <DialogTrigger asChild>
           <Button type="button" className="h-11" disabled={disabled || isPending}>
             <Check aria-hidden="true" />
@@ -113,6 +134,7 @@ export function ConfirmAgreementButton({
               className="h-11"
               disabled={isPending}
               onClick={handleConfirm}
+              aria-busy={isPending}
             >
               {isPending ? (
                 <>

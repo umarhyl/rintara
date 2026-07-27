@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { ApplicationError } from "@/server/errors/application-error";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
-import { getEmployerJob } from "@/server/queries/jobs/get-employer-job";
 import { listJobApplicants } from "@/server/queries/applications/job-applicants";
 
 const statusLabels = {
@@ -40,9 +39,21 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   year: "numeric",
 });
 
+const dateTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Jakarta",
+});
+
 function formatDate(date: Date) {
   return dateFormatter.format(date);
 }
+
+function formatDateTime(date: Date) {
+  return dateTimeFormatter.format(date);
+}
+
+export const dynamic = "force-dynamic";
 
 export default async function ApplicantsPage({
   params,
@@ -57,17 +68,13 @@ export default async function ApplicantsPage({
     "employer",
     `/employer/jobs/${encodeURIComponent(id)}/applicants`,
   );
-  let job;
   let applicantResult;
 
   try {
-    [job, applicantResult] = await Promise.all([
-      getEmployerJob(id),
-      listJobApplicants(
-        id,
-        { cursor: typeof cursor === "string" ? cursor : undefined },
-      ),
-    ]);
+    applicantResult = await listJobApplicants(
+      id,
+      { cursor: typeof cursor === "string" ? cursor : undefined },
+    );
   } catch (error) {
     if (error instanceof ApplicationError && error.code === "JOB_NOT_FOUND") {
       notFound();
@@ -75,10 +82,19 @@ export default async function ApplicantsPage({
     throw error;
   }
 
+  const job = applicantResult.job;
   const applicants = applicantResult.applicants;
-  const activeApplicantCount = applicants.filter(
-    (applicant) => applicant.status === "submitted",
-  ).length;
+  const now = new Date();
+  const activeApplicantCount = applicantResult.job.submittedApplicationCount;
+  const applicationWindowOpen =
+    job.status === "published" && job.applicationDeadline > now;
+  const selectionWindowOpen =
+    job.status === "published" && job.selectionCutoff > now;
+  const selectionDisabledReason = !selectionWindowOpen
+    ? job.status !== "published"
+      ? "Pemilihan pekerja ditutup karena pekerjaan ini tidak lagi berstatus menerima lamaran."
+      : "Batas pemilihan pekerja sudah lewat."
+    : undefined;
 
   return (
     <div className="grid gap-7">
@@ -94,6 +110,61 @@ export default async function ApplicantsPage({
           </p>
         }
       />
+
+      <section
+        aria-label="Jadwal penerimaan pelamar"
+        className="grid gap-3 rounded-xl bg-secondary/70 p-4 sm:grid-cols-3 sm:p-5"
+      >
+        <div>
+          <p className="text-sm text-muted-foreground">Lamaran baru</p>
+          <p className="mt-1 font-semibold">
+            {applicationWindowOpen ? "Masih dibuka" : "Sudah ditutup"}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Batas {formatDateTime(job.applicationDeadline)}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Pemilihan pekerja</p>
+          <p className="mt-1 font-semibold">
+            {selectionWindowOpen ? "Masih dapat dilakukan" : "Sudah ditutup"}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Batas {formatDateTime(job.selectionCutoff)}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Menunggu tinjauan</p>
+          <p className="mt-1 font-semibold tabular-nums">
+            {activeApplicantCount} pelamar
+          </p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Total dari seluruh halaman
+          </p>
+        </div>
+      </section>
+
+      {!applicationWindowOpen && selectionWindowOpen ? (
+        <Alert className="border-primary/20 bg-primary/5">
+          <Clock3 className="text-primary" aria-hidden="true" />
+          <AlertTitle>Lamaran baru sudah ditutup</AlertTitle>
+          <AlertDescription>
+            Pelamar yang sudah masuk tetap dapat ditinjau dan dipilih sampai{" "}
+            {formatDateTime(job.selectionCutoff)}.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!selectionWindowOpen && job.status === "published" ? (
+        <Alert variant="destructive">
+          <Clock3 aria-hidden="true" />
+          <AlertTitle>Pemilihan pekerja sudah ditutup</AlertTitle>
+          <AlertDescription>
+            Tidak ada pekerja yang dapat diterima setelah batas pemilihan.
+            Muat ulang halaman setelah status pekerjaan diperbarui.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {applicants.length === 0 ? (
         <EmptyState
@@ -252,10 +323,11 @@ export default async function ApplicantsPage({
                           applicationId={applicant.id}
                           workerDisplayName={applicant.workerDisplayName}
                           disabledReason={
-                            job.isFirstOpportunity &&
+                            selectionDisabledReason ??
+                            (job.isFirstOpportunity &&
                             !applicant.isEligibleForJobCategoryNow
                               ? "Pekerja ini sudah tidak layak untuk kategori Kesempatan Pertama."
-                              : undefined
+                              : undefined)
                           }
                         />
                       </>

@@ -1,7 +1,7 @@
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
-  applications,
   areas,
   categories,
   employerProfiles,
@@ -19,30 +19,66 @@ import {
 } from "./environment";
 
 const ids = {
-  admin: "00000000-0000-4000-8000-000000000001",
-  employerA: "00000000-0000-4000-8000-000000000002",
-  employerB: "00000000-0000-4000-8000-000000000003",
-  workerNew: "00000000-0000-4000-8000-000000000004",
-  workerSecond: "00000000-0000-4000-8000-000000000005",
-  workerSuspended: "00000000-0000-4000-8000-000000000006",
-  province: "10000000-0000-4000-8000-000000000001",
-  city: "10000000-0000-4000-8000-000000000002",
-  shopHelper: "20000000-0000-4000-8000-000000000001",
-  packingHelper: "20000000-0000-4000-8000-000000000002",
-  eventHelper: "20000000-0000-4000-8000-000000000003",
-  lightCleaning: "20000000-0000-4000-8000-000000000004",
-  simpleAdministration: "20000000-0000-4000-8000-000000000005",
-  eventGuideline: "30000000-0000-4000-8000-000000000001",
-  cleaningGuideline: "30000000-0000-4000-8000-000000000002",
-  demoFirstOpportunityJob: "40000000-0000-4000-8000-000000000001",
-  demoGeneralJob: "40000000-0000-4000-8000-000000000002",
-  demoApplicationA: "50000000-0000-4000-8000-000000000001",
-  demoApplicationB: "50000000-0000-4000-8000-000000000002",
+  admin: "7fb8d486-df08-48e7-94cd-589f30b4c070",
+  employerA: "0cf6f79f-4808-4557-a8bf-5bafbf56f4ad",
+  employerB: "5ddc431d-3fdf-4185-ad45-5f30bf9ec760",
+  workerNew: "0f9f1f1a-33c6-49b3-b4be-e00f2726d0d0",
+  workerSecond: "dcc68f58-7ad7-40f2-8a89-4239fa6d247a",
+  workerSuspended: "46b691dc-a0f9-4f71-9376-9c710cc9c09f",
+  jakartaProvince: "ddf8ce08-80e2-4570-a0a7-1ab117db6281",
+  southJakartaCity: "eeb72d1b-c74e-49d8-8257-2f90f967f41d",
+  shopHelper: "e4eaf555-13cb-4bd5-8b43-97a4b9e479a6",
+  packingHelper: "ef37354d-aacf-4a84-90be-f5ddd7801c7d",
+  eventHelper: "780eaeb9-3de5-4a7f-8cbf-a3f37014bb14",
+  lightCleaning: "7c89345a-18a4-4084-8feb-5d0558843003",
+  simpleAdministration: "794ea11d-bab0-4f20-b457-55ce80b7736c",
+  shopGuideline: "06e07143-1016-4925-8e99-f77a59dc0786",
+  packingGuideline: "3ffbf485-08e8-4dd5-9002-87ba9d6ad28b",
+  eventGuideline: "c47dbb9c-01c7-4a71-95e1-354e04f7e712",
+  cleaningGuideline: "d58d9a30-a6b6-40b7-97e5-d96465c23a7e",
+  administrationGuideline: "0f1ff4c2-6e2f-4dd5-8c88-37f91bed819e",
+  demoFirstOpportunityJob: "f43fd7c5-9b15-41db-8d02-5267c12a58a6",
+  demoGeneralJob: "4eb0ba68-2875-4bfe-80dc-44bd836742bb",
 } as const;
 
-const seedTime = new Date("2026-07-20T02:00:00.000Z");
-const applicationDeadline = new Date("2026-07-28T10:00:00.000Z");
-const jobStart = new Date("2026-07-30T02:00:00.000Z");
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const seedTime = new Date();
+const firstOpportunityDeadline = addDays(seedTime, 3);
+const firstOpportunityStart = addDays(seedTime, 5);
+const boostTargetDeadline = addDays(seedTime, 4);
+const boostTargetStart = addDays(seedTime, 7);
+
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * DAY_IN_MS);
+}
+
+async function resetDomainData(
+  database: ReturnType<typeof drizzle>,
+) {
+  await database.execute(sql`
+    truncate table
+      public.job_boosts,
+      public.opportunity_credits,
+      public.work_proofs,
+      public.work_sessions,
+      public.reports,
+      public.notifications,
+      public.idempotency_keys,
+      public.audit_logs,
+      public.agreements,
+      public.applications,
+      public.job_private_details,
+      public.jobs,
+      public.worker_interests,
+      public.wage_guidelines,
+      public.employer_profiles,
+      public.worker_profiles,
+      public.users,
+      public.categories,
+      public.areas
+    restart identity cascade
+  `);
+}
 
 async function seed() {
   assertSeedAllowed();
@@ -55,13 +91,15 @@ async function seed() {
   const database = drizzle(client);
 
   try {
+    await resetDomainData(database);
+
     await database.transaction(async (tx) => {
       await tx
         .insert(users)
         .values([
           {
             id: ids.admin,
-            authSubject: "seed-admin",
+            authSubject: "rintara-seed-admin",
             role: "admin",
             status: "active",
             createdAt: seedTime,
@@ -69,7 +107,7 @@ async function seed() {
           },
           {
             id: ids.employerA,
-            authSubject: "seed-employer-a",
+            authSubject: "rintara-seed-employer-sinar-event-studio",
             role: "employer",
             status: "active",
             createdAt: seedTime,
@@ -77,7 +115,7 @@ async function seed() {
           },
           {
             id: ids.employerB,
-            authSubject: "seed-employer-b",
+            authSubject: "rintara-seed-employer-warung-nusa",
             role: "employer",
             status: "active",
             createdAt: seedTime,
@@ -85,7 +123,7 @@ async function seed() {
           },
           {
             id: ids.workerNew,
-            authSubject: "seed-worker-new",
+            authSubject: "rintara-seed-worker-ayu-pratama",
             role: "worker",
             status: "active",
             createdAt: seedTime,
@@ -93,7 +131,7 @@ async function seed() {
           },
           {
             id: ids.workerSecond,
-            authSubject: "seed-worker-second",
+            authSubject: "rintara-seed-worker-bima-saputra",
             role: "worker",
             status: "active",
             createdAt: seedTime,
@@ -101,7 +139,7 @@ async function seed() {
           },
           {
             id: ids.workerSuspended,
-            authSubject: "seed-worker-suspended",
+            authSubject: "rintara-seed-worker-raka-suspended",
             role: "worker",
             status: "suspended",
             createdAt: seedTime,
@@ -114,17 +152,17 @@ async function seed() {
         .insert(areas)
         .values([
           {
-            id: ids.province,
-            code: "SEED-PROVINCE",
-            name: "Provinsi Demo",
+            id: ids.jakartaProvince,
+            code: "ID-JK",
+            name: "DKI Jakarta",
             level: "province",
             isActive: true,
           },
           {
-            id: ids.city,
-            parentId: ids.province,
-            code: "SEED-CITY",
-            name: "Kota Demo",
+            id: ids.southJakartaCity,
+            parentId: ids.jakartaProvince,
+            code: "ID-JK-JS",
+            name: "Kota Jakarta Selatan",
             level: "city_regency",
             isActive: true,
           },
@@ -137,35 +175,35 @@ async function seed() {
           {
             id: ids.shopHelper,
             slug: "shop-helper",
-            name: "Shop Helper",
+            name: "Asisten Toko",
             riskLevel: "low",
             firstOpportunityAllowed: true,
           },
           {
             id: ids.packingHelper,
             slug: "packing-helper",
-            name: "Light Packing and Warehouse Helper",
+            name: "Helper Packing Ringan",
             riskLevel: "low",
             firstOpportunityAllowed: true,
           },
           {
             id: ids.eventHelper,
             slug: "event-helper",
-            name: "Event Helper",
+            name: "Helper Acara",
             riskLevel: "low",
             firstOpportunityAllowed: true,
           },
           {
             id: ids.lightCleaning,
             slug: "light-cleaning",
-            name: "Light Cleaning",
+            name: "Bersih-Bersih Ringan",
             riskLevel: "low",
             firstOpportunityAllowed: true,
           },
           {
             id: ids.simpleAdministration,
             slug: "simple-administration",
-            name: "Simple Administration and Data Entry",
+            name: "Administrasi Sederhana",
             riskLevel: "low",
             firstOpportunityAllowed: true,
           },
@@ -179,17 +217,17 @@ async function seed() {
             userId: ids.employerA,
             displayName: "Sinar Event Studio",
             employerType: "business",
-            areaId: ids.city,
-            description: "Synthetic employer for the Rintara demo.",
+            areaId: ids.southJakartaCity,
+            description: "Studio acara kecil yang rutin membuka bantuan harian untuk persiapan kelas dan lokakarya.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
           {
             userId: ids.employerB,
-            displayName: "Toko Contoh Bersama",
+            displayName: "Warung Nusa Kebayoran",
             employerType: "business",
-            areaId: ids.city,
-            description: "Synthetic secondary employer for authorization tests.",
+            areaId: ids.southJakartaCity,
+            description: "Toko kebutuhan harian yang menerima bantuan ringan untuk penataan rak dan pengemasan.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
@@ -202,25 +240,25 @@ async function seed() {
           {
             userId: ids.workerNew,
             displayName: "Ayu Pratama",
-            areaId: ids.city,
-            bio: "Synthetic worker with no verified Work Proof.",
-            availabilityNote: "Available for the demo schedule.",
+            areaId: ids.southJakartaCity,
+            bio: "Baru mulai mencari pengalaman kerja harian di sekitar Jakarta Selatan.",
+            availabilityNote: "Bisa hadir pagi atau siang sesuai jadwal pekerjaan.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
           {
             userId: ids.workerSecond,
             displayName: "Bima Saputra",
-            areaId: ids.city,
-            bio: "Synthetic worker for concurrent application tests.",
+            areaId: ids.southJakartaCity,
+            bio: "Tertarik membantu pekerjaan operasional ringan dan acara komunitas.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
           {
             userId: ids.workerSuspended,
-            displayName: "Pengguna Ditangguhkan",
-            areaId: ids.city,
-            bio: "Synthetic suspended account for authorization tests.",
+            displayName: "Raka Mahendra",
+            areaId: ids.southJakartaCity,
+            bio: "Akun contoh dengan status ditangguhkan untuk pengecekan akses admin.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
@@ -240,13 +278,43 @@ async function seed() {
         .insert(wageGuidelines)
         .values([
           {
+            id: ids.shopGuideline,
+            areaId: ids.southJakartaCity,
+            categoryId: ids.shopHelper,
+            unit: "day",
+            minimumAmount: BigInt(135_000),
+            recommendedAmount: BigInt(175_000),
+            sourceLabel: "Simulasi Rintara - Jakarta Selatan 2026",
+            isSimulated: true,
+            effectiveFrom: "2026-07-01",
+            isActive: true,
+            createdBy: ids.admin,
+            createdAt: seedTime,
+            updatedAt: seedTime,
+          },
+          {
+            id: ids.packingGuideline,
+            areaId: ids.southJakartaCity,
+            categoryId: ids.packingHelper,
+            unit: "day",
+            minimumAmount: BigInt(140_000),
+            recommendedAmount: BigInt(185_000),
+            sourceLabel: "Simulasi Rintara - Jakarta Selatan 2026",
+            isSimulated: true,
+            effectiveFrom: "2026-07-01",
+            isActive: true,
+            createdBy: ids.admin,
+            createdAt: seedTime,
+            updatedAt: seedTime,
+          },
+          {
             id: ids.eventGuideline,
-            areaId: ids.city,
+            areaId: ids.southJakartaCity,
             categoryId: ids.eventHelper,
             unit: "job",
             minimumAmount: BigInt(150_000),
             recommendedAmount: BigInt(200_000),
-            sourceLabel: "Rintara simulation data",
+            sourceLabel: "Simulasi Rintara - Jakarta Selatan 2026",
             isSimulated: true,
             effectiveFrom: "2026-07-01",
             isActive: true,
@@ -256,12 +324,27 @@ async function seed() {
           },
           {
             id: ids.cleaningGuideline,
-            areaId: ids.city,
+            areaId: ids.southJakartaCity,
             categoryId: ids.lightCleaning,
             unit: "day",
             minimumAmount: BigInt(125_000),
             recommendedAmount: BigInt(175_000),
-            sourceLabel: "Rintara simulation data",
+            sourceLabel: "Simulasi Rintara - Jakarta Selatan 2026",
+            isSimulated: true,
+            effectiveFrom: "2026-07-01",
+            isActive: true,
+            createdBy: ids.admin,
+            createdAt: seedTime,
+            updatedAt: seedTime,
+          },
+          {
+            id: ids.administrationGuideline,
+            areaId: ids.southJakartaCity,
+            categoryId: ids.simpleAdministration,
+            unit: "hour",
+            minimumAmount: BigInt(25_000),
+            recommendedAmount: BigInt(35_000),
+            sourceLabel: "Simulasi Rintara - Jakarta Selatan 2026",
             isSimulated: true,
             effectiveFrom: "2026-07-01",
             isActive: true,
@@ -279,22 +362,22 @@ async function seed() {
             id: ids.demoFirstOpportunityJob,
             employerId: ids.employerA,
             categoryId: ids.eventHelper,
-            areaId: ids.city,
-            title: "Event Helper Demo",
-            description: "Help prepare a small synthetic community event.",
-            taskScope: "Arrange lightweight chairs, registration materials, and signs.",
-            publicLocationLabel: "Kota Demo",
-            startsAt: jobStart,
+            areaId: ids.southJakartaCity,
+            title: "Helper Registrasi Workshop Kreatif",
+            description: "Bantu tim menyiapkan meja registrasi, merapikan kursi, dan menyambut peserta workshop kreatif skala kecil.",
+            taskScope: "Menata kursi ringan, menyiapkan daftar hadir, membagikan name tag, dan merapikan area setelah acara.",
+            publicLocationLabel: "Kebayoran Baru, Jakarta Selatan",
+            startsAt: firstOpportunityStart,
             estimatedMinutes: 240,
             wageAmount: BigInt(200_000),
             wageUnit: "job",
             wageStatus: "compliant",
-            paymentMethod: "Cash outside Rintara",
-            paymentTiming: "After the work is completed",
-            toolsProvided: "Event materials and lightweight equipment",
+            paymentMethod: "Tunai di lokasi",
+            paymentTiming: "Setelah pekerjaan selesai dan diverifikasi",
+            toolsProvided: "Daftar hadir, name tag, pulpen, dan perlengkapan acara ringan",
             riskLevel: "low",
             isFirstOpportunity: true,
-            applicationDeadline,
+            applicationDeadline: firstOpportunityDeadline,
             status: "published",
             visibility: "visible",
             publishedAt: seedTime,
@@ -305,22 +388,22 @@ async function seed() {
             id: ids.demoGeneralJob,
             employerId: ids.employerA,
             categoryId: ids.lightCleaning,
-            areaId: ids.city,
-            title: "Light Cleaning Demo",
-            description: "Light cleaning for a synthetic meeting room.",
-            taskScope: "Sweep, wipe tables, and organize lightweight chairs.",
-            publicLocationLabel: "Kota Demo",
-            startsAt: jobStart,
+            areaId: ids.southJakartaCity,
+            title: "Rapikan Studio Setelah Kelas Sore",
+            description: "Bantu merapikan studio kecil setelah kelas sore selesai agar ruangan siap dipakai keesokan pagi.",
+            taskScope: "Menyapu area utama, mengelap meja, mengumpulkan sampah ringan, dan menata kursi kembali.",
+            publicLocationLabel: "Pancoran, Jakarta Selatan",
+            startsAt: boostTargetStart,
             estimatedMinutes: 180,
             wageAmount: BigInt(125_000),
             wageUnit: "day",
             wageStatus: "compliant",
-            paymentMethod: "Cash outside Rintara",
-            paymentTiming: "After the work is completed",
-            toolsProvided: "Basic cleaning tools",
+            paymentMethod: "Transfer bank",
+            paymentTiming: "Maksimal malam di hari kerja selesai",
+            toolsProvided: "Sapu, lap meja, kantong sampah, dan cairan pembersih ringan",
             riskLevel: "low",
             isFirstOpportunity: false,
-            applicationDeadline,
+            applicationDeadline: boostTargetDeadline,
             status: "published",
             visibility: "visible",
             publishedAt: seedTime,
@@ -335,45 +418,25 @@ async function seed() {
         .values([
           {
             jobId: ids.demoFirstOpportunityJob,
-            fullAddress: "Alamat sintetis khusus pengujian Event Helper",
-            arrivalInstructions: "Instruksi sintetis; tidak mewakili lokasi nyata.",
+            fullAddress: "Jl. Kenanga Raya No. 18, Kebayoran Baru, Jakarta Selatan",
+            arrivalInstructions: "Masuk lewat lobi utama dan sebut bertemu koordinator acara Rintara.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
           {
             jobId: ids.demoGeneralJob,
-            fullAddress: "Alamat sintetis khusus pengujian Light Cleaning",
-            arrivalInstructions: "Instruksi sintetis; tidak mewakili lokasi nyata.",
+            fullAddress: "Jl. Melati Dalam No. 7, Pancoran, Jakarta Selatan",
+            arrivalInstructions: "Datang ke pintu samping studio dan hubungi staf resepsionis.",
             createdAt: seedTime,
             updatedAt: seedTime,
           },
         ])
         .onConflictDoNothing();
-
-      await tx
-        .insert(applications)
-        .values([
-          {
-            id: ids.demoApplicationA,
-            jobId: ids.demoFirstOpportunityJob,
-            workerId: ids.workerNew,
-            note: "Synthetic application note from Ayu.",
-            firstOpportunityEligibleAtSubmission: true,
-            status: "submitted",
-            submittedAt: new Date("2026-07-20T03:00:00.000Z"),
-          },
-          {
-            id: ids.demoApplicationB,
-            jobId: ids.demoFirstOpportunityJob,
-            workerId: ids.workerSecond,
-            note: "Synthetic application note from Bima.",
-            firstOpportunityEligibleAtSubmission: true,
-            status: "submitted",
-            submittedAt: new Date("2026-07-20T03:05:00.000Z"),
-          },
-        ])
-        .onConflictDoNothing();
     });
+
+    console.info(
+      "Seed reset complete: 6 users, 1 province, 1 city, 5 categories, 5 wage guidelines, 2 published jobs, 0 applications.",
+    );
   } finally {
     await client.end({ timeout: 5 });
   }

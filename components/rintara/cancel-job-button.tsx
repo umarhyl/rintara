@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { cancelJob } from "@/server/domain/jobs/actions";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function CancelJobButton({
   jobId: string;
   disabled?: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -63,8 +65,10 @@ export function CancelJobButton({
     startTransition(async () => {
       try {
         await cancelJob(jobId, { reason });
+        submissionLockRef.current = false;
         setOpen(false);
         setReason("");
+        router.refresh();
       } catch (caughtError) {
         submissionLockRef.current = false;
         setError(messageFor(caughtError));

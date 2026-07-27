@@ -177,6 +177,15 @@ export async function confirmAgreement(
   if (outcome.changed) {
     revalidatePath(`/worker/agreements/${outcome.result.agreementId}`);
     revalidatePath(`/employer/agreements/${outcome.result.agreementId}`);
+    revalidatePath("/worker/dashboard");
+    revalidatePath("/employer/dashboard");
+    revalidatePath("/worker/notifications");
+    revalidatePath("/employer/notifications");
+
+    if (outcome.result.status === "active") {
+      revalidatePath(`/worker/work/${outcome.result.agreementId}`);
+      revalidatePath(`/employer/work/${outcome.result.agreementId}`);
+    }
   }
 
   return outcome.result;

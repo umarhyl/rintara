@@ -48,7 +48,7 @@ function formatDuration(minutes: number) {
 }
 
 function statusLabel(status: EmployerJobDetail["status"]) {
-  if (status === "draft") return "Draft";
+  if (status === "draft") return "Draf";
   if (status === "published") return "Menerima lamaran";
   if (status === "filled") return "Terisi";
   if (status === "in_progress") return "Berjalan";
@@ -252,7 +252,7 @@ export default async function EmployerJobPage({
               asChild
             >
               <Link href={`/employer/jobs/${job.id}/edit`}>
-                Edit draft <Pencil aria-hidden="true" />
+                Edit draf <Pencil aria-hidden="true" />
               </Link>
             </Button>
           ) : (

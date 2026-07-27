@@ -247,11 +247,142 @@ databaseTest(
       const { listMyApplications } = await import(
         "@/server/queries/applications/worker-applications"
       );
+      const { getWorkerJobApplicationState } = await import(
+        "@/server/queries/applications/worker-job-application"
+      );
+      const { listMyNotifications } = await import(
+        "@/server/queries/notifications"
+      );
+
+      await expect(
+        submitApplication("not-a-job-id", {
+          note: "Catatan ini valid tetapi pengenal pekerjaannya tidak valid.",
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        withdrawApplication("not-an-application-id"),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+      await expect(
+        getWorkerJobApplicationState(
+          "not-a-job-id",
+          workerContext,
+          database,
+          now,
+        ),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
+
+      await expect(
+        getWorkerJobApplicationState(
+          normalJobId,
+          workerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({ state: "eligible" });
+      await expect(
+        getWorkerJobApplicationState(
+          firstOpportunityJobId,
+          experiencedWorkerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({ state: "ineligible" });
+      await expect(
+        getWorkerJobApplicationState(
+          previousJobId,
+          experiencedWorkerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({
+        state: "existing",
+        applicationStatus: "accepted",
+        agreementId: previousAgreementId,
+      });
+      await expect(
+        getWorkerJobApplicationState(
+          lateJobId,
+          workerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({ state: "unavailable" });
+      await expect(
+        getWorkerJobApplicationState(
+          randomUUID(),
+          workerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({ state: "unavailable" });
+      await expect(
+        getWorkerJobApplicationState(
+          normalJobId,
+          employerContext,
+          database,
+          now,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      const experiencedHistory = await listMyApplications(
+        {},
+        experiencedWorkerContext,
+        database,
+        now,
+      );
+      expect(experiencedHistory.items).toHaveLength(1);
+      expect(experiencedHistory.items[0]).toMatchObject({
+        id: previousApplicationId,
+        publicDetailAvailable: false,
+      });
 
       const application = await submitApplication(normalJobId, {
         note: "Saya tersedia sesuai jadwal dan siap mengikuti arahan tugas.",
       });
       expect(application.status).toBe("submitted");
+      await expect(
+        getWorkerJobApplicationState(
+          normalJobId,
+          workerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({
+        state: "existing",
+        applicationStatus: "submitted",
+      });
+
+      const notificationsAfterSubmission = await listMyNotifications(
+        employerContext,
+        database,
+      );
+      expect(notificationsAfterSubmission.items).toHaveLength(1);
+      expect(notificationsAfterSubmission.items[0]).toMatchObject({
+        type: "application_submitted",
+        title: "Lamaran baru diterima",
+        href: `/employer/jobs/${normalJobId}/applicants`,
+      });
+      expect(notificationsAfterSubmission.items[0]!.body).toContain(
+        "Pekerjaan Lamaran Normal",
+      );
+      expect(notificationsAfterSubmission.items[0]!.body).not.toContain(
+        "Saya tersedia",
+      );
+      expect(notificationsAfterSubmission.items[0]!.body).not.toContain(
+        "Alamat privat",
+      );
+      const submissionAuditRows = await database
+        .select()
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.entityId, application.applicationId));
+      expect(submissionAuditRows).toHaveLength(1);
+      expect(submissionAuditRows[0]).toMatchObject({
+        actorId: workerId,
+        action: "submit_application",
+        entityType: "application",
+      });
+      expect(JSON.stringify(submissionAuditRows[0]!.metadata)).not.toContain(
+        "Saya tersedia",
+      );
 
       await database.insert(schema.applications).values({
         id: paginatedApplicationId,
@@ -266,6 +397,7 @@ databaseTest(
         { limit: 1 },
         undefined,
         database,
+        now,
       );
       expect(firstPage.items).toHaveLength(1);
       expect(firstPage.items[0]!.id).toBe(application.applicationId);
@@ -276,6 +408,7 @@ databaseTest(
         { cursor: firstPage.nextCursor!, limit: 1 },
         undefined,
         database,
+        now,
       );
       expect(secondPage.items.map(({ id }) => id)).toEqual([
         paginatedApplicationId,
@@ -317,6 +450,9 @@ databaseTest(
           note: "Saya mencoba mengirim lamaran kedua untuk pekerjaan sama.",
         }),
       ).rejects.toMatchObject({ code: "APPLICATION_ALREADY_EXISTS" });
+      expect(
+        (await listMyNotifications(employerContext, database)).items,
+      ).toHaveLength(1);
 
       await expect(
         submitApplication(lateJobId, {
@@ -350,9 +486,60 @@ databaseTest(
       expect(withdrawnRow.status).toBe("withdrawn");
       expect(withdrawnRow.withdrawnAt).not.toBeNull();
 
+      const notificationsAfterWithdrawal = await listMyNotifications(
+        employerContext,
+        database,
+      );
+      expect(notificationsAfterWithdrawal.items).toHaveLength(2);
+      expect(notificationsAfterWithdrawal.items[0]).toMatchObject({
+        type: "application_withdrawn",
+        title: "Lamaran ditarik",
+        href: `/employer/jobs/${normalJobId}/applicants`,
+      });
+      expect(notificationsAfterWithdrawal.items[0]!.body).not.toContain(
+        "Saya tersedia",
+      );
+      const applicationAuditRows = await database
+        .select()
+        .from(schema.auditLogs)
+        .where(eq(schema.auditLogs.entityId, application.applicationId));
+      expect(
+        applicationAuditRows.map(({ action }) => action).sort(),
+      ).toEqual(["submit_application", "withdraw_application"]);
+
+      const activeApplications = await listMyApplications(
+        { view: "active" },
+        workerContext,
+        database,
+        now,
+      );
+      expect(activeApplications.items.map(({ id }) => id)).toEqual([
+        paginatedApplicationId,
+      ]);
+      const historicalApplications = await listMyApplications(
+        { view: "history" },
+        workerContext,
+        database,
+        now,
+      );
+      expect(historicalApplications.items.map(({ id }) => id)).toEqual([
+        application.applicationId,
+      ]);
+
       await expect(
         withdrawApplication(application.applicationId),
       ).rejects.toMatchObject({ code: "APPLICATION_NOT_WITHDRAWABLE" });
+      expect(
+        (await listMyNotifications(employerContext, database)).items,
+      ).toHaveLength(2);
+      expect(
+        (
+          await database
+            .select()
+            .from(schema.auditLogs)
+            .where(eq(schema.auditLogs.entityId, application.applicationId))
+        ).map(({ action }) => action).sort(),
+      ).toEqual(["submit_application", "withdraw_application"]);
     } finally {
       await client.end({ timeout: 5 });
     }

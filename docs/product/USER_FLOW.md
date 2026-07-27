@@ -274,8 +274,18 @@ Alternative paths:
    applicable semantic status before the action. Payment/tool terms and the
    privacy notice follow; the full address remains hidden.
 6. For a First Opportunity job, the server checks the worker's category proof.
-7. Eligible worker selects **Apply**, writes a short note, reviews the fixed wage, and submits.
-8. Worker sees the submitted status in **My applications**.
+7. For an active Worker, the detail action privately reads the current
+   application state before showing a form. A previous application is shown as
+   its recorded status, even if the job later leaves public discovery.
+8. Eligible worker selects **Apply**, writes a short note, reviews the fixed
+   wage, and submits.
+9. Worker sees the submitted status in **My applications** and the Employer
+   receives a safe job-linked notification that does not copy the note or
+   private address.
+10. **My applications** separates active (`submitted`, `accepted`) and history
+    (`rejected`, `withdrawn`) before pagination. Closed job titles remain
+    readable but do not link to an unavailable public detail; accepted
+    applications link to their Mini Agreement when one exists.
 
 Discovery, **My applications**, employer jobs, and applicant lists expose
 forward navigation only when another bounded cursor page exists. The next link
@@ -293,7 +303,8 @@ Alternative paths:
 - Worker is already verified in that category: explain that the specific job is reserved for a first opportunity and suggest other jobs.
 - Duplicate application: show the existing application rather than creating another.
 - Job closes during submission: show that it is no longer available and return to discovery.
-- Worker may withdraw while status is `submitted`.
+- Worker may withdraw while status is `submitted`; the Employer receives one
+  safe update and a repeated withdrawal does not create another notification.
 
 ## 7. Employer Reviews and Accepts an Applicant
 

@@ -582,6 +582,16 @@ databaseTest(
         requestId: "confirm-cancelled",
       };
       await expect(
+        getAgreement(existingRollbackAgreementId),
+      ).resolves.toMatchObject({
+        status: "cancelled",
+        cancellation: {
+          reason: "Cancelled fixture.",
+          cancelledAt: expect.any(String),
+        },
+        allowedActions: { confirm: false },
+      });
+      await expect(
         confirmAgreement(existingRollbackAgreementId),
       ).rejects.toMatchObject({
         code: "INVALID_STATE_TRANSITION",

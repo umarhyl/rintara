@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { parsePublicAccountState } from "@/features/auth/use-public-auth-state";
+import { parseWorkerJobApplicationState } from "@/features/jobs/worker-job-application-state";
 
 describe("public job application account flow", () => {
   test("parses only the supported presentation states and roles", () => {
@@ -121,6 +122,13 @@ describe("public job application account flow", () => {
     expect(action).toContain(
       'accountState.kind === "ready" && accountState.role === "worker"',
     );
+    expect(action).toContain(
+      "fetch(`/jobs/${jobId}/application-status`",
+    );
+    expect(action).toContain('check.value.state === "eligible"');
+    expect(action).toContain('value.state === "ineligible"');
+    expect(action).toContain('value.state === "unavailable"');
+    expect(action).toContain('value.applicationStatus');
     expect(action).toContain("<JobApplicationForm jobId={jobId} />");
     expect(action).toContain(
       'href={{ pathname: "/sign-in", query: { next: `/jobs/${jobId}` } }}',
@@ -140,6 +148,53 @@ describe("public job application account flow", () => {
       'state.kind === "ready" || state.kind === "anonymous"',
     );
     expect(hook).toContain("return 0;");
+  });
+
+  test("accepts only safe worker application presentation states", () => {
+    expect(parseWorkerJobApplicationState({ state: "eligible" })).toEqual({
+      state: "eligible",
+    });
+    expect(
+      parseWorkerJobApplicationState({
+        state: "existing",
+        applicationStatus: "accepted",
+        agreementId: "agreement-id",
+      }),
+    ).toEqual({
+      state: "existing",
+      applicationStatus: "accepted",
+      agreementId: "agreement-id",
+    });
+    expect(
+      parseWorkerJobApplicationState({
+        state: "existing",
+        applicationStatus: "unknown",
+      }),
+    ).toBeNull();
+    expect(parseWorkerJobApplicationState({ state: "admin" })).toBeNull();
+    expect(parseWorkerJobApplicationState(null)).toBeNull();
+  });
+
+  test("keeps the application-state read private and server-authorized", () => {
+    const route = readFileSync(
+      "app/jobs/[id]/application-status/route.ts",
+      "utf8",
+    );
+    const query = readFileSync(
+      "server/queries/applications/worker-job-application.ts",
+      "utf8",
+    );
+
+    expect(route).toContain('"Cache-Control": "private, no-store, max-age=0"');
+    expect(route).toContain('Vary: "Cookie"');
+    expect(route).toContain("getWorkerJobApplicationState(id)");
+    expect(route).not.toContain("error.message");
+    expect(query).toContain("assertActiveUser");
+    expect(query).toContain('"worker"');
+    expect(query).toContain("workProofs.verificationStatus");
+    expect(query).toContain("workProofs.revokedAt");
+    expect(query).not.toContain("jobPrivateDetails");
+    expect(query).not.toContain("fullAddress");
   });
 
   test("keeps recoverable form input and offers recovery routes", () => {
