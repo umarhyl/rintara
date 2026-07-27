@@ -7,6 +7,12 @@ export async function GET(request: NextRequest) {
   const next = safeApplicationPath(request.nextUrl.searchParams.get("next"));
 
   function failedAuthenticationUrl() {
+    if (next === "/reset-password") {
+      const recoveryUrl = new URL("/forgot-password", request.url);
+      recoveryUrl.searchParams.set("error", "recovery_failed");
+      return recoveryUrl;
+    }
+
     const signInUrl = new URL("/sign-in", request.url);
     signInUrl.searchParams.set("error", "authentication_failed");
     if (next !== "/account/continue") signInUrl.searchParams.set("next", next);

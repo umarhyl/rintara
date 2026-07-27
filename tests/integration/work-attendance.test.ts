@@ -15,6 +15,8 @@ import * as schema from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
 
 const databaseTest = process.env.TEST_DATABASE_URL ? test : test.skip;
+process.env.CHECK_IN_CODE_PEPPER =
+  "rintara-test-only-check-in-code-pepper-32-characters";
 
 databaseTest(
   "handles check-in code lifecycle, check-out, active report block, and one Work Proof",
@@ -276,9 +278,34 @@ databaseTest(
       activeContext = employerContext;
       const replacement = await generateCheckInCode(agreementId);
       activeContext = workerContext;
+      const invalidReplacementCode =
+        replacement.code === "000000" ? "000001" : "000000";
+
+      for (let attempt = 1; attempt <= 5; attempt += 1) {
+        await expect(
+          checkIn({ agreementId, code: invalidReplacementCode }),
+        ).rejects.toMatchObject({
+          code: attempt === 5 ? "CODE_LOCKED" : "CODE_INVALID",
+        });
+      }
+      const [lockedSession] = await database
+        .select({
+          failedAttempts: schema.workSessions.checkInFailedAttempts,
+        })
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, agreementId))
+        .limit(1);
+      expect(lockedSession.failedAttempts).toBe(5);
+      await expect(
+        checkIn({ agreementId, code: replacement.code }),
+      ).rejects.toMatchObject({ code: "CODE_LOCKED" });
+
+      activeContext = employerContext;
+      const usableReplacement = await generateCheckInCode(agreementId);
+      activeContext = workerContext;
       const checkInResult = await checkIn({
         agreementId,
-        code: replacement.code,
+        code: usableReplacement.code,
       });
       expect(checkInResult).toMatchObject({ agreementId, status: "checked_in" });
 
@@ -287,7 +314,7 @@ databaseTest(
       expect(checkedInView.jobStatus).toBe("in_progress");
       expect(checkedInView.allowedActions.checkOut).toBe(true);
 
-      await expect(checkIn({ agreementId, code: replacement.code })).rejects.toMatchObject({
+      await expect(checkIn({ agreementId, code: usableReplacement.code })).rejects.toMatchObject({
         code: "INVALID_STATE_TRANSITION",
       });
 

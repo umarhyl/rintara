@@ -211,6 +211,10 @@ Shared authentication presentation:
   form without a documentary image.
 - Authentication errors remain on the sign-in screen with safe recovery copy;
   provider messages are not exposed.
+- **Lupa kata sandi?** opens `/forgot-password`. The request always shows the
+  same confirmation regardless of whether the email is registered. A valid
+  Supabase recovery callback opens `/reset-password`; an invalid or expired
+  callback returns to recovery with a safe retry message.
 - Rintara uses one light appearance; authentication exposes no appearance
   switch and never resets entered fields during route changes or recovery.
 - When authentication starts from a protected public action, sign-in, registration, and onboarding preserve the validated internal destination and return the completed user there.
@@ -418,7 +422,8 @@ Alternative paths:
 2. User selects a defined reason and adds an optional factual description.
 3. Rintara explains what reports can and cannot resolve.
 4. User submits; server verifies relationship and applies rate limits.
-5. User sees report reference and `open` status.
+5. User opens **Laporan saya** to see the report reference and current status
+   without private moderator notes.
 6. If related work is unfinished, completion is blocked while report is active.
 
 ### 12.2 Admin processes a report
@@ -444,6 +449,8 @@ Notification center covers:
 - report status changes.
 
 User opens notification to the authorized destination. If the destination is no longer accessible, show a safe unavailable state. Polling/revalidation is sufficient; immediate realtime delivery is not promised.
+Worker and employer feeds provide **Tandai dibaca**, **Tandai semua dibaca**,
+and bounded cursor pagination.
 
 ## 14. Privacy Flow Rules
 

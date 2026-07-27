@@ -13,6 +13,7 @@ import {
   notifications,
   opportunityCredits,
   reports,
+  users,
   workProofs,
   workSessions,
 } from "@/server/db/schema";
@@ -82,9 +83,22 @@ function makeCode() {
   return randomInt(0, 1_000_000).toString().padStart(6, "0");
 }
 
+function getCheckInCodePepper() {
+  const pepper = process.env.CHECK_IN_CODE_PEPPER;
+  if (!pepper || pepper.length < 32) {
+    throw new Error(
+      "CHECK_IN_CODE_PEPPER must be configured with at least 32 characters.",
+    );
+  }
+
+  return pepper;
+}
+
 function hashCode(code: string) {
   const salt = randomBytes(16).toString("base64url");
-  const digest = scryptSync(code, salt, 32).toString("base64url");
+  const digest = scryptSync(`${getCheckInCodePepper()}:${code}`, salt, 32).toString(
+    "base64url",
+  );
   return `scrypt:${salt}:${digest}`;
 }
 
@@ -94,7 +108,11 @@ function verifyCode(code: string, storedHash: string | null) {
   const [algorithm, salt, digest] = storedHash.split(":");
   if (algorithm !== "scrypt" || !salt || !digest) return false;
 
-  const actual = Buffer.from(scryptSync(code, salt, 32).toString("base64url"));
+  const actual = Buffer.from(
+    scryptSync(`${getCheckInCodePepper()}:${code}`, salt, 32).toString(
+      "base64url",
+    ),
+  );
   const expected = Buffer.from(digest);
 
   return actual.length === expected.length && timingSafeEqual(actual, expected);
@@ -217,7 +235,7 @@ export async function checkIn(input: unknown): Promise<CheckInResult> {
 
   const now = new Date();
 
-  const result = await db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
     const [row] = await tx
       .select({
         agreementId: agreements.id,
@@ -272,7 +290,17 @@ export async function checkIn(input: unknown): Promise<CheckInResult> {
           updatedAt: now,
         })
         .where(eq(workSessions.id, row.sessionId));
-      throw new ApplicationError("CODE_INVALID", "The check-in code is invalid.");
+      if (row.checkInFailedAttempts + 1 >= MAX_FAILED_ATTEMPTS) {
+        return {
+          ok: false as const,
+          errorCode: "CODE_LOCKED" as const,
+        };
+      }
+
+      return {
+        ok: false as const,
+        errorCode: "CODE_INVALID" as const,
+      };
     }
 
     assertWorkSessionTransition(row.sessionStatus, "checked_in");
@@ -317,15 +345,23 @@ export async function checkIn(input: unknown): Promise<CheckInResult> {
       createdAt: now,
     });
 
-    return session;
+    return { ok: true as const, session };
   });
 
-  revalidateWork(result.agreementId);
+  if (!outcome.ok) {
+    throw new ApplicationError(
+      outcome.errorCode,
+      outcome.errorCode === "CODE_LOCKED"
+        ? "Too many failed check-in attempts."
+        : "The check-in code is invalid.",
+    );
+  }
 
+  revalidateWork(outcome.session.agreementId);
   return {
-    agreementId: result.agreementId,
+    agreementId: outcome.session.agreementId,
     status: "checked_in",
-    checkedInAt: result.checkedInAt!.toISOString(),
+    checkedInAt: outcome.session.checkedInAt!.toISOString(),
   };
 }
 
@@ -549,6 +585,13 @@ export async function verifyCompletion(
     };
 
     if (row.isFirstOpportunity) {
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, row.employerId))
+        .limit(1)
+        .for("update");
+
       const [{ activeCreditCount }] = await tx
         .select({
           activeCreditCount: sql<number>`count(*)::int`,
@@ -604,6 +647,25 @@ export async function verifyCompletion(
         entityId: row.agreementId,
         createdAt: now,
       },
+      ...(row.isFirstOpportunity
+        ? [
+            {
+              recipientId: row.employerId,
+              type: credit.issued
+                ? "opportunity_credit_earned"
+                : "opportunity_credit_skipped",
+              title: credit.issued
+                ? "Kredit Kesempatan diterbitkan"
+                : "Batas Kredit Kesempatan tercapai",
+              body: credit.issued
+                ? "Satu Kredit Kesempatan baru tersedia untuk boost pekerjaan."
+                : "Penyelesaian tetap berhasil, tetapi kredit baru tidak diterbitkan karena sudah ada tiga kredit aktif.",
+              entityType: "job",
+              entityId: row.jobId,
+              createdAt: now,
+            },
+          ]
+        : []),
     ]);
 
     await tx.insert(auditLogs).values({

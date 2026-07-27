@@ -39,9 +39,16 @@ function messageFor(error: unknown) {
     "code" in error &&
     typeof error.code === "string"
   ) {
-    return error.code === "NOT_FOUND"
-      ? "Target laporan tidak tersedia."
-      : "Laporan belum bisa dikirim.";
+    if (error.code === "NOT_FOUND") {
+      return "Target laporan tidak tersedia.";
+    }
+    if (error.code === "REPORT_ALREADY_EXISTS") {
+      return "Laporan aktif untuk target ini sudah ada.";
+    }
+    if (error.code === "RATE_LIMITED") {
+      return "Terlalu banyak laporan dikirim. Tunggu sebentar lalu coba lagi.";
+    }
+    return "Laporan belum bisa dikirim.";
   }
   return "Koneksi terputus. Coba lagi sebentar lagi.";
 }

@@ -199,6 +199,8 @@ An active report blocks only the relevant risky transitions; it does not add amb
 ## 7. Job and Application Invariants
 
 - A worker can submit at most one application per job.
+- A worker may submit at most ten applications per rolling minute.
+- An employer may create at most ten job drafts per rolling minute.
 - A job can have at most one accepted application.
 - An employer cannot apply to jobs through an employer account.
 - A worker cannot apply to a job that is not `published` or whose deadline has passed.
@@ -318,6 +320,12 @@ Allowed report reasons include suspicious job, task or wage mismatch, absence, u
 - Admin may hide a job, suspend an account, cancel an unfinished workflow, revoke proof, revoke credit, and deactivate a related active boost.
 - Rejected or resolved reports no longer block completion unless a separate administrative restriction remains.
 - Reports and evidence are not hard-deleted through normal application flows.
+- A reporter may submit at most three reports per rolling minute and may not
+  create a duplicate active report for the same target.
+- A normal worker or employer cannot report an arbitrary standalone user; the
+  target user must be connected through a visible job or agreement.
+- Proof, credit, and boost identifiers selected during moderation must belong
+  to the report's job, agreement, or reported user.
 
 ## 14. Notifications and Audit
 

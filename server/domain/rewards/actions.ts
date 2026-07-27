@@ -13,6 +13,7 @@ import {
   jobs,
   notifications,
   opportunityCredits,
+  users,
 } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
 
@@ -73,6 +74,13 @@ export async function redeemOpportunityCredit(
   const requestHash = hashRequest(parsed.data);
 
   const result = await db.transaction(async (tx) => {
+    await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, actor.userId))
+      .limit(1)
+      .for("update");
+
     const [existingKey] = await tx
       .select()
       .from(idempotencyKeys)

@@ -12,9 +12,10 @@ import {
   jobs,
   jobPrivateDetails,
   notifications,
+  users,
   wageGuidelines,
 } from "@/server/db/schema";
-import { eq, and, desc, lte, or, isNull, gt } from "drizzle-orm";
+import { eq, and, desc, gte, lte, or, isNull, gt } from "drizzle-orm";
 import { z } from "zod";
 import { jobDraftSchema } from "./validation";
 import { getJobSelectionCutoff } from "./selection-cutoff";
@@ -45,6 +46,32 @@ export async function createJobDraft(input: unknown) {
 
   // Insert job and private details transactionally
   const result = await db.transaction(async (tx) => {
+    const now = new Date();
+    await tx
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, context.userId))
+      .limit(1)
+      .for("update");
+
+    const recentJobs = await tx
+      .select({ id: jobs.id })
+      .from(jobs)
+      .where(
+        and(
+          eq(jobs.employerId, context.userId),
+          gte(jobs.createdAt, new Date(now.getTime() - 60_000)),
+        ),
+      )
+      .limit(10);
+
+    if (recentJobs.length >= 10) {
+      throw new ApplicationError(
+        "RATE_LIMITED",
+        "Too many jobs were created. Try again later.",
+      );
+    }
+
     const [newJob] = await tx.insert(jobs).values({
       employerId: context.userId,
       categoryId: data.categoryId,
@@ -66,7 +93,7 @@ export async function createJobDraft(input: unknown) {
       applicationDeadline: data.applicationDeadline,
       status: "draft",
       visibility: "hidden", // Drafts are hidden by default
-      hiddenAt: new Date(),
+      hiddenAt: now,
       hiddenBy: context.userId,
       hiddenReason: "draft",
     }).returning({ id: jobs.id });
@@ -74,6 +101,17 @@ export async function createJobDraft(input: unknown) {
     await tx.insert(jobPrivateDetails).values({
       jobId: newJob.id,
       fullAddress: data.fullAddress,
+      arrivalInstructions: data.arrivalInstructions || null,
+    });
+
+    await tx.insert(auditLogs).values({
+      actorId: context.userId,
+      action: "create_job_draft",
+      entityType: "job",
+      entityId: newJob.id,
+      requestId: context.requestId,
+      metadata: {},
+      createdAt: now,
     });
 
     return newJob;
@@ -100,7 +138,8 @@ export async function updateJobDraft(jobId: string, input: unknown) {
     const [existingJob] = await tx.select({ status: jobs.status })
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
 
     if (!existingJob) {
       throw new ApplicationError("JOB_NOT_FOUND", "Job not found or not owned by you.");
@@ -110,7 +149,7 @@ export async function updateJobDraft(jobId: string, input: unknown) {
       throw new ApplicationError("JOB_NOT_DRAFT", "Only draft jobs can be updated with this action.");
     }
 
-    await tx.update(jobs)
+    const [updatedJob] = await tx.update(jobs)
       .set({
         categoryId: data.categoryId,
         areaId: data.areaId,
@@ -131,11 +170,26 @@ export async function updateJobDraft(jobId: string, input: unknown) {
         applicationDeadline: data.applicationDeadline,
         updatedAt: new Date(),
       })
-      .where(eq(jobs.id, jobId));
+      .where(
+        and(
+          eq(jobs.id, jobId),
+          eq(jobs.employerId, context.userId),
+          eq(jobs.status, "draft"),
+        ),
+      )
+      .returning({ id: jobs.id });
+
+    if (!updatedJob) {
+      throw new ApplicationError(
+        "JOB_NOT_DRAFT",
+        "Only draft jobs can be updated with this action.",
+      );
+    }
 
     await tx.update(jobPrivateDetails)
       .set({
         fullAddress: data.fullAddress,
+        arrivalInstructions: data.arrivalInstructions || null,
         updatedAt: new Date(),
       })
       .where(eq(jobPrivateDetails.jobId, jobId));
@@ -313,10 +367,18 @@ export async function cancelJob(jobId: string, input: unknown) {
     const [job] = await tx.select({ status: jobs.status, title: jobs.title })
       .from(jobs)
       .where(and(eq(jobs.id, jobId), eq(jobs.employerId, context.userId)))
-      .limit(1);
+      .limit(1)
+      .for("update");
 
     if (!job) {
       throw new ApplicationError("JOB_NOT_FOUND", "Job not found or not owned by you.");
+    }
+
+    if (job.status !== "draft" && job.status !== "published") {
+      throw new ApplicationError(
+        "INVALID_STATE_TRANSITION",
+        "Only draft or unfilled published jobs can be cancelled by the employer.",
+      );
     }
 
     assertJobTransition(job.status, "cancelled");
@@ -328,7 +390,13 @@ export async function cancelJob(jobId: string, input: unknown) {
         cancellationReason: reason,
         updatedAt: now,
       })
-      .where(eq(jobs.id, jobId));
+      .where(
+        and(
+          eq(jobs.id, jobId),
+          eq(jobs.employerId, context.userId),
+          eq(jobs.status, job.status),
+        ),
+      );
 
     let rejectedApplicationCount = 0;
 

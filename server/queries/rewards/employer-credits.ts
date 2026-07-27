@@ -10,6 +10,7 @@ import * as schema from "@/server/db/schema";
 import {
   jobBoosts,
   jobs,
+  agreements,
   opportunityCredits,
   workProofs,
 } from "@/server/db/schema";
@@ -173,7 +174,15 @@ export async function getMyCreditSummary(
   const [proofCountRow] = await database
     .select({ value: count() })
     .from(workProofs)
-    .where(eq(workProofs.employerId, actor.userId));
+    .innerJoin(agreements, eq(workProofs.agreementId, agreements.id))
+    .where(
+      and(
+        eq(workProofs.employerId, actor.userId),
+        eq(agreements.isFirstOpportunity, true),
+        eq(workProofs.verificationStatus, "verified"),
+        isNull(workProofs.revokedAt),
+      ),
+    );
 
   return {
     activeCreditCount: activeCountRow[0]?.value ?? 0,

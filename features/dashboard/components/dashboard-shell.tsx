@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness,
   ClipboardList,
   FileCheck2,
+  FileWarning,
   Home,
   LoaderCircle,
   LogOut,
@@ -61,6 +62,7 @@ const roleConfig = {
       { href: "/jobs", label: "Cari kerja", icon: BriefcaseBusiness },
       { href: "/worker/applications", label: "Lamaran", icon: ClipboardList },
       { href: "/worker/passport", label: "Paspor", icon: FileCheck2 },
+      { href: "/worker/reports", label: "Laporan", icon: FileWarning },
     ],
   },
   employer: {
@@ -72,6 +74,7 @@ const roleConfig = {
       { href: "/employer/jobs/new", label: "Pasang kerja", icon: PlusCircle },
       { href: "/employer/jobs", label: "Pekerjaan", icon: BriefcaseBusiness },
       { href: "/employer/opportunity-credits", label: "Kredit", icon: TicketCheck },
+      { href: "/employer/reports", label: "Laporan", icon: FileWarning },
     ],
   },
   admin: {
@@ -98,6 +101,7 @@ const accountMenuItems = {
       icon: ClipboardList,
     },
     { href: "/worker/passport", label: "Paspor Rintara", icon: FileCheck2 },
+    { href: "/worker/reports", label: "Laporan saya", icon: FileWarning },
   ],
   employer: [
     {
@@ -115,6 +119,7 @@ const accountMenuItems = {
       label: "Kredit Kesempatan",
       icon: TicketCheck,
     },
+    { href: "/employer/reports", label: "Laporan saya", icon: FileWarning },
   ],
   admin: [
     { href: "/admin", label: "Panel admin", icon: ShieldCheck },

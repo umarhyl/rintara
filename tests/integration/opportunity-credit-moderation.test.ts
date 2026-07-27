@@ -290,6 +290,9 @@ databaseTest(
         adminStartReportReview,
         createReport,
       } = await import("@/server/domain/reports/actions");
+      const { listMyReports } = await import(
+        "@/server/queries/reports/my-reports"
+      );
 
       const redemption = await redeemOpportunityCredit({
         creditId,
@@ -342,9 +345,49 @@ databaseTest(
         reason: "terms_mismatch",
         description: "Ketentuan setelah pekerjaan tidak sesuai bukti.",
       });
+      await expect(
+        createReport({
+          agreementId,
+          reportedUserId: employerId,
+          reason: "terms_mismatch",
+          description: "Laporan aktif yang sama tidak boleh dibuat ulang.",
+        }),
+      ).rejects.toMatchObject({ code: "REPORT_ALREADY_EXISTS" });
+      const reporterView = await listMyReports();
+      expect(reporterView.items).toHaveLength(1);
+      expect(reporterView.items[0]).toMatchObject({
+        id: report.id,
+        status: "open",
+      });
+      expect(reporterView.items[0]).not.toHaveProperty("moderatorNote");
+      await createReport({
+        jobId: targetJobId,
+        reason: "suspicious_job",
+        description: "Laporan kedua untuk menguji batas pengiriman.",
+      });
+      await createReport({
+        jobId: mismatchJobId,
+        reason: "spam",
+        description: "Laporan ketiga untuk menguji batas pengiriman.",
+      });
+      await expect(
+        createReport({
+          agreementId,
+          reason: "other",
+          description: "Pengiriman keempat harus terkena pembatasan.",
+        }),
+      ).rejects.toMatchObject({ code: "RATE_LIMITED" });
 
       activeContext = adminContext;
       await adminStartReportReview(report.id);
+      await expect(
+        adminResolveReport({
+          reportId: report.id,
+          outcome: "resolved",
+          moderatorNote: "Target revokasi tidak berkaitan dengan laporan ini.",
+          actions: { revokeWorkProofId: randomUUID() },
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION_FAILED" });
       await adminResolveReport({
         reportId: report.id,
         outcome: "resolved",

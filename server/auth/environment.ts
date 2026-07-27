@@ -25,3 +25,9 @@ export function getAuthenticationCallbackUrl(nextPath?: string): string {
 
   return callbackUrl.toString();
 }
+
+export function getPasswordRecoveryCallbackUrl(): string {
+  const callbackUrl = new URL(getAuthenticationCallbackUrl());
+  callbackUrl.searchParams.set("next", "/reset-password");
+  return callbackUrl.toString();
+}

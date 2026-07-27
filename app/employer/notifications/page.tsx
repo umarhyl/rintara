@@ -2,6 +2,11 @@ import Link from "next/link";
 import { ArrowUpRight, Bell } from "lucide-react";
 
 import { EmptyState } from "@/components/rintara/empty-state";
+import {
+  MarkAllNotificationsReadButton,
+  MarkNotificationReadButton,
+} from "@/components/rintara/notification-read-actions";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { listMyNotifications } from "@/server/queries/notifications";
@@ -14,15 +19,27 @@ function formatDate(value: Date) {
   }).format(value);
 }
 
-export default async function EmployerNotificationsPage() {
+export default async function EmployerNotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cursor?: string | string[] }>;
+}) {
   await requireDashboardPageRole("employer", "/employer/notifications");
-  const notificationPage = await listMyNotifications();
+  const { cursor } = await searchParams;
+  const notificationPage = await listMyNotifications({
+    cursor: typeof cursor === "string" ? cursor : undefined,
+  });
 
   return (
     <div className="grid gap-7">
       <PageHeader
         title="Notifikasi"
         description="Pembaruan tentang pelamar, kesepakatan, pekerjaan, dan Kredit Kesempatan."
+        action={
+          <MarkAllNotificationsReadButton
+            disabled={notificationPage.unreadCount === 0}
+          />
+        }
       />
 
       <section aria-labelledby="latest-notifications">
@@ -99,6 +116,11 @@ export default async function EmployerNotificationsPage() {
                       {content}
                     </div>
                   )}
+                  {!item.readAt ? (
+                    <div className="flex justify-end border-t border-border/70 px-4 py-2 sm:px-5">
+                      <MarkNotificationReadButton notificationId={item.id} />
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
@@ -110,6 +132,19 @@ export default async function EmployerNotificationsPage() {
           />
         )}
       </section>
+      {notificationPage.nextCursor ? (
+        <nav aria-label="Navigasi notifikasi">
+          <Button variant="outline" asChild>
+            <Link
+              href={`/employer/notifications?cursor=${encodeURIComponent(
+                notificationPage.nextCursor,
+              )}`}
+            >
+              Notifikasi berikutnya
+            </Link>
+          </Button>
+        </nav>
+      ) : null}
     </div>
   );
 }

@@ -12,6 +12,8 @@ const requiredPages = [
   "app/jobs/[id]/page.tsx",
   "app/(public-auth)/sign-in/page.tsx",
   "app/(public-auth)/register/page.tsx",
+  "app/(public-auth)/forgot-password/page.tsx",
+  "app/(public-auth)/reset-password/page.tsx",
   "app/onboarding/role/page.tsx",
   "app/onboarding/worker/page.tsx",
   "app/onboarding/employer/page.tsx",
@@ -22,6 +24,7 @@ const requiredPages = [
   "app/worker/work/[id]/page.tsx",
   "app/worker/passport/page.tsx",
   "app/worker/notifications/page.tsx",
+  "app/worker/reports/page.tsx",
   "app/employer/dashboard/page.tsx",
   "app/employer/jobs/page.tsx",
   "app/employer/jobs/new/page.tsx",
@@ -31,6 +34,7 @@ const requiredPages = [
   "app/employer/work/[id]/page.tsx",
   "app/employer/opportunity-credits/page.tsx",
   "app/employer/notifications/page.tsx",
+  "app/employer/reports/page.tsx",
   "app/admin/page.tsx",
   "app/admin/reports/page.tsx",
   "app/admin/jobs/page.tsx",
@@ -241,6 +245,25 @@ describe("frontend flow surface", () => {
     );
     expect(callback).toContain('signInUrl.searchParams.set("next", next)');
     expect(callback).not.toContain('new URL("/login');
+  });
+
+  test("provides a non-enumerating password recovery path", async () => {
+    const signInForm = await Bun.file(
+      "features/auth/components/sign-in-form.tsx",
+    ).text();
+    const recoveryForm = await Bun.file(
+      "features/auth/components/forgot-password-form.tsx",
+    ).text();
+    const resetPage = await Bun.file(
+      "app/(public-auth)/reset-password/page.tsx",
+    ).text();
+    const callback = await Bun.file("app/auth/callback/route.ts").text();
+
+    expect(signInForm).toContain('href="/forgot-password"');
+    expect(recoveryForm).toContain("Jika email tersebut terdaftar");
+    expect(resetPage).toContain("supabase.auth.getUser()");
+    expect(callback).toContain('next === "/reset-password"');
+    expect(callback).toContain('new URL("/forgot-password", request.url)');
   });
 
   test("keeps one persistent authentication frame across both entry routes", async () => {
