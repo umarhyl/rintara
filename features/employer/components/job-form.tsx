@@ -46,6 +46,7 @@ type JobDraftInput = {
   estimatedMinutes: number;
   applicationDeadline: string;
   fullAddress: string;
+  arrivalInstructions?: string;
   toolsProvided?: string;
   toolsRequired?: string;
   wageAmount: number;
@@ -225,6 +226,7 @@ export function JobForm({
     estimatedMinutes: initialData?.estimatedMinutes || "",
     applicationDeadline: initialData?.applicationDeadline ? new Date(initialData.applicationDeadline).toISOString().slice(0, 16) : "",
     fullAddress: initialData?.fullAddress || "",
+    arrivalInstructions: initialData?.arrivalInstructions || "",
     providedTools: initialData?.toolsProvided || "",
     requiredTools: initialData?.toolsRequired || "",
     wageAmount: initialData?.wageAmount || "",
@@ -290,6 +292,7 @@ export function JobForm({
       estimatedMinutes: Number(formData.estimatedMinutes),
       applicationDeadline: formData.applicationDeadline ? new Date(formData.applicationDeadline).toISOString() : undefined,
       fullAddress: formData.fullAddress,
+      arrivalInstructions: formData.arrivalInstructions || undefined,
       toolsProvided: formData.providedTools || undefined,
       toolsRequired: formData.requiredTools || undefined,
       wageAmount: Number(formData.wageAmount),
@@ -540,6 +543,23 @@ export function JobForm({
                 onChange={handleTextChange}
                 placeholder="Alamat tempat kerja lengkap"
                 className="min-h-24 rounded-xl"
+              />
+            </Field>
+            <Field
+              label="Petunjuk kedatangan (opsional)"
+              id="arrivalInstructions"
+              error={errors.arrivalInstructions}
+            >
+              <Textarea
+                {...fieldA11y(
+                  "arrivalInstructions",
+                  errors.arrivalInstructions,
+                )}
+                name="arrivalInstructions"
+                value={formData.arrivalInstructions}
+                onChange={handleTextChange}
+                placeholder="Contoh: masuk melalui lobi utama dan temui koordinator."
+                className="min-h-20 rounded-xl"
               />
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">

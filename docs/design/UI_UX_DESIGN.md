@@ -231,6 +231,7 @@ comparable terms, and the next action before unsupported promotion.
 - `/worker/work/[id]`
 - `/worker/passport`
 - `/worker/notifications`
+- `/worker/reports`
 
 ### Employer
 
@@ -242,6 +243,7 @@ comparable terms, and the next action before unsupported promotion.
 - `/employer/work/[id]`
 - `/employer/opportunity-credits`
 - `/employer/notifications`
+- `/employer/reports`
 
 ### Admin
 
@@ -383,6 +385,12 @@ new-password drafts remain separate, and the alternate segment is unavailable
 during submission. Role selection and profile onboarding use the image-free
 operational shell. Both preserve form recovery, duplicate-submission
 prevention, and registration progress.
+
+The sign-in password label includes a **Lupa kata sandi?** link. Recovery and
+new-password screens reuse the same documentary frame without the
+Masuk/Daftar segmented control. The recovery success message never confirms
+whether an account exists. Invalid or expired links provide a direct,
+keyboard-accessible action to request a new link.
 
 ### Appearance and motion
 

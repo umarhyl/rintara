@@ -18,6 +18,26 @@ export const signInSchema = z
   })
   .strict();
 
+export const passwordRecoveryRequestSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+export const passwordUpdateSchema = z
+  .object({
+    password: passwordSchema,
+    passwordConfirmation: z.string().max(128),
+  })
+  .strict()
+  .refine(
+    ({ password, passwordConfirmation }) => password === passwordConfirmation,
+    {
+      message: "Konfirmasi kata sandi tidak cocok.",
+      path: ["passwordConfirmation"],
+    },
+  );
+
 const profileText = (maximum: number) =>
   z
     .string()

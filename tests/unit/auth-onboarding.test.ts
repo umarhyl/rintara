@@ -3,7 +3,11 @@ import { requireSubjectClaim } from "@/server/auth/identity-claims";
 import { mapAuthProviderError } from "@/server/auth/provider-errors";
 import { hasCompleteRoleProfile } from "@/server/auth/profile-completeness";
 import { safeApplicationPath } from "@/server/auth/redirects";
-import { onboardingSchema } from "@/server/auth/schemas";
+import {
+  onboardingSchema,
+  passwordRecoveryRequestSchema,
+  passwordUpdateSchema,
+} from "@/server/auth/schemas";
 import { ApplicationError } from "@/server/errors/application-error";
 import { MAX_WORKER_CATEGORY_INTERESTS } from "@/lib/onboarding";
 
@@ -130,6 +134,47 @@ describe("authentication provider errors", () => {
 
     expect(error.code).toBe("UNAUTHENTICATED");
     expect(error.message).not.toContain("invalid_credentials");
+  });
+
+  test("maps an expired password recovery session to a safe error", () => {
+    const error = mapAuthProviderError(
+      { code: "session_not_found", status: 401 },
+      "password-update",
+    );
+
+    expect(error.code).toBe("UNAUTHENTICATED");
+    expect(error.message).not.toContain("session_not_found");
+  });
+});
+
+describe("password recovery input", () => {
+  test("normalizes a valid recovery email", () => {
+    expect(
+      passwordRecoveryRequestSchema.parse({
+        email: "  USER@Example.COM ",
+      }),
+    ).toEqual({ email: "user@example.com" });
+  });
+
+  test("requires a bounded password and matching confirmation", () => {
+    expect(
+      passwordUpdateSchema.safeParse({
+        password: "kata-sandi-baru",
+        passwordConfirmation: "kata-sandi-baru",
+      }).success,
+    ).toBe(true);
+    expect(
+      passwordUpdateSchema.safeParse({
+        password: "kata-sandi-baru",
+        passwordConfirmation: "tidak-sama",
+      }).success,
+    ).toBe(false);
+    expect(
+      passwordUpdateSchema.safeParse({
+        password: "pendek",
+        passwordConfirmation: "pendek",
+      }).success,
+    ).toBe(false);
   });
 });
 

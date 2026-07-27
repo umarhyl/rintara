@@ -98,14 +98,19 @@ on their internal format. Malformed or incompatible cursors return
 
 ### 2.5 Authentication and onboarding
 
-`signUp(input)`, `signIn(input)`, and `signOut()` are Server Action adapters over
-Supabase Auth. Credential input is validated and provider errors are mapped to
-the application error catalog; provider messages, tokens, and user objects are
-never returned.
+`signUp(input)`, `signIn(input)`, `signOut()`,
+`requestPasswordRecovery(input)`, and `updatePassword(input)` are Server Action
+adapters over Supabase Auth. Credential input is validated and provider errors
+are mapped to the application error catalog; provider messages, tokens, and
+user objects are never returned. Password recovery requests use one generic
+success response to avoid disclosing whether an email is registered.
 
 `GET /auth/callback` exchanges the one-time PKCE code for a cookie-backed
 session. Its optional `next` value accepts only an application-relative path to
-prevent open redirects. Failure returns to sign-in with a generic error.
+prevent open redirects. A password recovery request uses the same allowlisted
+callback with `next=/reset-password`; the reset screen requires the resulting
+provider session. General callback failure returns to sign-in, while recovery
+failure returns to `/forgot-password`, in both cases with a generic error.
 
 `completeOnboarding(input)` derives `auth_subject` exclusively from verified
 Supabase claims. Accepted input is one of:
@@ -333,6 +338,15 @@ An invalid application-deadline/selection-cutoff relationship returns
 Access: active owning employer for draft or unfilled published jobs; admin for exceptional later states.
 
 Input: bounded cancellation reason. The command follows the state machine and does not delete the row. Cancelling an unfilled published job rejects remaining submitted applications, notifies affected workers, and audits the change atomically.
+
+### `expireUnfilledJobs(input)`
+
+Access: protected maintenance runner only.
+
+Processes a bounded locked batch of published jobs whose server-derived
+selection cutoff has passed. Each job transition, remaining application
+rejection, notification, and system audit entry is committed atomically.
+Concurrent runners skip locked rows and retries are idempotent.
 
 ### `getEmployerJob(jobId)`
 
@@ -639,6 +653,10 @@ Notifications are read through revalidation or bounded polling. No realtime subs
 Access: authenticated active user with a legitimate target relationship.
 
 Input: reason, bounded description, and one or more target identifiers permitted by the schema. The server validates visibility and relationship.
+Normal users cannot report an arbitrary standalone user identifier. The command
+serializes submissions per reporter, permits at most three reports per rolling
+minute, rejects a duplicate active report for the same target, and inserts the
+report and audit entry in one transaction.
 
 ### `listMyReports(page)`
 
@@ -683,6 +701,15 @@ Recommended response:
 
 If a deep database readiness check is required, protect it appropriately and keep its output minimal.
 
+### `GET /api/maintenance/expire-jobs`
+
+Access: `Authorization: Bearer <CRON_SECRET>` for Vercel Cron, or
+`Authorization: Bearer <RINTARA_MAINTENANCE_SECRET>` for a manually configured
+scheduler.
+
+Runs one bounded `expireUnfilledJobs` batch and returns only processed job and
+application counts. The maintenance secret must contain at least 32 characters.
+
 Authentication provider callback routes follow provider documentation and are not reimplemented as Rintara domain endpoints.
 
 ## 12. Error Catalog
@@ -708,6 +735,7 @@ Authentication provider callback routes follow provider documentation and are no
 | `FIRST_OPPORTUNITY_INELIGIBLE` | Worker now has category proof | 409 |
 | `CONCURRENT_ACCEPTANCE_CONFLICT` | Another applicant won the race | 409 |
 | `ACTIVE_REPORT_BLOCKS_COMPLETION` | Moderation must finish first | 409 |
+| `REPORT_ALREADY_EXISTS` | The reporter already has an active report for the same target | 409 |
 | `CREDIT_NOT_AVAILABLE` | Credit is redeemed, expired, revoked, or absent | 409 |
 | `RATE_LIMITED` | Too many attempts | 429 |
 | `INTERNAL_ERROR` | Unexpected failure with request ID | 500 |

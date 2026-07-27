@@ -127,6 +127,8 @@ and audit rows unchanged.
 Assert that the expiry workflow at or after the selection cutoff expires an
 unfilled job, rejects remaining submitted applications, and writes each
 notification and audit effect once.
+`tests/integration/job-expiry.test.ts` covers the bounded workflow and its
+idempotent retry result.
 
 Run two concurrent acceptance requests for different applications to one job. Assert:
 
@@ -145,6 +147,12 @@ Force a failure after an intermediate write and assert the transaction leaves th
 Confirm each party in both orders and concurrently. Assert one active agreement,
 one scheduled work session, and no duplicate notification or audit side effects
 after retries.
+
+### Check-in attempt protection
+
+Use a test-only pepper, submit five guaranteed-invalid codes, assert the failed
+attempt counter persists at five, and assert both the issued code and further
+guesses return `CODE_LOCKED` until an employer issues a replacement.
 
 ### Completion transaction
 

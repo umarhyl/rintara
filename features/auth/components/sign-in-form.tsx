@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CircleAlert, LoaderCircle, Mail } from "lucide-react";
@@ -93,7 +94,15 @@ export function SignInForm({
         </div>
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="password">Kata sandi</Label>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="password">Kata sandi</Label>
+          <Link
+            href="/forgot-password"
+            className="inline-flex min-h-11 items-center rounded px-2 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/25"
+          >
+            Lupa kata sandi?
+          </Link>
+        </div>
         <AuthPasswordField
           id="password"
           name="password"

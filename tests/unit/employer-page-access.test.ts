@@ -11,6 +11,7 @@ const employerPages = [
   "app/employer/work/[id]/page.tsx",
   "app/employer/opportunity-credits/page.tsx",
   "app/employer/notifications/page.tsx",
+  "app/employer/reports/page.tsx",
   "app/employer/settings/profile/page.tsx",
 ] as const;
 

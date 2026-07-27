@@ -1,7 +1,12 @@
 import type { AuthError } from "@supabase/supabase-js";
 import { ApplicationError } from "@/server/errors/application-error";
 
-type AuthOperation = "sign-up" | "sign-in" | "sign-out";
+type AuthOperation =
+  | "sign-up"
+  | "sign-in"
+  | "sign-out"
+  | "password-recovery"
+  | "password-update";
 
 export function mapAuthProviderError(
   error: Pick<AuthError, "code" | "status">,
@@ -41,9 +46,27 @@ export function mapAuthProviderError(
     );
   }
 
+  if (
+    operation === "password-update" &&
+    (error.code === "session_not_found" ||
+      error.code === "bad_jwt" ||
+      error.status === 401)
+  ) {
+    return new ApplicationError(
+      "UNAUTHENTICATED",
+      "Tautan pemulihan tidak valid atau sudah kedaluwarsa. Minta tautan baru.",
+    );
+  }
+
+  if (operation === "password-update" && error.code === "weak_password") {
+    return new ApplicationError(
+      "VALIDATION_FAILED",
+      "Kata sandi tidak memenuhi persyaratan keamanan.",
+    );
+  }
+
   return new ApplicationError(
     "INTERNAL_ERROR",
     "Layanan autentikasi tidak tersedia. Silakan coba lagi.",
   );
 }
-

@@ -336,8 +336,8 @@ export function AgreementConfirmationView({
             <div className="flex gap-3 border-t border-amber-300/60 pt-4 text-sm leading-6 text-foreground">
               <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden="true" />
               <p>
-                Jika ada ketentuan yang salah, jangan konfirmasi. Gunakan alur
-                pembatalan atau laporkan masalah.
+                Jika ada ketentuan yang salah, jangan konfirmasi. Laporkan
+                masalah untuk meminta peninjauan dan pembatalan alur.
               </p>
             </div>
             <ReportProblem

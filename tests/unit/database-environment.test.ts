@@ -3,6 +3,7 @@ import {
   assertMigrationAllowed,
   assertSeedAllowed,
   getIntegrationDatabaseUrl,
+  getRuntimeDatabaseUrl,
 } from "@/server/db/environment";
 
 const originalEnvironment = process.env.RINTARA_ENV;
@@ -37,6 +38,22 @@ afterEach(() => {
 });
 
 describe("database operation guards", () => {
+  test("refuses a missing runtime database in production", () => {
+    process.env.RINTARA_ENV = "production";
+    delete process.env.DATABASE_URL;
+
+    expect(() => getRuntimeDatabaseUrl()).toThrow(
+      "DATABASE_URL is required",
+    );
+  });
+
+  test("keeps the build-time placeholder outside production", () => {
+    process.env.RINTARA_ENV = "review";
+    delete process.env.DATABASE_URL;
+
+    expect(getRuntimeDatabaseUrl()).toContain("/dummy");
+  });
+
   test("always refuses seed against production", () => {
     process.env.RINTARA_ENV = "production";
     process.env.RINTARA_ALLOW_SEED = "true";

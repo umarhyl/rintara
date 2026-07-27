@@ -2,9 +2,17 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { ApplicationError } from "@/server/errors/application-error";
-import { getAuthenticationCallbackUrl } from "./environment";
+import {
+  getAuthenticationCallbackUrl,
+  getPasswordRecoveryCallbackUrl,
+} from "./environment";
 import { mapAuthProviderError } from "./provider-errors";
-import { signInSchema, signUpSchema } from "./schemas";
+import {
+  passwordRecoveryRequestSchema,
+  passwordUpdateSchema,
+  signInSchema,
+  signUpSchema,
+} from "./schemas";
 
 function parseCredentials(
   schema: typeof signInSchema,
@@ -60,4 +68,54 @@ export async function signOut() {
   }
 
   return { signedOut: true as const };
+}
+
+export async function requestPasswordRecovery(input: unknown) {
+  const result = passwordRecoveryRequestSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Masukkan alamat email yang valid.",
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    result.data.email,
+    { redirectTo: getPasswordRecoveryCallbackUrl() },
+  );
+
+  if (error) {
+    throw mapAuthProviderError(error, "password-recovery");
+  }
+
+  return { requested: true as const };
+}
+
+export async function updatePassword(input: unknown) {
+  const result = passwordUpdateSchema.safeParse(input);
+
+  if (!result.success) {
+    const confirmationError = result.error.issues.some(
+      (issue) => issue.path[0] === "passwordConfirmation",
+    );
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      confirmationError
+        ? "Konfirmasi kata sandi tidak cocok."
+        : "Kata sandi harus terdiri dari 8–128 karakter.",
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({
+    password: result.data.password,
+  });
+
+  if (error) {
+    throw mapAuthProviderError(error, "password-update");
+  }
+
+  return { updated: true as const };
 }

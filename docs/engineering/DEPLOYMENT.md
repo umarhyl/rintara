@@ -54,6 +54,8 @@ The final `.env.example` should document names without values. Expected categori
 | Rate-limit configuration | Mixed | Abuse control |
 | Log level/release identifier | Non-secret | Operations and correlation |
 | Demo-seed safety flag | Non-secret | Explicitly enable controlled demo behavior |
+| Maintenance secret | Secret | Authenticate bounded expiry operations |
+| Release identifier | Non-secret | Identify the deployed build in shallow health responses |
 
 Rules:
 
@@ -63,6 +65,12 @@ Rules:
 - Secrets are rotated after accidental disclosure.
 - `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
 - `RINTARA_APP_URL` is the canonical origin used to build `/auth/callback`; each environment must allowlist that callback in its isolated Supabase project.
+- Production must set `RINTARA_ENV=production`; startup/build access to the
+  runtime database configuration fails instead of falling back to a placeholder
+  when `DATABASE_URL` is missing.
+- Keep `CHECK_IN_CODE_PEPPER` stable and secret. Rotating it invalidates every
+  outstanding 15-minute check-in code, so employers must generate replacement
+  codes after a rotation.
 
 ## 5. Build Requirements
 
@@ -164,6 +172,16 @@ still filter deadline-passed jobs and elapsed boosts by server time.
 even while its persisted status is still `published`.
 
 Scheduled endpoints require authentication/secret validation, idempotency, bounded work, logs without sensitive payloads, and safe retries.
+Configure the platform scheduler to call
+`GET /api/maintenance/expire-jobs` with the bearer maintenance secret. The
+schedule must run frequently enough that selection-cutoff state does not remain
+stale during the pilot.
+
+The committed Vercel configuration runs this operation daily at `17:00 UTC`
+(`00:00 Asia/Jakarta`) so it remains compatible with the Hobby plan. Set
+`CRON_SECRET` to a random value of at least 32 bytes in the Vercel Production
+environment; Vercel sends it automatically as a bearer token. Manual schedulers
+may instead use `RINTARA_MAINTENANCE_SECRET`.
 
 ## 12. Connection and Scaling Controls
 

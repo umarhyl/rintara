@@ -32,6 +32,11 @@ export function getDatabaseSslMode(): "require" | false {
 
 export function getRuntimeDatabaseUrl() {
   if (!process.env.DATABASE_URL) {
+    if (process.env.RINTARA_ENV === "production") {
+      throw new Error(
+        "DATABASE_URL is required when RINTARA_ENV=production.",
+      );
+    }
     return "postgres://dummy:dummy@localhost:5432/dummy";
   }
   return postgresUrlSchema.parse(process.env.DATABASE_URL);

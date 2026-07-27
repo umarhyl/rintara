@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { getAuthenticationCallbackUrl } from "@/server/auth/environment";
+import {
+  getAuthenticationCallbackUrl,
+  getPasswordRecoveryCallbackUrl,
+} from "@/server/auth/environment";
 
 const originalApplicationUrl = process.env.RINTARA_APP_URL;
 
@@ -23,6 +26,13 @@ describe("authentication callback configuration", () => {
     process.env.RINTARA_APP_URL = "https://review.rintara.example/base";
     expect(getAuthenticationCallbackUrl()).toBe(
       "https://review.rintara.example/auth/callback",
+    );
+  });
+
+  test("uses the same allowlisted callback for password recovery", () => {
+    process.env.RINTARA_APP_URL = "https://rintara.example";
+    expect(getPasswordRecoveryCallbackUrl()).toBe(
+      "https://rintara.example/auth/callback?next=%2Freset-password",
     );
   });
 });

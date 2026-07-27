@@ -1,6 +1,11 @@
 "use server";
 
-import { signIn, signUp } from "@/server/auth/adapters";
+import {
+  requestPasswordRecovery,
+  signIn,
+  signUp,
+  updatePassword,
+} from "@/server/auth/adapters";
 import { ApplicationError } from "@/server/errors/application-error";
 
 export type AuthFormResult =
@@ -31,6 +36,29 @@ export async function submitSignUp(credentials: { email: string; password: strin
       credentials.nextPath,
     );
     return { ok: true, requiresEmailConfirmation: result.requiresEmailConfirmation };
+  } catch (error) {
+    return safeAuthFailure(error);
+  }
+}
+
+export async function submitPasswordRecoveryRequest(input: {
+  email: string;
+}): Promise<AuthFormResult> {
+  try {
+    await requestPasswordRecovery(input);
+    return { ok: true };
+  } catch (error) {
+    return safeAuthFailure(error);
+  }
+}
+
+export async function submitPasswordUpdate(input: {
+  password: string;
+  passwordConfirmation: string;
+}): Promise<AuthFormResult> {
+  try {
+    await updatePassword(input);
+    return { ok: true };
   } catch (error) {
     return safeAuthFailure(error);
   }

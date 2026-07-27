@@ -25,6 +25,11 @@ export const jobDraftSchema = z.object({
     .string()
     .min(10, "Alamat lengkap minimal 10 karakter.")
     .max(300, "Alamat lengkap maksimal 300 karakter."),
+  arrivalInstructions: z
+    .string()
+    .trim()
+    .max(500, "Petunjuk kedatangan maksimal 500 karakter.")
+    .optional(),
   
   startsAt: z.coerce.date("Waktu mulai kerja wajib diisi.").refine((date) => date > new Date(), {
     message: "Waktu mulai kerja harus berada di masa mendatang.",

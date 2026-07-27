@@ -345,7 +345,10 @@ databaseTest(
         .select()
         .from(schema.auditLogs)
         .where(eq(schema.auditLogs.entityId, newDraft.jobId));
-      expect(auditRows).toHaveLength(2);
+      expect(auditRows).toHaveLength(3);
+      expect(
+        auditRows.find((row) => row.action === "create_job_draft"),
+      ).toBeDefined();
       expect(auditRows.find((row) => row.action === "publish_job")?.metadata).toMatchObject({
         previousStatus: "draft",
         newStatus: "published",

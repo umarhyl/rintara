@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireActiveUser } from "@/server/auth/identity";
 import { db } from "@/server/db/client";
@@ -11,6 +11,7 @@ import {
   auditLogs,
   jobs,
   notifications,
+  users,
   workProofs,
 } from "@/server/db/schema";
 import type { AgreementTermsSnapshot } from "@/server/db/schema";
@@ -74,7 +75,8 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
         })
         .from(jobs)
         .where(eq(jobs.id, parsedJobId.data))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!job) {
         throw new ApplicationError("JOB_NOT_FOUND", "Job not found.");
@@ -89,6 +91,34 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
         throw new ApplicationError(
           "JOB_NOT_AVAILABLE",
           "This job is no longer accepting applications.",
+        );
+      }
+
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, context.userId))
+        .limit(1)
+        .for("update");
+
+      const recentApplications = await tx
+        .select({ id: applications.id })
+        .from(applications)
+        .where(
+          and(
+            eq(applications.workerId, context.userId),
+            gte(
+              applications.submittedAt,
+              new Date(now.getTime() - 60_000),
+            ),
+          ),
+        )
+        .limit(10);
+
+      if (recentApplications.length >= 10) {
+        throw new ApplicationError(
+          "RATE_LIMITED",
+          "Too many applications were submitted. Try again later.",
         );
       }
 

@@ -253,6 +253,9 @@ databaseTest(
       const { listMyNotifications } = await import(
         "@/server/queries/notifications"
       );
+      const { markAllNotificationsRead, markNotificationRead } = await import(
+        "@/server/domain/notifications/actions"
+      );
 
       await expect(
         submitApplication("not-a-job-id", {
@@ -352,6 +355,7 @@ databaseTest(
       });
 
       const notificationsAfterSubmission = await listMyNotifications(
+        {},
         employerContext,
         database,
       );
@@ -370,6 +374,21 @@ databaseTest(
       expect(notificationsAfterSubmission.items[0]!.body).not.toContain(
         "Alamat privat",
       );
+      activeContext = employerContext;
+      await markNotificationRead(notificationsAfterSubmission.items[0]!.id);
+      const notificationsAfterRead = await listMyNotifications(
+        {},
+        employerContext,
+        database,
+      );
+      expect(notificationsAfterRead.unreadCount).toBe(0);
+      expect(notificationsAfterRead.items[0]!.readAt).not.toBeNull();
+      await expect(
+        markNotificationRead(notificationsAfterSubmission.items[0]!.id),
+      ).resolves.toMatchObject({
+        notificationId: notificationsAfterSubmission.items[0]!.id,
+      });
+      activeContext = workerContext;
       const submissionAuditRows = await database
         .select()
         .from(schema.auditLogs)
@@ -451,7 +470,7 @@ databaseTest(
         }),
       ).rejects.toMatchObject({ code: "APPLICATION_ALREADY_EXISTS" });
       expect(
-        (await listMyNotifications(employerContext, database)).items,
+        (await listMyNotifications({}, employerContext, database)).items,
       ).toHaveLength(1);
 
       await expect(
@@ -487,6 +506,7 @@ databaseTest(
       expect(withdrawnRow.withdrawnAt).not.toBeNull();
 
       const notificationsAfterWithdrawal = await listMyNotifications(
+        {},
         employerContext,
         database,
       );
@@ -499,6 +519,14 @@ databaseTest(
       expect(notificationsAfterWithdrawal.items[0]!.body).not.toContain(
         "Saya tersedia",
       );
+      activeContext = employerContext;
+      await expect(markAllNotificationsRead()).resolves.toMatchObject({
+        updatedCount: 1,
+      });
+      expect(
+        (await listMyNotifications({}, employerContext, database)).unreadCount,
+      ).toBe(0);
+      activeContext = workerContext;
       const applicationAuditRows = await database
         .select()
         .from(schema.auditLogs)
@@ -530,7 +558,7 @@ databaseTest(
         withdrawApplication(application.applicationId),
       ).rejects.toMatchObject({ code: "APPLICATION_NOT_WITHDRAWABLE" });
       expect(
-        (await listMyNotifications(employerContext, database)).items,
+        (await listMyNotifications({}, employerContext, database)).items,
       ).toHaveLength(2);
       expect(
         (

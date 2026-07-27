@@ -19,13 +19,16 @@ Priority labels:
 
 ### FR-001 — Authentication and session management [P0]
 
-The system MUST support registration, sign-in, sign-out, and secure session handling through a mature authentication solution.
+The system MUST support registration, sign-in, sign-out, password recovery, and
+secure session handling through a mature authentication solution.
 
 Acceptance criteria:
 
 - Anonymous users cannot read private resources or execute authenticated mutations.
 - Every private operation derives the user identity from the server session.
 - Passwords, tokens, and session implementation are not built or logged by application code.
+- Password recovery returns a generic request result, uses a one-time provider
+  callback, and rejects an invalid or expired recovery session.
 
 ### FR-002 — Role onboarding and account status [P0]
 

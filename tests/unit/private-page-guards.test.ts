@@ -7,7 +7,9 @@ const staticGuardedPages = [
   ["app/worker/applications/page.tsx", "worker", "/worker/applications"],
   ["app/worker/passport/page.tsx", "worker", "/worker/passport"],
   ["app/worker/notifications/page.tsx", "worker", "/worker/notifications"],
+  ["app/worker/reports/page.tsx", "worker", "/worker/reports"],
   ["app/employer/jobs/page.tsx", "employer", "/employer/jobs"],
+  ["app/employer/reports/page.tsx", "employer", "/employer/reports"],
   [
     "app/employer/settings/profile/page.tsx",
     "employer",
