@@ -223,6 +223,12 @@ databaseTest(
         accountStatus: "active",
         requestId: "work-other-worker",
       };
+      const adminContext: TestContext = {
+        userId: adminId,
+        role: "admin",
+        accountStatus: "active",
+        requestId: "work-admin",
+      };
       let activeContext: TestContext | null = employerContext;
 
       mock.module("@/server/auth/identity", () => ({
@@ -244,6 +250,9 @@ databaseTest(
         generateCheckInCode,
         verifyCompletion,
       } = await import("@/server/domain/work/actions");
+      const { getAuthorizedWorkEvidence } = await import(
+        "@/server/domain/work/evidence"
+      );
       const { getWorkView } = await import("@/server/queries/work/get-work-session");
 
       const generated = await generateCheckInCode(agreementId);
@@ -318,6 +327,49 @@ databaseTest(
         code: "INVALID_STATE_TRANSITION",
       });
 
+      await expect(
+        checkOut({
+          agreementId,
+          completionNote: "Pekerjaan selesai sesuai arahan.",
+        }),
+      ).rejects.toMatchObject({ code: "WORK_EVIDENCE_REQUIRED" });
+
+      const [activeSession] = await database
+        .select({ id: schema.workSessions.id })
+        .from(schema.workSessions)
+        .where(eq(schema.workSessions.agreementId, agreementId))
+        .limit(1);
+      await database.insert(schema.workCompletionEvidence).values({
+        workSessionId: activeSession.id,
+        storagePath: `${agreementId}/integration-fixture.webp`,
+        mimeType: "image/webp",
+        byteSize: 1024,
+        sha256: "a".repeat(64),
+        uploadedBy: workerId,
+      });
+
+      activeContext = otherWorkerContext;
+      await expect(
+        getAuthorizedWorkEvidence(agreementId),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      activeContext = employerContext;
+      await expect(getAuthorizedWorkEvidence(agreementId)).resolves.toMatchObject({
+        mimeType: "image/webp",
+        byteSize: 1024,
+      });
+
+      activeContext = null;
+      await expect(
+        getAuthorizedWorkEvidence(agreementId),
+      ).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+
+      activeContext = adminContext;
+      await expect(getAuthorizedWorkEvidence(agreementId)).resolves.toMatchObject({
+        mimeType: "image/webp",
+      });
+
+      activeContext = workerContext;
       const checkOutResult = await checkOut({
         agreementId,
         completionNote: "Pekerjaan selesai sesuai arahan.",

@@ -374,17 +374,25 @@ Alternative paths:
 
 ### 9.2 Check-out
 
-1. After finishing, worker selects **Check out**.
-2. Worker may add a short completion note.
-3. Worker confirms.
-4. Rintara records server time and notifies employer to verify completion.
+1. After finishing, worker selects one result photo without people or personal
+   information.
+2. Rintara validates JPG/PNG/WebP and the 5 MB limit, removes embedded
+   metadata by normalizing the image, and stores it privately.
+3. Worker may replace the photo while still checked in.
+4. Once a photo is stored, worker selects **Check out**, may add a short
+   completion note, and confirms.
+5. Rintara records server time, locks the photo against replacement, and
+   notifies employer to verify completion.
 
-Check-out is available once and only after check-in. There is no GPS collection or evidence-photo upload in the MVP.
+Check-out is available once, only after check-in, and only after one evidence
+photo exists. Rintara does not collect continuous GPS. The photo is available
+only to the related worker, related employer, and authorized admin.
 
 ## 10. Completion, Work Proof, and Passport
 
 1. Employer opens the completion request.
-2. Employer reviews job terms, attendance timestamps, and worker note.
+2. Employer reviews job terms, attendance timestamps, private result photo,
+   and worker note.
 3. Employer selects **Verify completion**.
 4. Confirmation explains that completion will issue permanent work history and may issue an Opportunity Credit.
 5. Server checks states, ownership, and active reports, then runs the atomic completion operation.

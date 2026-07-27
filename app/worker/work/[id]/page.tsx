@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
-import { CheckInForm, CheckOutButton } from "@/components/rintara/work-actions";
+import {
+  CheckInForm,
+  CheckOutButton,
+  WorkEvidenceUpload,
+} from "@/components/rintara/work-actions";
+import { WorkEvidenceView } from "@/components/rintara/work-evidence-view";
 import { ReportProblem } from "@/components/rintara/report-problem";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -112,7 +117,7 @@ export default async function WorkerWorkPage({
               {work.allowedActions.checkIn
                 ? "Masukkan kode check-in"
                 : work.allowedActions.checkOut
-                  ? "Check-out setelah selesai"
+                  ? "Unggah foto lalu check-out"
                   : work.session.status === "verified"
                     ? "Pekerjaan terverifikasi"
                     : "Menunggu langkah berikutnya"}
@@ -121,7 +126,7 @@ export default async function WorkerWorkPage({
               {work.allowedActions.checkIn
                 ? "Minta kode enam digit langsung dari pemberi kerja. Kode berlaku selama 15 menit."
                 : work.allowedActions.checkOut
-                  ? "Tambahkan catatan singkat jika perlu, lalu selesaikan sesi kerja."
+                  ? "Unggah satu foto hasil pekerjaan. Setelah tersimpan, tambahkan catatan jika perlu lalu check-out."
                   : "Tidak ada aksi pekerja yang tersedia pada status ini."}
             </p>
 
@@ -129,7 +134,16 @@ export default async function WorkerWorkPage({
               {work.allowedActions.checkIn ? (
                 <CheckInForm agreementId={work.agreementId} />
               ) : work.allowedActions.checkOut ? (
-                <CheckOutButton agreementId={work.agreementId} />
+                <div className="grid gap-4">
+                  <WorkEvidenceUpload
+                    agreementId={work.agreementId}
+                    hasEvidence={work.session.evidence !== null}
+                  />
+                  <CheckOutButton
+                    agreementId={work.agreementId}
+                    disabled={work.session.evidence === null}
+                  />
+                </div>
               ) : (
                 <Button type="button" className="w-full" disabled>
                   Menunggu
@@ -140,8 +154,9 @@ export default async function WorkerWorkPage({
             <div className="mt-5 flex gap-3 border-t border-border/75 pt-5 text-sm leading-6 text-muted-foreground">
               <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
               <p>
-                Rintara tidak mengumpulkan GPS berkelanjutan atau foto bukti
-                kerja. Kode check-in tidak pernah ditampilkan ulang.
+                Foto dinormalisasi untuk membuang metadata lokasi, disimpan
+                privat, dan terkunci setelah check-out. Kode check-in tidak
+                pernah ditampilkan ulang.
               </p>
             </div>
           </div>
@@ -188,6 +203,10 @@ export default async function WorkerWorkPage({
           </section>
         </aside>
       </div>
+
+      {work.session.evidence ? (
+        <WorkEvidenceView evidence={work.session.evidence} />
+      ) : null}
 
       <aside className="flex flex-col gap-4 border-y border-border/75 py-6 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="privacy-note-title">
         <div className="flex max-w-3xl gap-4">

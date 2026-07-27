@@ -9,7 +9,8 @@ Publish job
 -> apply
 -> accept one worker
 -> confirm Mini Agreement
--> check in and check out
+-> check in
+-> upload one private result photo and check out
 -> verify completion
 -> issue Work Proof
 -> issue and redeem Opportunity Credit
@@ -24,10 +25,15 @@ Payments are recorded as agreement terms but take place outside Rintara during t
 - Supabase Managed PostgreSQL as the source of truth
 - Drizzle ORM with repository-managed SQL migrations
 - Supabase Auth with server-side session validation
+- Private Supabase Storage for one normalized completion photo per work session
 - Vercel deployment with `main` as the production branch
 - Unit tests, PostgreSQL integration tests, and manual release smoke testing
 
-Vercel, Supabase Managed PostgreSQL, and Supabase Auth are accepted in ADR-011 and ADR-012. Project-specific production-readiness evidence such as region, plan limits, backup restore, connection sizing, callbacks, and test accounts must still be recorded before release.
+Vercel, Supabase Managed PostgreSQL, Supabase Auth, and the narrowly bounded
+private completion-evidence Storage path are accepted in ADR-011, ADR-012, and
+ADR-013. Project-specific production-readiness evidence such as region, plan
+limits, backup restore, connection sizing, callbacks, storage privacy, and test
+accounts must still be recorded before release.
 
 ## Documentation
 

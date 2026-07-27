@@ -30,6 +30,7 @@ erDiagram
     JOBS ||--o{ APPLICATIONS : receives
     APPLICATIONS ||--o| AGREEMENTS : creates
     AGREEMENTS ||--o| WORK_SESSIONS : schedules
+    WORK_SESSIONS ||--o| WORK_COMPLETION_EVIDENCE : requires
     AGREEMENTS ||--o| WORK_PROOFS : proves
 ```
 
@@ -274,6 +275,24 @@ The snapshot contains the full address and all accepted terms. It is returned on
 | `verified_at` | timestamptz nullable | Server timestamp |
 | `verified_by` | uuid nullable | FK `users.id` |
 | `created_at`, `updated_at` | timestamptz | Required |
+
+### `work_completion_evidence`
+
+| Column | Type | Rules |
+| --- | --- | --- |
+| `id` | uuid | Primary key |
+| `work_session_id` | uuid | Unique FK `work_sessions.id`, restricted delete |
+| `storage_path` | text | Unique private object path, never returned to clients |
+| `mime_type` | text | Normalized `image/webp` only |
+| `byte_size` | integer | `> 0` and `<= 5,242,880` |
+| `sha256` | text | Required 64-character integrity digest |
+| `uploaded_by` | uuid | FK `users.id`, accepted worker |
+| `uploaded_at`, `updated_at` | timestamptz | Required |
+
+The table is authoritative for whether checkout may proceed. The binary object
+remains in the private bucket selected by ADR-013. The worker may replace the
+row only while its work session is `checked_in`; the work-session row
+serializes replacement against checkout.
 
 ### `work_proofs`
 

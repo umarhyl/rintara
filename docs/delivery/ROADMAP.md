@@ -209,6 +209,7 @@ Deliverables:
 
 - check-in code generation, hashing, expiry, attempt limit, and replacement;
 - worker check-in and check-out;
+- one private result-photo upload after check-in and before check-out;
 - atomic/idempotent `verifyCompletion`;
 - unique Work Proof issuance;
 - conditional Opportunity Credit issuance with source-job uniqueness and active
@@ -219,6 +220,8 @@ Deliverables:
 Exit criteria:
 
 - Invalid, expired, reused, and cross-agreement codes fail safely.
+- Checkout fails without completion evidence; unrelated accounts cannot read
+  the private image; replacement is unavailable after checkout.
 - Repeated completion calls produce one proof.
 - Worker becomes experienced only in the completed category.
 - Golden path works through Passport on preview deployment.

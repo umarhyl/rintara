@@ -198,11 +198,21 @@ Acceptance criteria:
 
 ### FR-042 — Check-out [P0]
 
-The accepted worker MUST be able to check out after a successful check-in and add an optional completion note.
+The accepted worker MUST upload one private result photo after a successful
+check-in before checking out, and MAY add an optional completion note.
 
 Acceptance criteria:
 
-- Check-out is allowed exactly once and only from `checked_in`.
+- The worker may upload or replace one JPG, PNG, or WebP result photo of at
+  most 5 MB only while the session is `checked_in`.
+- The server normalizes the photo without embedded metadata and stores it in
+  private object storage.
+- The worker must attest that they have permission to photograph the area and
+  that the selected image excludes people and private information.
+- Only the related worker, related employer, and authorized admin can read the
+  photo; it never appears in public jobs or Passport.
+- Check-out is allowed exactly once, only from `checked_in`, and only when the
+  session has an evidence record.
 - The work session records a server timestamp and becomes `checked_out`.
 - Employer receives an in-app request to verify completion.
 

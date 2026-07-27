@@ -60,6 +60,7 @@ async function resetDomainData(
       public.job_boosts,
       public.opportunity_credits,
       public.work_proofs,
+      public.work_completion_evidence,
       public.work_sessions,
       public.reports,
       public.notifications,

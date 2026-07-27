@@ -14,6 +14,7 @@ import {
   opportunityCredits,
   reports,
   users,
+  workCompletionEvidence,
   workProofs,
   workSessions,
 } from "@/server/db/schema";
@@ -407,6 +408,18 @@ export async function checkOut(input: unknown): Promise<CheckOutResult> {
     }
     if (row.sessionStatus !== "checked_in") {
       throw new ApplicationError("INVALID_STATE_TRANSITION", "Work session is not ready for check-out.");
+    }
+
+    const [evidence] = await tx
+      .select({ id: workCompletionEvidence.id })
+      .from(workCompletionEvidence)
+      .where(eq(workCompletionEvidence.workSessionId, row.sessionId))
+      .limit(1);
+    if (!evidence) {
+      throw new ApplicationError(
+        "WORK_EVIDENCE_REQUIRED",
+        "Upload satu foto hasil pekerjaan sebelum check-out.",
+      );
     }
 
     assertWorkSessionTransition(row.sessionStatus, "checked_out");

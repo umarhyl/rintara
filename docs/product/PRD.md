@@ -1,7 +1,7 @@
 # Rintara Product Requirements Document
 
-> **Version:** 3.0  
-> **Date:** July 18, 2026  
+> **Version:** 3.1
+> **Date:** July 27, 2026
 > **Status:** MVP implementation baseline  
 > **Product:** Informal Job Portal and Local Service Network  
 > **Primary stack:** Next.js App Router, TypeScript, PostgreSQL  
@@ -49,7 +49,7 @@ The MVP proves one connected product loop:
 2. An eligible worker applies without bidding on the wage.
 3. The employer accepts exactly one worker.
 4. Rintara creates an immutable Mini Agreement.
-5. Attendance and completion are confirmed.
+5. Attendance, one private result photo, and completion are confirmed.
 6. Rintara issues one verified Work Proof to the worker's Rintara Passport.
 7. For a valid First Opportunity job, the employer earns one Opportunity Credit.
 8. The employer can redeem the credit for a 24-hour job boost.
@@ -181,7 +181,7 @@ The MVP must:
 | Applications | One concise application per worker per job; no wage bidding |
 | Worker acceptance | Exactly one accepted worker and one agreement per job |
 | Mini Agreement | Immutable snapshot confirmed independently by both parties |
-| Attendance | Short-lived check-in code and worker check-out |
+| Attendance and result evidence | Short-lived check-in code, one private result photo, and worker check-out |
 | Verified completion | Atomic completion, Work Proof issuance, and optional credit issuance |
 | Rintara Passport | Read model derived from verified Work Proof records |
 | Opportunity Credit and boost | Maximum three active credits; one credit gives one job a 24-hour boost |
@@ -208,7 +208,7 @@ Detailed acceptance criteria are in `docs/product/REQUIREMENTS.md`.
 - Real-time chat, video calls, email, SMS, or WhatsApp integration.
 - Fast Rematch, automatic matching, AI scoring, or recommendations.
 - Direct worker search by employers.
-- Identity-document storage, background checks, or work-proof photo uploads.
+- Identity-document storage or background checks.
 - Continuous GPS tracking or interactive maps.
 - More than one accepted worker per job.
 - High-risk or licensed job categories.
@@ -248,6 +248,7 @@ Electrical work, working at height, heavy machinery, medical work, unverified ch
 | Credit use | One published job receives a 24-hour boost |
 | Passport | A read model over Work Proof, not a separately editable profile section |
 | Realtime | Not required; database notifications plus revalidation/polling are sufficient |
+| Completion evidence | One private result photo is required after check-in and before check-out; it is excluded from Passport |
 
 ## 11. Success Measures
 

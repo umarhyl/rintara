@@ -7,6 +7,7 @@ import {
 } from "@/components/rintara/work-actions";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { ReportProblem } from "@/components/rintara/report-problem";
+import { WorkEvidenceView } from "@/components/rintara/work-evidence-view";
 import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { ApplicationError } from "@/server/errors/application-error";
@@ -170,6 +171,10 @@ export default async function EmployerWorkPage({
             </blockquote>
           </section>
 
+          {work.session.evidence ? (
+            <WorkEvidenceView evidence={work.session.evidence} />
+          ) : null}
+
           <section className="grid gap-4 border-y border-border/70 py-4 sm:grid-cols-[auto_1fr]">
             <span className="grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground">
               <KeyRound className="size-4" aria-hidden="true" />
@@ -199,7 +204,9 @@ export default async function EmployerWorkPage({
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {work.allowedActions.generateCheckInCode
               ? "Berikan kode hanya kepada pekerja yang diterima ketika siap mulai."
-              : "Verifikasi menerbitkan satu Bukti Kerja setelah pekerja check-out."}
+              : work.allowedActions.verifyCompletion
+                ? "Tinjau foto hasil dan catatan pekerja. Verifikasi menerbitkan satu Bukti Kerja."
+                : "Pekerja harus mengunggah foto hasil sebelum check-out."}
           </p>
           <div className="mt-5 border-t border-border/75 pt-5">
             {work.allowedActions.generateCheckInCode ? (

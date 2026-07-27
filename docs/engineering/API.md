@@ -573,7 +573,32 @@ Errors include `CODE_INVALID`, `CODE_EXPIRED`, `CODE_LOCKED`, and `AGREEMENT_NOT
 
 Access: active worker party.
 
-Input: agreement ID and optional bounded completion note. Allowed once from `checked_in`.
+Input: agreement ID and optional bounded completion note. Allowed once from
+`checked_in` only when the session has one completion-evidence record.
+
+### `POST /api/work-evidence/:agreementId`
+
+Access: accepted active worker party.
+
+Accepts one multipart field named `photo`: JPG, PNG, or WebP up to 5 MB.
+Available only while the session is `checked_in`. The server decodes, rotates,
+resizes within 2048×2048, and re-encodes the input as WebP without copied
+metadata before saving it to a random path in the private bucket. A replacement
+atomically swaps the PostgreSQL metadata pointer and is unavailable after
+checkout. Successful output returns only agreement ID, upload timestamp, and
+normalized byte size; it never returns a storage path.
+
+At most five successful uploads/replacements per actor and agreement are
+allowed per rolling minute.
+
+### `GET /api/work-evidence/:agreementId`
+
+Access: related active worker, related active employer, or active admin.
+
+Streams the normalized private image with `private, no-store` and
+`nosniff` headers after server-side relationship authorization. Anonymous and
+unrelated identifiers return safe authorization/not-found responses. Storage
+paths and provider credentials are never returned.
 
 ### `verifyCompletion(agreementId)`
 
@@ -594,7 +619,8 @@ type VerifyCompletionResult = {
 };
 ```
 
-Repeated successful requests return the same proof and credit outcome. Errors include `WORK_NOT_CHECKED_OUT` and `ACTIVE_REPORT_BLOCKS_COMPLETION`.
+Repeated successful requests return the same proof and credit outcome. Errors
+include `WORK_NOT_CHECKED_OUT` and `ACTIVE_REPORT_BLOCKS_COMPLETION`.
 
 ## 8. Passport, Credit, and Boost Contracts
 
@@ -735,6 +761,8 @@ Authentication provider callback routes follow provider documentation and are no
 | `FIRST_OPPORTUNITY_INELIGIBLE` | Worker now has category proof | 409 |
 | `CONCURRENT_ACCEPTANCE_CONFLICT` | Another applicant won the race | 409 |
 | `ACTIVE_REPORT_BLOCKS_COMPLETION` | Moderation must finish first | 409 |
+| `WORK_EVIDENCE_REQUIRED` | Worker has not stored the required result photo before checkout | 409 |
+| `WORK_EVIDENCE_INVALID` | Photo format, content, or size is invalid | 400 |
 | `REPORT_ALREADY_EXISTS` | The reporter already has an active report for the same target | 409 |
 | `CREDIT_NOT_AVAILABLE` | Credit is redeemed, expired, revoked, or absent | 409 |
 | `RATE_LIMITED` | Too many attempts | 429 |

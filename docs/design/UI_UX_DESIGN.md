@@ -631,7 +631,9 @@ Admin marketplace configuration provides:
 - Use responsive images only where images add product value.
 - Keep the landing and authentication images route-specific and optimized;
   neither is required to understand or operate its adjacent form.
-- Do not require profile images or proof images for the golden path.
+- Do not require profile images. Require exactly one private result photo after
+  check-in and before checkout; keep the upload island bounded and show
+  progress, validation, replacement-before-checkout, and retry states.
 - Prefer Server Components and limit client JavaScript to interactive islands.
 - Avoid autoplay media and large animation libraries.
 - Loading states should show structure without causing major layout shifts.
@@ -646,6 +648,8 @@ Required explanations:
 - Wage Guidelines are references unless legally validated;
 - First Opportunity is not unpaid work;
 - Work Proof is issued after employer-verified completion;
+- one private result photo is required before checkout, stripped of embedded
+  metadata, and visible only to the related parties and authorized admin;
 - reports pause relevant completion while under review.
 
 Do not expose applicant notes, full addresses, check-in codes, private report notes, contact details, or account-status reasons in public metadata or screenshots.
