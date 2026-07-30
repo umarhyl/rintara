@@ -5,15 +5,22 @@ import { eq } from "drizzle-orm";
 import { db } from "@/server/db/client";
 import { employerProfiles, users, workerProfiles } from "@/server/db/schema";
 import { requireActiveUser } from "@/server/auth/identity";
+import type { RequestContext } from "@/server/auth/types";
 
-export type DashboardContext = {
-  userId: string;
-  role: "worker" | "employer" | "admin";
+export type DashboardContext = RequestContext & {
   displayName: string;
 };
 
 export const getCurrentUserDashboardContext = cache(async (): Promise<DashboardContext> => {
   const context = await requireActiveUser();
+
+  if (context.role === "admin") {
+    return {
+      ...context,
+      displayName: "Admin Rintara",
+    };
+  }
+
   const [account] = await db
     .select({
       workerName: workerProfiles.displayName,
@@ -26,13 +33,10 @@ export const getCurrentUserDashboardContext = cache(async (): Promise<DashboardC
     .limit(1);
 
   return {
-    userId: context.userId,
-    role: context.role,
+    ...context,
     displayName:
       context.role === "worker"
         ? account!.workerName!
-        : context.role === "employer"
-          ? account!.employerName!
-          : "Admin Rintara",
+        : account!.employerName!,
   };
 });

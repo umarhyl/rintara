@@ -607,6 +607,9 @@ Admin marketplace configuration provides:
 
 - separate forms for categories, pilot city/regency areas, and Wage Guideline
   versions;
+- a route-specific skeleton that preserves the three-form and three-summary
+  layout; after authorization, category and area forms render without waiting
+  for the data-dependent Wage Guideline options and saved summaries;
 - source and simulation labels for each guideline;
 - explicit active/nonactive status controls with audit feedback; and
 - independently paginated summaries so advancing one configuration list does

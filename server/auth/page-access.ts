@@ -2,13 +2,11 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { ApplicationError } from "@/server/errors/application-error";
-import type { RintaraRole } from "./types";
+import type { RequestContext, RintaraRole } from "./types";
 import { safeApplicationPath } from "./redirects";
 import { getVerifiedAuthSubject } from "./verified-subject";
 
-export type DashboardPageContext = {
-  userId: string;
-  role: RintaraRole;
+export type DashboardPageContext = RequestContext & {
   displayName: string;
 };
 

@@ -243,6 +243,11 @@ either record.
 Configuration lists use independent bounded cursors so advancing one list does
 not reset the other two.
 
+During initial navigation, the loading skeleton preserves the configuration
+page's form and summary layout. After authorization, category and pilot-area
+forms may render while Wage Guideline options and saved configuration lists
+continue loading within stable section-level placeholders.
+
 ## 5. Employer Creates and Publishes a Job
 
 1. Employer selects **Post a job**.

@@ -951,10 +951,34 @@ describe("frontend flow surface", () => {
     const wageGuidelines = await Bun.file(
       "app/admin/wage-guidelines/page.tsx",
     ).text();
+    const marketplaceResults = await Bun.file(
+      "features/admin/components/marketplace-config-results.tsx",
+    ).text();
+    const marketplaceLoading = await Bun.file(
+      "app/admin/wage-guidelines/loading.tsx",
+    ).text();
+    const marketplaceQuery = await Bun.file(
+      "server/queries/admin/marketplace-config.ts",
+    ).text();
     expect(jobFilters).toContain("inline-flex min-h-11");
     expect(withdrawButton).toContain('className="h-11"');
     expect(marketplaceForms).toContain('className="min-h-11"');
-    expect(wageGuidelines.match(/className="min-h-11"/g)?.length).toBe(3);
+    expect(
+      `${wageGuidelines}\n${marketplaceResults}`.match(
+        /className="min-h-11"/g,
+      )?.length,
+    ).toBe(3);
+    expect(wageGuidelines).toContain(
+      "const configPromise = getAdminMarketplaceConfig(cursors, account)",
+    );
+    expect(wageGuidelines.match(/<Suspense/g)?.length).toBe(3);
+    expect(marketplaceResults).toContain("await configPromise");
+    expect(marketplaceLoading).toContain(
+      'aria-label="Memuat konfigurasi marketplace"',
+    );
+    expect(marketplaceLoading).toContain("<FormSectionSkeleton");
+    expect(marketplaceQuery).toContain("canReuseAreaPage");
+    expect(marketplaceQuery).toContain("canReuseCategoryPage");
     for (const primitive of [
       "components/ui/alert.tsx",
       "components/rintara/status-badge.tsx",
