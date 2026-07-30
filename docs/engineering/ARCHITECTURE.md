@@ -36,10 +36,14 @@ Non-goals include microservices, event streaming, realtime chat, payment infrast
 | Database | Supabase Managed PostgreSQL through standard PostgreSQL connections |
 | Data access | Drizzle ORM plus explicit SQL where transaction or query-plan control is needed |
 | Authentication | Supabase Auth with cookie-based Next.js SSR; no custom password or session implementation |
+| Private completion media | Supabase Storage private bucket behind a server-only adapter, as accepted in ADR-013 |
 | Deployment | Vercel; `main` is the production branch |
 | Testing | Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing |
 
-ADR-011 and ADR-012 select Vercel, Supabase Managed PostgreSQL, and Supabase Auth. Business data remains provider-portable: Drizzle and parameterized SQL use standard PostgreSQL connections, while provider-specific authentication code stays behind the auth infrastructure boundary.
+ADR-011, ADR-012, and ADR-013 select Vercel, Supabase Managed PostgreSQL,
+Supabase Auth, and a narrowly bounded private Supabase Storage path for work
+completion evidence. Business state remains in PostgreSQL; provider-specific
+authentication and binary-storage code stays behind infrastructure adapters.
 
 ## 3. System Context
 
@@ -48,6 +52,7 @@ flowchart TD
     U["Worker, Employer, Admin"] --> W["Next.js Web Application"]
     W --> A["Supabase Auth"]
     W --> P["Supabase Managed PostgreSQL"]
+    W --> S["Private Supabase Storage"]
     O["Operations and Monitoring"] --> W
     O --> P
 ```
@@ -57,6 +62,7 @@ Rintara is a modular monolith:
 - one deployable Next.js application;
 - one PostgreSQL database;
 - one authentication integration;
+- one private object-storage bucket for normalized completion evidence;
 - no internal network boundary between UI and domain services;
 - clear code-level boundaries so modules can be extracted later only if evidence justifies it.
 
@@ -216,6 +222,16 @@ The following operations require database transactions:
 
 Transactions must be short. Do not call external authentication, messaging, storage, analytics, or other network services while holding locks.
 
+### Work completion evidence upload
+
+Image validation and normalization happen before object upload. Each upload
+uses a new random private path. After upload, a short PostgreSQL transaction
+locks the work session, rechecks that it is still `checked_in`, and inserts or
+replaces the unique metadata pointer. A failed transaction attempts to delete
+the newly uploaded object. A successful replacement attempts to delete the
+previous object after commit. `checkOut` locks the same work-session row and
+requires the metadata record, so upload/replacement cannot race checkout.
+
 ## 8. Read Models and Privacy Boundaries
 
 Use distinct projections instead of returning table-shaped objects everywhere.
@@ -227,6 +243,7 @@ Use distinct projections instead of returning table-shaped objects everywhere.
 | Worker application detail | Applicant | Other applicants, employer private administration data |
 | Employer applicant view | Owning employer | Worker data unrelated to the application |
 | Agreement detail | Two parties/admin | Data unrelated to the agreement |
+| Work completion photo | Related worker, related employer, authorized admin | Storage path, service credential, unrelated sessions, public caches |
 | Passport owner view | Worker | Internal audit/moderation metadata |
 | Passport applicant view | Owning employer | Private worker data beyond verified work context |
 
@@ -339,11 +356,15 @@ Never log passwords, session tokens, check-in codes, full addresses, application
 | --- | --- | --- |
 | Local | Development and tests | Local or isolated development database |
 | Preview | Review and acceptance | Synthetic data only; separate credentials |
-| Production | Public MVP and live demo | Managed backups, least-privilege credentials, controlled seed |
+| Demo | Live rehearsal and presentation | Dedicated Supabase project, synthetic accounts created through normal application flows |
+| Production | Public MVP | Managed backups, least-privilege credentials, no seed/reset command |
 
 Required configuration categories include database connection, authentication secrets and callbacks, application base URL, rate-limit configuration if used, and observability configuration. Environment names are documented in the repository README without secret values.
 
 Database migrations run as a controlled deployment step. Application instances must not race to run migrations on startup.
+Local/test seeds are restricted to loopback PostgreSQL. The repository seed
+command cannot reset a preview, demo, or production database. Remote demo data
+is prepared through normal registration, onboarding, and job-management flows.
 
 ## 15. Testing Architecture
 
@@ -352,7 +373,10 @@ Database migrations run as a controlled deployment step. Application instances m
 - Concurrency tests cover acceptance, completion, and credit redemption.
 - Query tests verify public/private projections.
 - Manual release smoke testing rehearses the golden path and required authorization scenarios.
-- Seed data creates two employers, multiple workers with category-specific history, compliant and non-compliant jobs, credits, and a report scenario.
+- Local seed data creates synthetic role fixtures, active reference data, and
+  two visible future-deadline jobs. The reset verifies discoverability before
+  committing.
+  commit; workflow state is created by the rehearsed golden path.
 
 ## 16. Architecture Decision Guardrails
 

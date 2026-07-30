@@ -6,7 +6,10 @@
 
 ## 1. Purpose
 
-This guide defines a safe deployment process for the Next.js application on Vercel and Supabase Managed PostgreSQL. ADR-011 selects the providers; project-specific region, plan, limits, and restore evidence remain production-readiness gates.
+This guide defines a safe deployment process for the Next.js application on
+Vercel, Supabase Managed PostgreSQL, and the private Supabase Storage path
+approved in ADR-013. Provider-specific region, plan, limits, and restore
+evidence remain production-readiness gates.
 
 ## 2. Environment Model
 
@@ -39,6 +42,15 @@ Never point local or review reset/seed commands at production.
 - query/connection observability; and
 - a tested export/exit path.
 
+### Supabase private object storage
+
+- private `work-completion-evidence` bucket;
+- 5 MB object limit and normalized `image/webp` allowlist;
+- server-only service-role access;
+- storage usage/error visibility and an unattached-object cleanup procedure;
+- no public bucket URLs or client-bundled administrative credential; and
+- retention/deletion policy approved before long-lived public-user storage.
+
 ## 4. Configuration Contract
 
 The final `.env.example` should document names without values. Expected categories include:
@@ -49,11 +61,12 @@ The final `.env.example` should document names without values. Expected categori
 | Pooled database URL | Secret | Runtime queries |
 | Direct database URL | Secret | Controlled migrations if provider requires it |
 | Authentication secrets/keys | Secret | Session and provider integration |
+| Supabase service-role key | Secret | Server-only private completion-evidence object access |
 | Authentication callback URL | Public/config | Provider redirect configuration |
 | Check-in code pepper/key | Secret | Protect low-entropy code verification data |
 | Rate-limit configuration | Mixed | Abuse control |
 | Log level/release identifier | Non-secret | Operations and correlation |
-| Demo-seed safety flag | Non-secret | Explicitly enable controlled demo behavior |
+| Local/test seed safety flag | Non-secret | Explicitly enable synthetic local/test fixtures |
 | Maintenance secret | Secret | Authenticate bounded expiry operations |
 | Release identifier | Non-secret | Identify the deployed build in shallow health responses |
 
@@ -71,6 +84,11 @@ Rules:
 - Keep `CHECK_IN_CODE_PEPPER` stable and secret. Rotating it invalidates every
   outstanding 15-minute check-in code, so employers must generate replacement
   codes after a rotation.
+- `SUPABASE_SERVICE_ROLE_KEY` is required only on the server. Rotate it
+  immediately if exposed; never prefix it with `NEXT_PUBLIC_`.
+- Seed commands are limited to loopback local/test databases and refuse
+  preview, demo, production, and every remote database. Prepare remote demo
+  accounts and jobs through the normal application flows.
 
 ## 5. Build Requirements
 
@@ -124,6 +142,10 @@ Use synthetic smoke accounts and avoid changing real workflows.
 - [ ] A safe create/read action reaches PostgreSQL.
 - [ ] Notifications query is private to the current user.
 - [ ] Health endpoint returns minimal expected output.
+- [ ] Worker uploads one valid result photo after check-in; unrelated users
+  cannot read it; replacement stops after checkout.
+- [ ] The `work-completion-evidence` bucket remains private and upload/download
+  failures are visible in operational logs without photo contents.
 - [ ] Logs show release identifier and no secrets/PII.
 
 Run the full demo only in the approved demo dataset/environment.

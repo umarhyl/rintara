@@ -2,7 +2,13 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, KeyRound, LoaderCircle } from "lucide-react";
+import {
+  Camera,
+  Check,
+  ImageUp,
+  KeyRound,
+  LoaderCircle,
+} from "lucide-react";
 import {
   checkIn,
   checkOut,
@@ -10,6 +16,7 @@ import {
   verifyCompletion,
 } from "@/server/domain/work/actions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +43,12 @@ const messages: Record<string, string> = {
     "Status pekerjaan baru saja berubah. Muat ulang halaman untuk melihat aksi terbaru.",
   NOT_FOUND: "Sesi pekerjaan tidak ditemukan.",
   WORK_NOT_CHECKED_OUT: "Pekerja harus check-out sebelum verifikasi.",
+  WORK_EVIDENCE_INVALID:
+    "Gunakan satu foto JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.",
+  WORK_EVIDENCE_REQUIRED:
+    "Unggah satu foto hasil pekerjaan sebelum check-out.",
+  RATE_LIMITED:
+    "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
 };
 
 function messageFor(error: unknown) {
@@ -280,6 +293,158 @@ export function CheckOutButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function WorkEvidenceUpload({
+  agreementId,
+  hasEvidence,
+  disabled,
+}: {
+  agreementId: string;
+  hasEvidence: boolean;
+  disabled?: boolean;
+}) {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [privacyAttested, setPrivacyAttested] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleUpload() {
+    if (!file || !privacyAttested || pending || disabled) return;
+
+    setPending(true);
+    setError(null);
+    const formData = new FormData();
+    formData.set("photo", file);
+    formData.set("privacyAttested", String(privacyAttested));
+
+    try {
+      const response = await fetch(
+        `/api/work-evidence/${encodeURIComponent(agreementId)}`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+      const payload = (await response.json()) as {
+        code?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        setError(
+          payload.code
+            ? messages[payload.code] ?? payload.message ?? "Foto belum dapat disimpan."
+            : "Foto belum dapat disimpan.",
+        );
+        return;
+      }
+
+      setFile(null);
+      setPrivacyAttested(false);
+      if (inputRef.current) inputRef.current.value = "";
+      router.refresh();
+    } catch {
+      setError("Koneksi terputus saat mengunggah foto. Coba lagi.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section
+      className="grid gap-4 rounded-xl border border-border bg-muted/25 p-4"
+      aria-labelledby="work-evidence-upload-title"
+    >
+      <div className="flex gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Camera className="size-5" aria-hidden="true" />
+        </span>
+        <div>
+          <h3 id="work-evidence-upload-title" className="font-semibold">
+            Foto hasil pekerjaan
+          </h3>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Wajib satu foto tanpa orang atau informasi pribadi. JPG, PNG, atau
+            WebP maksimal 5 MB.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="work-evidence-photo">
+          {hasEvidence ? "Ganti foto sebelum check-out" : "Pilih foto"}
+        </Label>
+        <Input
+          ref={inputRef}
+          id="work-evidence-photo"
+          name="photo"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          disabled={disabled || pending}
+          onChange={(event) => {
+            setFile(event.target.files?.[0] ?? null);
+            setError(null);
+          }}
+          className="h-auto min-h-12 py-2 file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-2 file:font-medium file:text-primary"
+        />
+      </div>
+
+      <div className="flex min-h-11 items-start gap-3">
+        <Checkbox
+          id="work-evidence-privacy"
+          checked={privacyAttested}
+          onCheckedChange={(value) => setPrivacyAttested(value === true)}
+          disabled={disabled || pending}
+          className="mt-1"
+        />
+        <Label
+          htmlFor="work-evidence-privacy"
+          className="cursor-pointer text-sm font-normal leading-6"
+        >
+          Saya memiliki izin memotret area ini dan memastikan foto tidak
+          memuat orang, dokumen, atau informasi pribadi.
+        </Label>
+      </div>
+
+      <Button
+        type="button"
+        variant={hasEvidence ? "outline" : "default"}
+        className="h-11"
+        disabled={disabled || pending || !file || !privacyAttested}
+        onClick={handleUpload}
+      >
+        {pending ? (
+          <>
+            <LoaderCircle className="animate-spin" aria-hidden="true" />
+            Memproses foto
+          </>
+        ) : (
+          <>
+            <ImageUp aria-hidden="true" />
+            {hasEvidence ? "Ganti foto" : "Unggah foto"}
+          </>
+        )}
+      </Button>
+
+      {hasEvidence ? (
+        <p className="text-sm font-medium text-success" role="status">
+          Foto tersimpan. Kamu dapat check-out.
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+    </section>
   );
 }
 

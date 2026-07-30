@@ -15,6 +15,7 @@
 | Selection cutoff | The fixed point 24 hours before `starts_at`; the last boundary for accepting an existing submitted application |
 | Mini Agreement | The immutable operational terms snapshot created when one application is accepted |
 | Work Session | The single attendance and completion record for an agreement |
+| Work Completion Evidence | One private normalized result photo required after check-in and before check-out |
 | Work Proof | System-issued evidence of a verified completed job |
 | Rintara Passport | A read model composed from a worker's Work Proof records |
 | Opportunity Credit | A non-transferable employer reward for a qualifying First Opportunity completion |
@@ -41,6 +42,7 @@
 | Review applicants | No | Own jobs only | Moderation only | No |
 | Confirm agreement | Own agreements | Own agreements | Moderation only | No |
 | Check in/check out | Accepted worker only | No | Exceptional moderation only | No |
+| Upload/view completion evidence | Own session | Related agreement | Authorized moderation | No |
 | Generate check-in code | No | Job owner only | Exceptional moderation only | No |
 | Verify completion | No | Job owner only | Exceptional moderation only | No |
 | View full address | Accepted worker | Job owner | Authorized moderation | No |
@@ -166,6 +168,9 @@ scheduled -> checked_in -> checked_out -> verified
 ```
 
 Every agreement has at most one session. Skipping states is prohibited.
+While the session is `checked_in`, the accepted worker may upload or replace
+exactly one private result photo. The photo becomes immutable when the session
+leaves `checked_in`, and `checked_out` requires the evidence record.
 
 ### 6.5 Opportunity Credit
 
@@ -319,7 +324,9 @@ Allowed report reasons include suspicious job, task or wage mismatch, absence, u
 - Admin actions require a factual reason and immutable audit record.
 - Admin may hide a job, suspend an account, cancel an unfinished workflow, revoke proof, revoke credit, and deactivate a related active boost.
 - Rejected or resolved reports no longer block completion unless a separate administrative restriction remains.
-- Reports and evidence are not hard-deleted through normal application flows.
+- Reports and lifecycle evidence are not hard-deleted through normal
+  application flows. Binary completion evidence follows its separately
+  approved retention policy.
 - A reporter may submit at most three reports per rolling minute and may not
   create a duplicate active report for the same target.
 - A normal worker or employer cannot report an arbitrary standalone user; the
@@ -342,6 +349,7 @@ At minimum, PostgreSQL enforces:
 - at most one accepted application per job through a partial unique index;
 - unique agreement by application and job;
 - unique work session by agreement;
+- unique completion evidence by work session and unique private storage path;
 - unique Work Proof by agreement;
 - unique Opportunity Credit by source job;
 - unique boost by credit and no overlapping active boost through transactional validation;

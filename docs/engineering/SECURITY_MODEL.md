@@ -95,6 +95,8 @@ Rules:
 | SQL injection | Filter text reaches query string | Parameterized ORM/SQL and input validation |
 | CSRF | Cross-site protected mutation | Auth-provider/framework CSRF model, same-site secure cookies |
 | Report abuse | User floods reports to block completion | Relationship validation, rate limits, duplicate detection, admin queue |
+| Private photo disclosure | Guessed agreement or object identifier exposes a room photo | Private bucket, server relationship authorization, opaque path, no-store response |
+| Image parser/resource abuse | Malformed or oversized upload consumes runtime resources | MIME allowlist, 5 MB input cap, pixel cap, server decode/re-encode, upload rate limit |
 | Log leakage | Request body contains address/code | Structured allowlisted logs, no unrestricted payloads |
 | Seed/reset damage | Demo reset runs on production | Explicit environment allowlist, production refusal, isolated credentials |
 | Dependency compromise | New package introduces malicious code | Lockfile, minimal dependencies, review, vulnerability monitoring |
@@ -141,6 +143,20 @@ Central authorization helpers should produce typed results and be tested indepen
 - Access is limited to the job owner, accepted worker through agreement context, and authorized admin.
 - Do not include address in public HTML, metadata, cache keys, notification copy, analytics, errors, or logs.
 - Test anonymous, unrelated worker, unrelated employer, and hidden-job cases.
+
+### 8.1 Private work completion evidence
+
+- Accept one JPG, PNG, or WebP input up to 5 MB only from the accepted worker
+  while the related session is `checked_in`.
+- Decode and re-encode as bounded WebP without copying EXIF, XMP, ICC, filename,
+  or caller-provided metadata.
+- Keep the Supabase bucket private and its service-role credential server-only.
+- Store the object path only in PostgreSQL and never return it to the browser.
+- Stream through an authenticated, relationship-authorized, no-store endpoint.
+- Permit the related worker, related employer, and authorized admin only.
+- Serialize metadata replacement and checkout on the work-session row.
+- Never log image bytes, multipart bodies, object credentials, private paths,
+  or image contents.
 
 ## 9. Check-In Code Protection
 

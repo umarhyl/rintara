@@ -6,7 +6,10 @@ import {
   getAuthenticationCallbackUrl,
   getPasswordRecoveryCallbackUrl,
 } from "./environment";
-import { mapAuthProviderError } from "./provider-errors";
+import {
+  isExistingAccountSignUpError,
+  mapAuthProviderError,
+} from "./provider-errors";
 import {
   passwordRecoveryRequestSchema,
   passwordUpdateSchema,
@@ -39,11 +42,17 @@ export async function signUp(input: unknown, nextPath?: string) {
   });
 
   if (error) {
+    if (isExistingAccountSignUpError(error)) {
+      return { state: "confirm-or-sign-in" as const };
+    }
+
     throw mapAuthProviderError(error, "sign-up");
   }
 
   return {
-    requiresEmailConfirmation: data.session === null,
+    state: data.session === null
+      ? ("confirm-or-sign-in" as const)
+      : ("signed-in" as const),
   };
 }
 

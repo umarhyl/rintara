@@ -113,6 +113,58 @@ databaseTest(
       expect(guideline.ok).toBe(true);
       if (!guideline.ok) throw new Error(guideline.message);
 
+      const overlappingGuideline = await createWageGuidelineAction(
+        null,
+        form({
+          areaId: area.id,
+          categoryId: category.id,
+          unit: "job",
+          minimumAmount: "120000",
+          recommendedAmount: "170000",
+          sourceLabel: "Sumber sintetis overlap",
+          effectiveFrom: "2030-06-01",
+          isSimulated: true,
+          isActive: true,
+        }),
+      );
+      expect(overlappingGuideline).toMatchObject({
+        ok: false,
+        fieldErrors: {
+          effectiveFrom: [
+            "Pilih periode yang tidak bertumpang tindih dengan panduan aktif.",
+          ],
+        },
+      });
+
+      const inactiveOverlappingGuideline = await createWageGuidelineAction(
+        null,
+        form({
+          areaId: area.id,
+          categoryId: category.id,
+          unit: "job",
+          minimumAmount: "120000",
+          recommendedAmount: "170000",
+          sourceLabel: "Sumber sintetis nonaktif",
+          effectiveFrom: "2030-06-01",
+          isSimulated: true,
+          isActive: false,
+        }),
+      );
+      expect(inactiveOverlappingGuideline.ok).toBe(true);
+      if (!inactiveOverlappingGuideline.ok) {
+        throw new Error(inactiveOverlappingGuideline.message);
+      }
+      expect(
+        await setWageGuidelineActiveAction(
+          null,
+          form({ id: inactiveOverlappingGuideline.id, isActive: "true" }),
+        ),
+      ).toMatchObject({
+        ok: false,
+        message:
+          "Panduan Upah tidak dapat diaktifkan karena periodenya bertumpang tindih dengan panduan aktif lain.",
+      });
+
       for (const [action, id] of [
         [setCategoryActiveAction, category.id],
         [setPilotAreaActiveAction, area.id],

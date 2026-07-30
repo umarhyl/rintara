@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import {
@@ -41,25 +41,35 @@ const ids = {
   demoGeneralJob: "4eb0ba68-2875-4bfe-80dc-44bd836742bb",
 } as const;
 
+const authSubjects = {
+  admin: "rintara-local-seed-admin",
+  employerA: "rintara-local-seed-employer-a",
+  employerB: "rintara-local-seed-employer-b",
+  workerNew: "rintara-local-seed-worker-new",
+  workerSecond: "rintara-local-seed-worker-second",
+  workerSuspended: "rintara-local-seed-worker-suspended",
+} as const;
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const seedTime = new Date();
-const firstOpportunityDeadline = addDays(seedTime, 3);
-const firstOpportunityStart = addDays(seedTime, 5);
-const boostTargetDeadline = addDays(seedTime, 4);
-const boostTargetStart = addDays(seedTime, 7);
+const firstOpportunityDeadline = addDays(seedTime, 14);
+const firstOpportunityStart = addDays(seedTime, 21);
+const boostTargetDeadline = addDays(seedTime, 21);
+const boostTargetStart = addDays(seedTime, 28);
 
 function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * DAY_IN_MS);
 }
 
 async function resetDomainData(
-  database: ReturnType<typeof drizzle>,
+  database: Pick<ReturnType<typeof drizzle>, "execute">,
 ) {
   await database.execute(sql`
     truncate table
       public.job_boosts,
       public.opportunity_credits,
       public.work_proofs,
+      public.work_completion_evidence,
       public.work_sessions,
       public.reports,
       public.notifications,
@@ -80,10 +90,11 @@ async function resetDomainData(
   `);
 }
 
-async function seed() {
-  assertSeedAllowed();
+export async function seedDatabase() {
+  const seedDatabaseUrl = getSeedDatabaseUrl();
+  assertSeedAllowed(seedDatabaseUrl);
 
-  const client = postgres(getSeedDatabaseUrl(), {
+  const client = postgres(seedDatabaseUrl, {
     max: 1,
     prepare: false,
     ssl: getDatabaseSslMode(),
@@ -91,15 +102,15 @@ async function seed() {
   const database = drizzle(client);
 
   try {
-    await resetDomainData(database);
-
     await database.transaction(async (tx) => {
+      await resetDomainData(tx);
+
       await tx
         .insert(users)
         .values([
           {
             id: ids.admin,
-            authSubject: "rintara-seed-admin",
+            authSubject: authSubjects.admin,
             role: "admin",
             status: "active",
             createdAt: seedTime,
@@ -107,7 +118,7 @@ async function seed() {
           },
           {
             id: ids.employerA,
-            authSubject: "rintara-seed-employer-sinar-event-studio",
+            authSubject: authSubjects.employerA,
             role: "employer",
             status: "active",
             createdAt: seedTime,
@@ -115,7 +126,7 @@ async function seed() {
           },
           {
             id: ids.employerB,
-            authSubject: "rintara-seed-employer-warung-nusa",
+            authSubject: authSubjects.employerB,
             role: "employer",
             status: "active",
             createdAt: seedTime,
@@ -123,7 +134,7 @@ async function seed() {
           },
           {
             id: ids.workerNew,
-            authSubject: "rintara-seed-worker-ayu-pratama",
+            authSubject: authSubjects.workerNew,
             role: "worker",
             status: "active",
             createdAt: seedTime,
@@ -131,7 +142,7 @@ async function seed() {
           },
           {
             id: ids.workerSecond,
-            authSubject: "rintara-seed-worker-bima-saputra",
+            authSubject: authSubjects.workerSecond,
             role: "worker",
             status: "active",
             createdAt: seedTime,
@@ -139,7 +150,7 @@ async function seed() {
           },
           {
             id: ids.workerSuspended,
-            authSubject: "rintara-seed-worker-raka-suspended",
+            authSubject: authSubjects.workerSuspended,
             role: "worker",
             status: "suspended",
             createdAt: seedTime,
@@ -432,6 +443,23 @@ async function seed() {
           },
         ])
         .onConflictDoNothing();
+
+      const [verification] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(jobs)
+        .where(
+          and(
+            eq(jobs.status, "published"),
+            eq(jobs.visibility, "visible"),
+            gt(jobs.applicationDeadline, seedTime),
+          ),
+        );
+
+      if (!verification || verification.count < 1) {
+        throw new Error(
+          "Seed verification failed: no discoverable published job was created.",
+        );
+      }
     });
 
     console.info(
@@ -442,4 +470,6 @@ async function seed() {
   }
 }
 
-await seed();
+if (import.meta.main) {
+  await seedDatabase();
+}

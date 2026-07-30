@@ -30,6 +30,7 @@ erDiagram
     JOBS ||--o{ APPLICATIONS : receives
     APPLICATIONS ||--o| AGREEMENTS : creates
     AGREEMENTS ||--o| WORK_SESSIONS : schedules
+    WORK_SESSIONS ||--o| WORK_COMPLETION_EVIDENCE : requires
     AGREEMENTS ||--o| WORK_PROOFS : proves
 ```
 
@@ -155,7 +156,12 @@ Interests are self-declared and never treated as verified experience.
 | `created_by` | uuid | FK `users.id` |
 | `created_at`, `updated_at` | timestamptz | Required |
 
-Prevent overlapping active guidelines for the same area, category, and unit through a migration-level exclusion strategy or an admin transaction check plus a supporting index.
+Prevent overlapping active guidelines for the same area, category, and unit.
+Admin create/reactivate operations acquire a transaction-scoped PostgreSQL
+advisory lock derived from `(area_id, category_id, unit)`, then perform a
+half-open `[effective_from, effective_to)` overlap check using the supporting
+lookup index before writing. Inactive historical versions may overlap but
+cannot be activated while an active overlap exists.
 
 ## 6. Jobs and Applications
 
@@ -274,6 +280,24 @@ The snapshot contains the full address and all accepted terms. It is returned on
 | `verified_at` | timestamptz nullable | Server timestamp |
 | `verified_by` | uuid nullable | FK `users.id` |
 | `created_at`, `updated_at` | timestamptz | Required |
+
+### `work_completion_evidence`
+
+| Column | Type | Rules |
+| --- | --- | --- |
+| `id` | uuid | Primary key |
+| `work_session_id` | uuid | Unique FK `work_sessions.id`, restricted delete |
+| `storage_path` | text | Unique private object path, never returned to clients |
+| `mime_type` | text | Normalized `image/webp` only |
+| `byte_size` | integer | `> 0` and `<= 5,242,880` |
+| `sha256` | text | Required 64-character integrity digest |
+| `uploaded_by` | uuid | FK `users.id`, accepted worker |
+| `uploaded_at`, `updated_at` | timestamptz | Required |
+
+The table is authoritative for whether checkout may proceed. The binary object
+remains in the private bucket selected by ADR-013. The worker may replace the
+row only while its work session is `checked_in`; the work-session row
+serializes replacement against checkout.
 
 ### `work_proofs`
 
@@ -509,4 +533,10 @@ Implementation locations:
 - Deterministic synthetic seed: `server/db/seed.ts`
 - Runtime PostgreSQL boundary: `server/db/client.ts`
 
-Use the pooled `DATABASE_URL` for Vercel runtime traffic and the controlled `DIRECT_DATABASE_URL` for migrations when reachable. `db:seed` requires `RINTARA_ALLOW_SEED=true` and always refuses `RINTARA_ENV=production`.
+Use the pooled `DATABASE_URL` for Vercel runtime traffic and the controlled
+`DIRECT_DATABASE_URL` for migrations when reachable. `db:seed` requires
+`RINTARA_ALLOW_SEED=true`, always refuses `RINTARA_ENV=production`, and permits
+`local`/`test` only on loopback PostgreSQL (`test` additionally requires the
+`rintara_test` database). It refuses preview, demo, production, and every remote
+database. The reset and all fixture writes execute in one transaction and
+verify at least one visible, future-deadline published job before commit.

@@ -11,7 +11,8 @@ Employer publishes a fair First Opportunity job
 -> eligible worker applies
 -> employer accepts exactly one worker
 -> both confirm an immutable Mini Agreement
--> worker checks in and checks out
+-> worker checks in
+-> worker uploads one private result photo and checks out
 -> employer verifies completion
 -> Rintara issues one Work Proof
 -> eligible employer receives one Opportunity Credit
@@ -79,7 +80,7 @@ Do not implement, scaffold, prepare hidden database fields for, or describe as M
 - realtime chat, video calls, SMS, email, or WhatsApp integration;
 - Fast Rematch, AI matching, worker scoring, or recommendations;
 - direct worker search by employers;
-- identity documents, selfies, background checks, or work-evidence uploads;
+- identity documents, selfies, or background checks;
 - continuous GPS, live maps, or geofencing;
 - multiple accepted workers per job;
 - high-risk or licensed categories;
@@ -110,9 +111,16 @@ Run a repository search for stale terminology when touching related code or docu
 - Drizzle ORM plus explicit parameterized SQL where appropriate
 - Repository-approved validation/form libraries
 - Supabase Auth through the approved Next.js SSR integration
+- Supabase Storage only for the private completion-evidence path approved in
+  ADR-013
 - Unit/domain tests, PostgreSQL integration tests, and manual release smoke testing
 
-Deploy the application on Vercel and use Supabase Managed PostgreSQL and Supabase Auth as accepted in ADR-011 and ADR-012. Business data access uses Drizzle or explicit parameterized PostgreSQL; do not introduce Supabase Data API, Realtime, Storage, or Edge Functions as a second business-state path without an approved architecture decision.
+Deploy the application on Vercel and use Supabase Managed PostgreSQL, Supabase
+Auth, and the narrowly bounded private Storage path accepted in ADR-011,
+ADR-012, and ADR-013. Business data access uses Drizzle or explicit
+parameterized PostgreSQL. Do not introduce Supabase Data API, Realtime, another
+Storage use case, or Edge Functions as a second business-state path without an
+approved architecture decision.
 
 Use the repository's existing package manager and scripts. Do not switch package manager, formatter, test framework, or component system during an unrelated task.
 
@@ -350,8 +358,12 @@ Do not collect or store:
 - continuous GPS;
 - full birth dates;
 - private chat;
-- work-evidence photos; or
 - secrets in user content.
+
+The single private result photo required by ADR-013 is the only approved
+work-evidence media. It must be normalized without embedded metadata, kept out
+of public/Passport projections, and served only to the related worker,
+employer, or authorized admin.
 
 ### 14.2 Full address
 

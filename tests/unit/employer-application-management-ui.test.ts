@@ -50,7 +50,29 @@ describe("employer application management UI", () => {
     expect(jobForm).toContain("<Dialog");
     expect(jobForm).toContain("Terbitkan pekerjaan ini?");
     expect(jobForm).toContain("tidak dapat diedit");
-    expect(jobForm).toContain("fieldErrorsFor");
+    expect(jobForm).toContain("submitCreateJobDraft");
+    expect(jobForm).toContain("submitUpdateJobDraft");
+    expect(jobForm).toContain("submitPublishJob");
+    expect(jobForm).toContain("failure.fieldErrors");
+    expect(jobForm).toContain("reportValidity()");
+    expect(jobForm).toContain("toLocalDateTimeInput");
+    expect(jobForm).toContain("!formData.isFirstOpportunity");
     expect(jobForm).not.toContain("(error as Error).message");
+    expect(jobForm).not.toContain("@/server/domain/jobs/actions");
+  });
+
+  test("keeps employer and publish Wage Guideline ordering aligned", async () => {
+    const referenceQuery = await Bun.file(
+      "server/queries/jobs/reference-data.ts",
+    ).text();
+    const publishAction = await Bun.file(
+      "server/domain/jobs/actions.ts",
+    ).text();
+
+    for (const source of [referenceQuery, publishAction]) {
+      expect(source).toContain("desc(wageGuidelines.effectiveFrom)");
+      expect(source).toContain("desc(wageGuidelines.createdAt)");
+      expect(source).toContain("asc(wageGuidelines.id)");
+    }
   });
 });

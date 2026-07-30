@@ -12,6 +12,7 @@ import {
   employerProfiles,
   jobs,
   reports,
+  workCompletionEvidence,
   workProofs,
   workSessions,
   workerProfiles,
@@ -54,6 +55,11 @@ export type WorkView = {
     checkedInAt: string | null;
     checkedOutAt: string | null;
     completionNote: string | null;
+    evidence: {
+      uploadedAt: string;
+      byteSize: number;
+      url: string;
+    } | null;
     verifiedAt: string | null;
   };
   workProofId: string | null;
@@ -62,6 +68,7 @@ export type WorkView = {
     generateCheckInCode: boolean;
     checkIn: boolean;
     checkOut: boolean;
+    uploadEvidence: boolean;
     verifyCompletion: boolean;
   };
 };
@@ -99,6 +106,8 @@ export async function getWorkView(
       checkedInAt: workSessions.checkedInAt,
       checkedOutAt: workSessions.checkedOutAt,
       completionNote: workSessions.completionNote,
+      evidenceUploadedAt: workCompletionEvidence.uploadedAt,
+      evidenceByteSize: workCompletionEvidence.byteSize,
       verifiedAt: workSessions.verifiedAt,
       workProofId: workProofs.id,
     })
@@ -107,6 +116,10 @@ export async function getWorkView(
     .innerJoin(workerProfiles, eq(agreements.workerId, workerProfiles.userId))
     .innerJoin(employerProfiles, eq(agreements.employerId, employerProfiles.userId))
     .innerJoin(workSessions, eq(workSessions.agreementId, agreements.id))
+    .leftJoin(
+      workCompletionEvidence,
+      eq(workCompletionEvidence.workSessionId, workSessions.id),
+    )
     .leftJoin(workProofs, eq(workProofs.agreementId, agreements.id))
     .where(and(eq(agreements.id, agreementId), partyCondition))
     .limit(1);
@@ -157,6 +170,14 @@ export async function getWorkView(
       checkedInAt: row.checkedInAt?.toISOString() ?? null,
       checkedOutAt: row.checkedOutAt?.toISOString() ?? null,
       completionNote: row.completionNote,
+      evidence:
+        row.evidenceUploadedAt && row.evidenceByteSize
+          ? {
+              uploadedAt: row.evidenceUploadedAt.toISOString(),
+              byteSize: row.evidenceByteSize,
+              url: `/api/work-evidence/${row.agreementId}`,
+            }
+          : null,
       verifiedAt: row.verifiedAt?.toISOString() ?? null,
     },
     workProofId: row.workProofId,
@@ -166,6 +187,8 @@ export async function getWorkView(
         isEmployer && isActive && row.sessionStatus === "scheduled",
       checkIn: isWorker && isActive && row.sessionStatus === "scheduled",
       checkOut: isWorker && isActive && row.sessionStatus === "checked_in",
+      uploadEvidence:
+        isWorker && isActive && row.sessionStatus === "checked_in",
       verifyCompletion:
         isEmployer &&
         isActive &&

@@ -386,6 +386,14 @@ during submission. Role selection and profile onboarding use the image-free
 operational shell. Both preserve form recovery, duplicate-submission
 prevention, and registration progress.
 
+If registration returns an ambiguous existing-account or pending-confirmation
+outcome, replace the form with a neutral **Lanjutkan dengan email ini** state.
+Do not claim that the address is registered or that a message was definitely
+sent. Keep the submitted email visible and provide two 44px-minimum actions:
+**Masuk ke akun**, preserving the validated destination, and **Pulihkan kata
+sandi**. The shared authentication state carries the email to either route
+without placing it in the URL.
+
 The sign-in password label includes a **Lupa kata sandi?** link. Recovery and
 new-password screens reuse the same documentary frame without the
 Masuk/Daftar segmented control. The recovery success message never confirms
@@ -511,6 +519,15 @@ The schedule section shows both the application deadline and the derived
 selection cutoff 24 hours before the start time. The cutoff is display-only,
 not another employer input.
 
+Draft and publish failures stay on the form and preserve every valid value.
+Expected validation failures use inline field messages plus a specific summary
+such as **Draf belum tersimpan** or **Pekerjaan belum diterbitkan**; do not
+describe them as connection failures. Move focus to the first invalid field.
+Use connection-recovery copy only when the Server Action request itself rejects.
+If active area or category reference data is empty, show a blocking unavailable
+state and disable both actions. A checked First Opportunity option must always
+remain operable so the employer can clear it after related inputs change.
+
 ### 8.5 Applicant list
 
 - Make category eligibility visible but not the sole decision content.
@@ -631,7 +648,9 @@ Admin marketplace configuration provides:
 - Use responsive images only where images add product value.
 - Keep the landing and authentication images route-specific and optimized;
   neither is required to understand or operate its adjacent form.
-- Do not require profile images or proof images for the golden path.
+- Do not require profile images. Require exactly one private result photo after
+  check-in and before checkout; keep the upload island bounded and show
+  progress, validation, replacement-before-checkout, and retry states.
 - Prefer Server Components and limit client JavaScript to interactive islands.
 - Avoid autoplay media and large animation libraries.
 - Loading states should show structure without causing major layout shifts.
@@ -646,6 +665,8 @@ Required explanations:
 - Wage Guidelines are references unless legally validated;
 - First Opportunity is not unpaid work;
 - Work Proof is issued after employer-verified completion;
+- one private result photo is required before checkout, stripped of embedded
+  metadata, and visible only to the related parties and authorized admin;
 - reports pause relevant completion while under review.
 
 Do not expose applicant notes, full addresses, check-in codes, private report notes, contact details, or account-status reasons in public metadata or screenshots.

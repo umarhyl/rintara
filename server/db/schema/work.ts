@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  integer,
   index,
   jsonb,
   pgTable,
@@ -153,6 +154,49 @@ export const workSessions = pgTable(
         OR (${table.status} = 'checked_out' AND ${table.checkedInAt} IS NOT NULL AND ${table.checkedOutAt} IS NOT NULL AND ${table.verifiedAt} IS NULL)
         OR (${table.status} = 'verified' AND ${table.checkedInAt} IS NOT NULL AND ${table.checkedOutAt} IS NOT NULL AND ${table.verifiedAt} IS NOT NULL AND ${table.verifiedBy} IS NOT NULL)
       `,
+    ),
+  ],
+);
+
+export const workCompletionEvidence = pgTable(
+  "work_completion_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workSessionId: uuid("work_session_id")
+      .notNull()
+      .references(() => workSessions.id, { onDelete: "restrict" }),
+    storagePath: varchar("storage_path", { length: 500 }).notNull(),
+    mimeType: varchar("mime_type", { length: 80 }).notNull(),
+    byteSize: integer("byte_size").notNull(),
+    sha256: varchar("sha256", { length: 64 }).notNull(),
+    uploadedBy: uuid("uploaded_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("work_completion_evidence_session_unique").on(
+      table.workSessionId,
+    ),
+    uniqueIndex("work_completion_evidence_storage_path_unique").on(
+      table.storagePath,
+    ),
+    check(
+      "work_completion_evidence_mime_type_check",
+      sql`${table.mimeType} = 'image/webp'`,
+    ),
+    check(
+      "work_completion_evidence_byte_size_check",
+      sql`${table.byteSize} > 0 AND ${table.byteSize} <= 5242880`,
+    ),
+    check(
+      "work_completion_evidence_sha256_check",
+      sql`char_length(${table.sha256}) = 64`,
     ),
   ],
 );

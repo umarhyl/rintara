@@ -10,6 +10,7 @@ import {
   jobPrivateDetails,
   jobs,
   opportunityCredits,
+  workCompletionEvidence,
   workProofs,
   workSessions,
 } from "@/server/db/schema";
@@ -28,6 +29,9 @@ describe("database schema invariants", () => {
     const sessionIndexes = getTableConfig(workSessions).indexes.map(
       (index) => index.config.name,
     );
+    const evidenceIndexes = getTableConfig(workCompletionEvidence).indexes.map(
+      (index) => index.config.name,
+    );
     const proofIndexes = getTableConfig(workProofs).indexes.map(
       (index) => index.config.name,
     );
@@ -44,6 +48,12 @@ describe("database schema invariants", () => {
     expect(agreementIndexes).toContain("agreements_application_unique");
     expect(agreementIndexes).toContain("agreements_job_unique");
     expect(sessionIndexes).toContain("work_sessions_agreement_unique");
+    expect(evidenceIndexes).toContain(
+      "work_completion_evidence_session_unique",
+    );
+    expect(evidenceIndexes).toContain(
+      "work_completion_evidence_storage_path_unique",
+    );
     expect(proofIndexes).toContain("work_proofs_agreement_unique");
     expect(creditIndexes).toContain("opportunity_credits_source_job_unique");
     expect(boostIndexes).toContain("job_boosts_credit_unique");
@@ -95,5 +105,11 @@ describe("database schema invariants", () => {
     expect(migrationSql).toContain("interval '24 hours'");
     expect(migrationSql).toContain("reports_has_target_check");
     expect(migrationSql).toContain("job_boosts_exact_duration_check");
+    expect(migrationSql).toContain(
+      "work_completion_evidence_byte_size_check",
+    );
+    expect(migrationSql).toContain(
+      "work_completion_evidence_session_unique",
+    );
   });
 });

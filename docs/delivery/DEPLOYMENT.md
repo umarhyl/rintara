@@ -10,7 +10,11 @@ Rintara maintains strict isolation between development, testing, and production 
 ### Local Development (`.env.local`)
 - **Vercel Env**: Handled locally via `.env.local`
 - **Database**: Connects to the local development Supabase project.
-- **Variables**: `DATABASE_URL` (local connection), `NEXT_PUBLIC_SUPABASE_URL` (local API), `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (local publishable key).
+- **Variables**: `DATABASE_URL` (local connection),
+  `NEXT_PUBLIC_SUPABASE_URL` (local API),
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (local publishable key), and the
+  server-only `SUPABASE_SERVICE_ROLE_KEY` when testing private completion
+  evidence.
 
 ### Automated Testing (`ci.yml`)
 - **Environment**: Handled by GitHub Actions and defined in the `integration` job.
@@ -20,7 +24,10 @@ Rintara maintains strict isolation between development, testing, and production 
 ### Vercel Production
 - **Branch**: `main`
 - **Database**: Connects to the managed Supabase Production project (via connection pooling for Drizzle).
-- **Variables**: `DATABASE_URL` must point to the production database pool. All Next.js and Supabase environment variables must use production values.
+- **Variables**: `DATABASE_URL` must point to the production database pool.
+  All Next.js and Supabase environment variables must use production values.
+  `SUPABASE_SERVICE_ROLE_KEY` is required server-side for the ADR-013 private
+  evidence bucket and must never be exposed to client code or logs.
 - **Vercel Configuration**: 
   - Production Branch: `main`
   - Ensure development/preview keys are strictly separated in Vercel's Environment Variables settings dashboard.

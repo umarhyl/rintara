@@ -30,6 +30,7 @@ Accepted ADRs are historical records. Do not rewrite their decision after implem
 | [ADR-010](./ADR-010-wage-guideline-source.md) | Proposed | Select and govern the Wage Guideline source |
 | [ADR-011](./ADR-011-managed-platform-selection.md) | Accepted | Use Vercel and Supabase Managed PostgreSQL |
 | [ADR-012](./ADR-012-authentication-provider-selection.md) | Accepted | Use Supabase Auth |
+| [ADR-013](./ADR-013-private-work-completion-evidence.md) | Accepted | Require one private result photo before worker check-out |
 
 ## When to Create an ADR
 

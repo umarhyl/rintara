@@ -115,6 +115,7 @@ erDiagram
     job ||--o| agreement : "has accepted terms"
     user ||--o{ agreement : "participates in"
     agreement ||--o| workSession : "activates"
+    workSession ||--o| workCompletionEvidence : "requires before checkout"
     agreement ||--o| workProof : "produces"
     user ||--o{ workProof : "earns or verifies"
     category ||--o{ workProof : "proves experience in"
@@ -203,6 +204,16 @@ erDiagram
         datetime verifiedAt "nullable"
         uuid verifiedBy FK "nullable"
     }
+    workCompletionEvidence["work_completion_evidence"] {
+        uuid id PK
+        uuid workSessionId FK, UK
+        text storagePath UK
+        text mimeType
+        int byteSize
+        text sha256
+        uuid uploadedBy FK
+        datetime uploadedAt
+    }
     workProof["work_proofs"] {
         uuid id PK
         uuid agreementId FK, UK
@@ -230,6 +241,7 @@ erDiagram
 | Application | Agreement | 1:0..1 | Only an accepted application creates an agreement |
 | Job | Agreement | 1:0..1 | One accepted worker per MVP job |
 | Agreement | Work session | 1:0..1 | Created once when both parties confirm |
+| Work session | Completion evidence | 1:0..1 | Required after check-in and before checkout |
 | Agreement | Work Proof | 1:0..1 | Created only after verified completion |
 
 Rintara Passport is a read model over `work_proofs`; there is no editable `passports` table.
@@ -407,6 +419,9 @@ Do not create editable Passport rows, stored beginner flags, mutable credit coun
 - Expiring an unfilled job rejects its submitted applications and writes
   notifications and audit history atomically.
 - The second agreement confirmation activates it and creates one work session atomically.
+- One work session has at most one private completion-evidence metadata row.
+- Checkout requires that metadata row; the binary object remains in private
+  storage and is not part of Passport.
 - `verifyCompletion` completes session/agreement/job, creates one Work Proof, and conditionally creates one credit atomically and idempotently.
 - `redeemOpportunityCredit` consumes one credit and creates one 24-hour boost atomically and idempotently.
 

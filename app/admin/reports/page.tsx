@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, Clock3, FileWarning } from "lucide-react";
+import { AlertTriangle, Camera, Clock3, FileWarning } from "lucide-react";
 import { AdminReportActions } from "@/components/rintara/admin-report-actions";
 import { DetailList } from "@/components/rintara/detail-list";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { StatusBadge } from "@/components/rintara/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { requireDashboardPageRole } from "@/server/auth/page-access";
 import { adminListReports } from "@/server/queries/admin/moderation";
 
@@ -142,6 +143,20 @@ export default async function ReportsPage({
                     { label: "Catatan moderator", value: selected.moderatorNote || "Belum ada keputusan." },
                   ]}
                 />
+                {selected.agreementId ? (
+                  <div className="border-t border-border/70 py-5">
+                    <Button asChild variant="outline">
+                      <Link
+                        href={`/api/work-evidence/${encodeURIComponent(selected.agreementId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Camera aria-hidden="true" />
+                        Lihat foto hasil jika tersedia
+                      </Link>
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </section>
 

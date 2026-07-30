@@ -9,7 +9,7 @@ import {
 import { ApplicationError } from "@/server/errors/application-error";
 
 export type AuthFormResult =
-  | { ok: true; requiresEmailConfirmation?: boolean }
+  | { ok: true; nextStep?: "confirm-or-sign-in" }
   | { ok: false; message: string };
 
 function safeAuthFailure(error: unknown): AuthFormResult {
@@ -35,7 +35,13 @@ export async function submitSignUp(credentials: { email: string; password: strin
       { email: credentials.email, password: credentials.password },
       credentials.nextPath,
     );
-    return { ok: true, requiresEmailConfirmation: result.requiresEmailConfirmation };
+    return {
+      ok: true,
+      nextStep:
+        result.state === "confirm-or-sign-in"
+          ? "confirm-or-sign-in"
+          : undefined,
+    };
   } catch (error) {
     return safeAuthFailure(error);
   }

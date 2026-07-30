@@ -154,6 +154,23 @@ Use a test-only pepper, submit five guaranteed-invalid codes, assert the failed
 attempt counter persists at five, and assert both the issued code and further
 guesses return `CODE_LOCKED` until an employer issues a replacement.
 
+### Work completion evidence
+
+Unit-test JPG/PNG/WebP acceptance, the 5 MB and pixel limits, WebP
+normalization, and absence of copied EXIF metadata. PostgreSQL integration
+tests must assert:
+
+- checkout from `checked_in` fails with `WORK_EVIDENCE_REQUIRED` before the
+  unique evidence row exists;
+- one evidence row exists per work session;
+- the accepted worker can replace it before checkout;
+- replacement fails after checkout;
+- related worker/employer and authorized admin can read it; and
+- anonymous and unrelated accounts cannot obtain the binary or private path.
+
+The production smoke test must also confirm the Supabase bucket is private and
+the service-role key is absent from browser bundles and logs.
+
 ### Completion transaction
 
 Run repeated and concurrent verification. Assert:

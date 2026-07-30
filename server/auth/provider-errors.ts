@@ -8,6 +8,14 @@ type AuthOperation =
   | "password-recovery"
   | "password-update";
 
+export function isExistingAccountSignUpError(
+  error: Pick<AuthError, "code">,
+): boolean {
+  return (
+    error.code === "user_already_exists" || error.code === "email_exists"
+  );
+}
+
 export function mapAuthProviderError(
   error: Pick<AuthError, "code" | "status">,
   operation: AuthOperation,
@@ -24,11 +32,11 @@ export function mapAuthProviderError(
 
   if (
     operation === "sign-up" &&
-    (error.code === "user_already_exists" || error.code === "email_exists")
+    isExistingAccountSignUpError(error)
   ) {
     return new ApplicationError(
       "VALIDATION_FAILED",
-      "Akun tidak dapat dibuat dengan data tersebut.",
+      "Pendaftaran belum dapat dilanjutkan. Coba masuk atau pulihkan kata sandi.",
     );
   }
 
