@@ -259,13 +259,7 @@ export async function getAdminMarketplaceConfig(
     input.wageGuidelineCursor,
   );
 
-  const [
-    areaRows,
-    categoryRows,
-    wageGuidelineRows,
-    activeAreaOptions,
-    activeCategoryOptions,
-  ] = await Promise.all([
+  const [areaRows, categoryRows, wageGuidelineRows] = await Promise.all([
     database
       .select({
         id: areas.id,
@@ -333,31 +327,49 @@ export async function getAdminMarketplaceConfig(
         asc(wageGuidelines.id),
       )
       .limit(limit + 1),
-    database
-      .select({
-        id: areas.id,
-        code: areas.code,
-        name: areas.name,
-        level: areas.level,
-        isActive: areas.isActive,
-      })
-      .from(areas)
-      .where(and(eq(areas.level, "city_regency"), eq(areas.isActive, true)))
-      .orderBy(asc(areas.name), asc(areas.id))
-      .limit(MAX_LIMIT),
-    database
-      .select({
-        id: categories.id,
-        slug: categories.slug,
-        name: categories.name,
-        riskLevel: categories.riskLevel,
-        firstOpportunityAllowed: categories.firstOpportunityAllowed,
-        isActive: categories.isActive,
-      })
-      .from(categories)
-      .where(eq(categories.isActive, true))
-      .orderBy(asc(categories.name), asc(categories.id))
-      .limit(MAX_LIMIT),
+  ]);
+
+  const canReuseAreaPage = !areaCursor && areaRows.length <= limit;
+  const canReuseCategoryPage =
+    !categoryCursor && categoryRows.length <= limit;
+
+  const [activeAreaOptions, activeCategoryOptions] = await Promise.all([
+    canReuseAreaPage
+      ? Promise.resolve(areaRows.filter((area) => area.isActive))
+      : database
+          .select({
+            id: areas.id,
+            code: areas.code,
+            name: areas.name,
+            level: areas.level,
+            isActive: areas.isActive,
+          })
+          .from(areas)
+          .where(
+            and(
+              eq(areas.level, "city_regency"),
+              eq(areas.isActive, true),
+            ),
+          )
+          .orderBy(asc(areas.name), asc(areas.id))
+          .limit(MAX_LIMIT),
+    canReuseCategoryPage
+      ? Promise.resolve(
+          categoryRows.filter((category) => category.isActive),
+        )
+      : database
+          .select({
+            id: categories.id,
+            slug: categories.slug,
+            name: categories.name,
+            riskLevel: categories.riskLevel,
+            firstOpportunityAllowed: categories.firstOpportunityAllowed,
+            isActive: categories.isActive,
+          })
+          .from(categories)
+          .where(eq(categories.isActive, true))
+          .orderBy(asc(categories.name), asc(categories.id))
+          .limit(MAX_LIMIT),
   ]);
 
   const areaItems = areaRows.slice(0, limit);

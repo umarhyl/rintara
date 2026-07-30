@@ -1,138 +1,156 @@
 # Rintara
 
-Rintara is a local informal-work platform designed to turn a fair first opportunity into verified work history. An employer publishes transparent work, accepts one eligible worker, confirms attendance and completion, and Rintara issues Work Proof while rewarding a qualifying employer with an Opportunity Credit.
+**Rintara** adalah platform kerja informal lokal yang membantu pekerja memperoleh
+kesempatan pertama, menjalani pekerjaan dengan ketentuan yang jelas, dan
+membangun riwayat kerja terverifikasi.
 
-## MVP Golden Path
+Rintara menjawab masalah yang sering dialami pekerja pemula:
+
+> Pekerja membutuhkan pengalaman agar dipercaya, tetapi membutuhkan kepercayaan
+> untuk mendapatkan pengalaman pertama.
+
+Melalui Rintara, pemberi kerja dapat menerbitkan pekerjaan dengan tugas, jadwal,
+area, upah, serta ketentuan pembayaran yang terlihat sejak awal. Setelah
+pekerjaan selesai dan diverifikasi, sistem menerbitkan **Bukti Kerja** ke
+**Paspor Rintara** milik pekerja.
+
+## Akses Aplikasi
+
+- Website: [https://rintara-app.vercel.app](https://rintara-app.vercel.app)
+- Repositori: [https://github.com/umarhyl/rintara](https://github.com/umarhyl/rintara)
+
+## Alur Utama MVP
 
 ```text
-Publish job
--> apply
--> accept one worker
--> confirm Mini Agreement
--> check in
--> upload one private result photo and check out
--> verify completion
--> issue Work Proof
--> issue and redeem Opportunity Credit
+Pemberi kerja menerbitkan pekerjaan
+→ pekerja yang memenuhi syarat mengirim lamaran
+→ pemberi kerja menerima tepat satu pekerja
+→ kedua pihak mengonfirmasi Mini Agreement
+→ pekerja melakukan check-in
+→ pekerja mengunggah satu foto hasil dan melakukan check-out
+→ pemberi kerja memverifikasi penyelesaian
+→ Rintara menerbitkan satu Bukti Kerja
+→ pemberi kerja yang memenuhi syarat memperoleh Kredit Kesempatan
+→ Kredit Kesempatan digunakan untuk meningkatkan visibilitas pekerjaan selama 24 jam
 ```
 
-Payments are recorded as agreement terms but take place outside Rintara during the MVP.
+## Fitur
 
-## Technology Baseline
+### Untuk pekerja
 
-- Next.js App Router
-- React and TypeScript
-- Supabase Managed PostgreSQL as the source of truth
-- Drizzle ORM with repository-managed SQL migrations
-- Supabase Auth with server-side session validation
-- Private Supabase Storage for one normalized completion photo per work session
-- Vercel deployment with `main` as the production branch
-- Unit tests, PostgreSQL integration tests, and manual release smoke testing
+- Registrasi, masuk, pemulihan kata sandi, dan pemilihan peran.
+- Profil pekerja dengan area domisili, biografi, ketersediaan, dan kategori
+  minat.
+- Pencarian pekerjaan berdasarkan kata kunci, area, kategori, rentang upah, dan
+  Kesempatan Pertama.
+- Informasi tugas, jadwal, durasi, upah, dan area umum sebelum melamar.
+- Pengiriman satu lamaran singkat tanpa penawaran upah.
+- Konfirmasi Mini Agreement setelah diterima.
+- Check-in menggunakan kode sekali pakai dari pemberi kerja.
+- Unggah satu foto hasil pekerjaan secara privat sebelum check-out.
+- Paspor Rintara yang dibentuk dari Bukti Kerja terverifikasi.
+- Riwayat lamaran, notifikasi, dan laporan masalah.
 
-Vercel, Supabase Managed PostgreSQL, Supabase Auth, and the narrowly bounded
-private completion-evidence Storage path are accepted in ADR-011, ADR-012, and
-ADR-013. Project-specific production-readiness evidence such as region, plan
-limits, backup restore, connection sizing, callbacks, storage privacy, and test
-accounts must still be recorded before release.
+### Untuk pemberi kerja
 
-## Documentation
+- Profil usaha atau pemberi kerja.
+- Pembuatan draf dan penerbitan pekerjaan dengan ketentuan transparan.
+- Pemisahan area umum dan alamat lengkap yang bersifat privat.
+- Validasi upah berdasarkan Panduan Upah.
+- Peninjauan pelamar dan konteks Paspor Rintara yang diizinkan.
+- Penerimaan tepat satu pekerja secara transaksional.
+- Konfirmasi Mini Agreement dan pengelolaan sesi kerja.
+- Pembuatan kode check-in dengan masa berlaku 15 menit.
+- Peninjauan foto hasil dan verifikasi penyelesaian pekerjaan.
+- Kredit Kesempatan dan peningkatan visibilitas pekerjaan selama 24 jam.
 
-Start with [the documentation index](./docs/README.md).
+### Untuk administrator
 
-| Need | Document |
+- Pengelolaan area percontohan, kategori pekerjaan, dan Panduan Upah.
+- Peninjauan pekerjaan, pengguna, dan laporan.
+- Moderasi pekerjaan dan akun melalui tindakan yang tercatat.
+- Pencabutan Bukti Kerja, Kredit Kesempatan, atau peningkatan visibilitas jika
+  ditemukan pelanggaran.
+- Riwayat audit untuk operasi penting.
+
+## Akun Demo
+
+Gunakan sesi atau profil peramban yang berbeda untuk akun pekerja, pemberi
+kerja, dan administrator agar alur dapat diuji tanpa saling mengganti sesi.
+
+| Peran | Email | Kegunaan |
+| --- | --- | --- |
+| Administrator | `admin@admin.com:admin` | Mengelola area, kategori, Panduan Upah, dan moderasi |
+| Pemberi kerja | `employer@employer.com:employer` | Membuat pekerjaan, meninjau lamaran, dan memverifikasi pekerjaan |
+| Pekerja | `worker@worker.com:worker123` | Mencari pekerjaan, melamar, dan menyelesaikan pekerjaan |
+
+## Teknologi
+
+| Lapisan | Teknologi |
 | --- | --- |
-| Product scope | [`docs/product/PRD.md`](./docs/product/PRD.md) |
-| Acceptance criteria | [`docs/product/REQUIREMENTS.md`](./docs/product/REQUIREMENTS.md) |
-| Domain behavior | [`docs/product/BUSINESS_RULES.md`](./docs/product/BUSINESS_RULES.md) |
-| User journeys | [`docs/product/USER_FLOW.md`](./docs/product/USER_FLOW.md) |
-| UI and accessibility | [`docs/design/UI_UX_DESIGN.md`](./docs/design/UI_UX_DESIGN.md) |
-| System design | [`docs/engineering/ARCHITECTURE.md`](./docs/engineering/ARCHITECTURE.md) |
-| PostgreSQL design | [`docs/engineering/DATABASE.md`](./docs/engineering/DATABASE.md) |
-| Application contracts | [`docs/engineering/API.md`](./docs/engineering/API.md) |
-| Delivery plan | [`docs/delivery/ROADMAP.md`](./docs/delivery/ROADMAP.md) |
-| Agent rules | [`AGENTS.md`](./AGENTS.md) |
+| Antarmuka web | Next.js App Router, React, TypeScript, Tailwind CSS |
+| Validasi | Zod |
+| Basis data | Supabase Managed PostgreSQL |
+| Akses data | Drizzle ORM dan SQL terparameterisasi |
+| Autentikasi | Supabase Auth dengan integrasi SSR |
+| Penyimpanan foto privat | Supabase Storage |
+| Deployment | Vercel |
+| Pengujian | Unit test dan integration test dengan PostgreSQL |
+| Otomasi kualitas | GitHub Actions |
 
-## Repository Layout
+Rintara menggunakan arsitektur **modular monolith**: satu aplikasi Next.js dan
+satu PostgreSQL sebagai sumber data utama. Aturan bisnis berada di lapisan
+server dan dipanggil melalui operasi bernama, bukan perubahan status bebas dari
+antarmuka.
+
+## Struktur Repositori
 
 ```text
 .
-├── AGENTS.md
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── README.md
-├── docs/
-│   ├── README.md
-│   ├── product/
-│   ├── design/
-│   ├── engineering/
-│   ├── delivery/
-│   ├── operations/
-│   ├── decisions/
-│   └── assets/
-├── src/
-├── tests/
-└── migrations/
+├── app/          # Route, halaman, layout, loading, dan error boundary
+├── components/   # Komponen antarmuka bersama
+├── features/     # Komponen yang dikelompokkan berdasarkan fitur
+├── server/       # Autentikasi, query, aturan domain, dan akses data
+├── drizzle/      # Migrasi PostgreSQL
+├── tests/        # Unit test dan integration test PostgreSQL
+├── docs/         # Dokumentasi produk, desain, teknik, dan operasional
+└── public/       # Aset publik aplikasi
 ```
 
-Application directories may follow the exact module structure documented in `docs/engineering/ARCHITECTURE.md`. Do not create empty application directories only to match this example.
+Dokumentasi lengkap tersedia di [docs/README.md](./docs/README.md).
 
-## Development Commands
+## Menjalankan Secara Lokal
 
-Use Bun 1.3.14 as declared in `package.json` and `bun.lock`:
+Rintara menggunakan Bun 1.3.14 sesuai deklarasi pada `package.json` dan
+`bun.lock`.
 
-| Script | Purpose |
+```bash
+bun install --frozen-lockfile
+cp .env.example .env.local
+bun run db:migrate
+bun run dev
+```
+
+Perintah pemeriksaan yang tersedia:
+
+```bash
+bun run lint
+bun run typecheck
+bun run test
+bun run test:integration
+bun run db:check
+bun run build
+```
+
+## Dokumentasi Utama
+
+| Topik | Dokumen |
 | --- | --- |
-| `dev` | Start local development |
-| `build` | Create the production build |
-| `lint` | Run static style and correctness checks |
-| `typecheck` | Run strict TypeScript checking |
-| `test` | Run fast unit/domain tests |
-| `test:integration` | Run tests against isolated PostgreSQL |
-| `db:check` | Validate committed Drizzle migration consistency |
-| `db:migrate` | Apply committed migrations |
-| `db:seed` | Load synthetic local/test development data |
-
-Run them with `bun run <script>`. Database schema lives under `server/db/schema/`, committed migrations live under `drizzle/`, and database operations enforce the environment guards documented in `.env.example`.
-
-## Setup Checklist
-
-1. Install the runtime and Bun version declared by the repository.
-2. Install dependencies with `bun install --frozen-lockfile`.
-3. Create local environment configuration from the committed example file.
-4. Provision an isolated development PostgreSQL database.
-5. Run committed migrations.
-6. Load synthetic seed data only into a loopback local/test database. Prepare
-   remote demo accounts and jobs through the normal application flows.
-7. Start the development server.
-8. Run unit and integration tests before opening a pull request.
-
-Secret values never belong in documentation or source control. Required variable names, provider callbacks, and approved commands belong in `.env.example` and deployment documentation without real values.
-
-## Continuous Integration
-
-GitHub Actions runs two required jobs for pushes and pull requests targeting
-`dev` or `main`:
-
-- `Quality`: frozen dependency install, lint, typecheck, unit tests, Drizzle
-  migration check, and production build.
-- `Integration`: PostgreSQL integration tests against a disposable PostgreSQL
-  16 service container.
-
-The integration job uses synthetic test-only credentials declared in the
-workflow. It does not receive Supabase or production database credentials.
-
-## MVP Scope Guard
-
-The MVP does not include bidding, payments, escrow, chat, AI matching, Fast Rematch, direct worker search, continuous GPS, identity-document storage, multi-worker jobs, or microservices.
-
-Any scope change must follow the change-control section of `docs/product/PRD.md` and update all affected specifications.
-
-## Contributing and Security
-
-- Read [`CONTRIBUTING.md`](./CONTRIBUTING.md) before changing code or documentation.
-- Follow [`SECURITY.md`](./SECURITY.md) for vulnerability reporting.
-- AI agents and automated contributors must follow [`AGENTS.md`](./AGENTS.md).
-
-## Status
-
-The documentation describes the competition MVP baseline dated July 18, 2026, with a submission target of July 31, 2026. ADR-010 remains proposed; ADR-011 and ADR-012 are accepted provider decisions with production-readiness checks still open.
+| Ruang lingkup produk | [PRD](./docs/product/PRD.md) |
+| Persyaratan fungsional | [Requirements](./docs/product/REQUIREMENTS.md) |
+| Aturan bisnis | [Business Rules](./docs/product/BUSINESS_RULES.md) |
+| Alur pengguna | [User Flow](./docs/product/USER_FLOW.md) |
+| Desain UI/UX | [UI/UX Design](./docs/design/UI_UX_DESIGN.md) |
+| Arsitektur | [Architecture](./docs/engineering/ARCHITECTURE.md) |
+| Basis data | [Database](./docs/engineering/DATABASE.md) |
+| Kontrak aplikasi | [API](./docs/engineering/API.md) |
