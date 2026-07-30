@@ -45,16 +45,26 @@ allowlist that origin's `/auth/callback` in the same Supabase project.
 
 ### Employer account
 
-- Active employer profile: **Sinar Event Studio**.
+- Demo email: **emploer@employer.com**.
+- Active employer profile completed through the normal onboarding flow.
 - Zero or fewer than three active Opportunity Credits.
 - One pre-created published general job eligible to receive a boost.
 - No active boost on the target job.
 
 ### Worker account
 
-- Active worker profile: **Ayu Pratama**.
+- Demo email: **worker@worker.com**.
+- Active worker profile completed through the normal onboarding flow.
 - No verified Work Proof in **Event Helper** category.
 - Optional verified proof in a different category to demonstrate category-specific eligibility.
+
+### Administrator account
+
+- Demo email: **admin@admin.com**.
+- Active administrator account for marketplace configuration and optional
+  moderation proof points.
+- The full administrator credential is shared privately with the judges and is
+  never committed to the public repository.
 
 ### Reference data
 
