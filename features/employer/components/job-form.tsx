@@ -32,8 +32,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-import { createJobDraft, updateJobDraft, publishJob } from "@/server/domain/jobs/actions";
+import {
+  submitCreateJobDraft,
+  submitPublishJob,
+  submitUpdateJobDraft,
+} from "@/app/employer/jobs/actions";
 
 type JobDraftInput = {
   title: string;
@@ -90,52 +93,27 @@ function selectionCutoffFor(startsAt: string) {
   return new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
 }
 
-const jobErrorMessages: Record<string, string> = {
-  CATEGORY_NOT_ALLOWED:
-    "Kategori ini belum dapat digunakan untuk ketentuan pekerjaan tersebut.",
-  FORBIDDEN: "Akun ini tidak dapat mengelola pekerjaan.",
-  JOB_NOT_DRAFT:
-    "Draf ini sudah berubah status. Muat ulang daftar pekerjaan untuk melihat kondisi terbaru.",
-  JOB_NOT_FOUND: "Pekerjaan tidak ditemukan atau bukan milik akun ini.",
-  VALIDATION_FAILED: "Periksa kembali ketentuan pekerjaan yang ditandai.",
-  WAGE_BELOW_GUIDELINE:
-    "Upah Kesempatan Pertama harus memenuhi panduan upah yang berlaku.",
-  WAGE_GUIDELINE_UNAVAILABLE:
-    "Panduan upah belum tersedia untuk kombinasi area, kategori, dan satuan ini.",
+function toLocalDateTimeInput(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
+
+type JobFormFailure = {
+  ok: false;
+  message: string;
+  fieldErrors?: Record<string, string[]>;
 };
 
-function errorCodeFor(error: unknown) {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof error.code === "string"
-  ) {
-    return error.code;
-  }
-
-  return null;
-}
-
-function fieldErrorsFor(error: unknown) {
-  if (typeof error !== "object" || error === null) return null;
-
-  const candidate = error as {
-    details?: unknown;
-    fieldErrors?: unknown;
-  };
-  const value = candidate.details ?? candidate.fieldErrors;
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null;
-  }
-
-  return value as Record<string, string[]>;
-}
-
-function messageForJobError(error: unknown, fallback: string) {
-  const code = errorCodeFor(error);
-  return code ? (jobErrorMessages[code] ?? fallback) : fallback;
-}
+const errorFieldIds: Record<string, string> = {
+  categoryId: "category",
+  areaId: "area",
+  toolsProvided: "providedTools",
+  toolsRequired: "requiredTools",
+};
 
 function FormSection({
   number,
@@ -212,8 +190,10 @@ export function JobForm({
   jobId?: string;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
   const persistedJobIdRef = useRef(jobId);
+  const [formOpenedAt] = useState(Date.now);
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -222,9 +202,13 @@ export function JobForm({
     description: initialData?.description || "",
     taskScope: initialData?.taskScope || "",
     publicLocationLabel: initialData?.publicLocationLabel || "",
-    startsAt: initialData?.startsAt ? new Date(initialData.startsAt).toISOString().slice(0, 16) : "",
+    startsAt: initialData?.startsAt
+      ? toLocalDateTimeInput(initialData.startsAt)
+      : "",
     estimatedMinutes: initialData?.estimatedMinutes || "",
-    applicationDeadline: initialData?.applicationDeadline ? new Date(initialData.applicationDeadline).toISOString().slice(0, 16) : "",
+    applicationDeadline: initialData?.applicationDeadline
+      ? toLocalDateTimeInput(initialData.applicationDeadline)
+      : "",
     fullAddress: initialData?.fullAddress || "",
     arrivalInstructions: initialData?.arrivalInstructions || "",
     providedTools: initialData?.toolsProvided || "",
@@ -237,19 +221,66 @@ export function JobForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string[]>>({});
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [submissionIntent, setSubmissionIntent] = useState<
     "draft" | "publish" | null
   >(null);
   const isSubmitting = submissionIntent !== null;
+  const referenceDataUnavailable =
+    referenceData.areas.length === 0 || referenceData.categories.length === 0;
+
+  const showFailure = (
+    failure: JobFormFailure,
+    intent: "draft" | "publish",
+  ) => {
+    const fieldErrors = failure.fieldErrors ?? {};
+    setErrors(fieldErrors);
+    setFormError({
+      title:
+        intent === "publish"
+          ? "Pekerjaan belum diterbitkan"
+          : "Draf belum tersimpan",
+      message: failure.message,
+    });
+
+    const firstField = Object.keys(fieldErrors)[0];
+    if (firstField) {
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById(errorFieldIds[firstField] ?? firstField)
+          ?.focus();
+      });
+    }
+  };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const fieldName =
+      e.target.name === "providedTools"
+        ? "toolsProvided"
+        : e.target.name === "requiredTools"
+          ? "toolsRequired"
+          : e.target.name;
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setErrors((current) => {
+      if (!current[fieldName]) return current;
+      const next = { ...current };
+      delete next[fieldName];
+      return next;
+    });
   };
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((current) => {
+      if (!current[name]) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
   };
 
   const selectedCategory = useMemo(() => referenceData.categories.find(c => c.id === formData.categoryId), [formData.categoryId, referenceData.categories]);
@@ -257,6 +288,8 @@ export function JobForm({
     () => selectionCutoffFor(formData.startsAt),
     [formData.startsAt],
   );
+  const selectionCutoffHasPassed =
+    selectionCutoff !== null && selectionCutoff.getTime() <= formOpenedAt;
   const activeGuideline = useMemo(() => {
     const guidelineDate = formData.startsAt
       ? new Date(formData.startsAt).toISOString().slice(0, 10)
@@ -306,31 +339,40 @@ export function JobForm({
 
   const onSaveDraft = async () => {
     if (submittingRef.current) return;
+    if (referenceDataUnavailable || !formRef.current?.reportValidity()) return;
     submittingRef.current = true;
     setSubmissionIntent("draft");
     setErrors({});
-    setGlobalError(null);
+    setFormError(null);
 
     try {
       const payload = prepareInput();
-      
+
       if (persistedJobIdRef.current) {
-        await updateJobDraft(persistedJobIdRef.current, payload);
+        const result = await submitUpdateJobDraft(
+          persistedJobIdRef.current,
+          payload,
+        );
+        if (!result.ok) {
+          showFailure(result, "draft");
+          return;
+        }
         router.push("/employer/jobs");
       } else {
-        const result = await createJobDraft(payload);
+        const result = await submitCreateJobDraft(payload);
+        if (!result.ok) {
+          showFailure(result, "draft");
+          return;
+        }
         persistedJobIdRef.current = result.jobId;
         router.push("/employer/jobs");
       }
-    } catch (error: unknown) {
-      const fieldErrors = fieldErrorsFor(error);
-      if (fieldErrors) setErrors(fieldErrors);
-      setGlobalError(
-        messageForJobError(
-          error,
-          "Draf belum tersimpan. Periksa koneksi lalu coba lagi.",
-        ),
-      );
+    } catch {
+      setFormError({
+        title: "Draf belum tersimpan",
+        message:
+          "Hubungan ke server terputus. Periksa jaringan lalu coba lagi.",
+      });
     } finally {
       submittingRef.current = false;
       setSubmissionIntent(null);
@@ -339,34 +381,50 @@ export function JobForm({
 
   const onPublish = async () => {
     if (submittingRef.current) return;
+    if (referenceDataUnavailable || !formRef.current?.reportValidity()) {
+      setPublishDialogOpen(false);
+      return;
+    }
     submittingRef.current = true;
     setSubmissionIntent("publish");
     setErrors({});
-    setGlobalError(null);
+    setFormError(null);
 
     try {
       const payload = prepareInput();
       
       let currentJobId = persistedJobIdRef.current;
       if (currentJobId) {
-        await updateJobDraft(currentJobId, payload);
+        const updateResult = await submitUpdateJobDraft(currentJobId, payload);
+        if (!updateResult.ok) {
+          showFailure(updateResult, "publish");
+          setPublishDialogOpen(false);
+          return;
+        }
       } else {
-        const res = await createJobDraft(payload);
-        currentJobId = res.jobId;
+        const createResult = await submitCreateJobDraft(payload);
+        if (!createResult.ok) {
+          showFailure(createResult, "publish");
+          setPublishDialogOpen(false);
+          return;
+        }
+        currentJobId = createResult.jobId;
         persistedJobIdRef.current = currentJobId;
       }
-      
-      await publishJob(currentJobId!);
+
+      const publishResult = await submitPublishJob(currentJobId);
+      if (!publishResult.ok) {
+        showFailure(publishResult, "publish");
+        setPublishDialogOpen(false);
+        return;
+      }
       router.push(`/employer/jobs/${currentJobId}`);
-    } catch (error: unknown) {
-      const fieldErrors = fieldErrorsFor(error);
-      if (fieldErrors) setErrors(fieldErrors);
-      setGlobalError(
-        messageForJobError(
-          error,
-          "Pekerjaan belum diterbitkan. Periksa koneksi lalu coba lagi.",
-        ),
-      );
+    } catch {
+      setFormError({
+        title: "Pekerjaan belum diterbitkan",
+        message:
+          "Hubungan ke server terputus. Periksa jaringan lalu coba lagi.",
+      });
       setPublishDialogOpen(false);
     } finally {
       submittingRef.current = false;
@@ -376,18 +434,30 @@ export function JobForm({
 
   return (
     <form
+      ref={formRef}
       className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8"
       aria-busy={isSubmitting}
       onSubmit={(event) => event.preventDefault()}
     >
       <div className="grid gap-7">
-        {globalError && (
+        {formError ? (
           <Alert variant="destructive">
             <CircleAlert className="size-4" />
-            <AlertTitle>Gagal Menyimpan</AlertTitle>
-            <AlertDescription>{globalError}</AlertDescription>
+            <AlertTitle>{formError.title}</AlertTitle>
+            <AlertDescription>{formError.message}</AlertDescription>
           </Alert>
-        )}
+        ) : null}
+
+        {referenceDataUnavailable ? (
+          <Alert variant="destructive">
+            <CircleAlert className="size-4" />
+            <AlertTitle>Form belum dapat digunakan</AlertTitle>
+            <AlertDescription>
+              Area atau kategori aktif belum tersedia. Hubungi admin lalu muat
+              ulang halaman ini.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <FormSection
           number="1"
@@ -404,6 +474,9 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Contoh: Kru Event Pameran Buku"
                   className="h-11 rounded-xl"
+                  minLength={5}
+                  maxLength={160}
+                  required
                 />
               </Field>
             </div>
@@ -446,6 +519,9 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Tujuan pekerjaan..."
                   className="min-h-24 rounded-xl"
+                  minLength={20}
+                  maxLength={2000}
+                  required
                 />
               </Field>
             </div>
@@ -458,6 +534,9 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Rincian tugas spesifik..."
                   className="min-h-24 rounded-xl"
+                  minLength={10}
+                  maxLength={1000}
+                  required
                 />
               </Field>
             </div>
@@ -473,6 +552,9 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Kecamatan, kota"
                   className="h-11 rounded-xl"
+                  minLength={3}
+                  maxLength={60}
+                  required
                 />
               </Field>
             </div>
@@ -484,6 +566,7 @@ export function JobForm({
                 value={formData.startsAt}
                 onChange={handleTextChange}
                 className="h-11 rounded-xl"
+                required
               />
             </Field>
             <Field label="Estimasi durasi (Menit)" id="estimatedMinutes" error={errors.estimatedMinutes}>
@@ -494,6 +577,10 @@ export function JobForm({
                 value={formData.estimatedMinutes}
                 onChange={handleTextChange}
                 className="h-11 rounded-xl"
+                min={15}
+                max={10080}
+                step={1}
+                required
               />
             </Field>
             <Field label="Batas waktu lamaran" id="applicationDeadline" error={errors.applicationDeadline}>
@@ -507,6 +594,7 @@ export function JobForm({
                 value={formData.applicationDeadline}
                 onChange={handleTextChange}
                 className="h-11 rounded-xl"
+                required
               />
             </Field>
             <div
@@ -520,8 +608,10 @@ export function JobForm({
               <div>
                 <p className="font-medium">Batas pemilihan pekerja</p>
                 <p className="mt-1 text-base leading-6 text-muted-foreground">
-                  {selectionCutoff
-                    ? `${selectionCutoffFormatter.format(selectionCutoff)}. Batas lamaran harus lebih awal dari waktu ini.`
+                  {selectionCutoffHasPassed
+                    ? "Waktu mulai terlalu dekat. Pilih waktu mulai kerja lebih dari 24 jam dari sekarang agar batas lamaran masih dapat diatur."
+                    : selectionCutoff
+                      ? `${selectionCutoffFormatter.format(selectionCutoff)}. Batas lamaran harus lebih awal dari waktu ini.`
                     : "Isi waktu mulai kerja untuk melihat batas pemilihan otomatis."}
                 </p>
               </div>
@@ -543,6 +633,9 @@ export function JobForm({
                 onChange={handleTextChange}
                 placeholder="Alamat tempat kerja lengkap"
                 className="min-h-24 rounded-xl"
+                minLength={10}
+                maxLength={300}
+                required
               />
             </Field>
             <Field
@@ -560,6 +653,7 @@ export function JobForm({
                 onChange={handleTextChange}
                 placeholder="Contoh: masuk melalui lobi utama dan temui koordinator."
                 className="min-h-20 rounded-xl"
+                maxLength={500}
               />
             </Field>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -571,6 +665,7 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Meja registrasi"
                   className="h-11 rounded-xl"
+                  maxLength={200}
                 />
               </Field>
               <Field label="Peralatan dibawa" id="requiredTools" error={errors.toolsRequired}>
@@ -581,6 +676,7 @@ export function JobForm({
                   onChange={handleTextChange}
                   placeholder="Tidak ada"
                   className="h-11 rounded-xl"
+                  maxLength={200}
                 />
               </Field>
             </div>
@@ -601,6 +697,10 @@ export function JobForm({
                 value={formData.wageAmount}
                 onChange={handleTextChange}
                 className="h-11 rounded-xl"
+                min={10000}
+                max={100000000}
+                step={1}
+                required
               />
             </Field>
             <Field label="Satuan" id="wageUnit" error={errors.wageUnit}>
@@ -626,6 +726,9 @@ export function JobForm({
                 onChange={handleTextChange}
                 placeholder="Transfer BCA / Tunai"
                 className="h-11 rounded-xl"
+                minLength={2}
+                maxLength={100}
+                required
               />
             </Field>
             <Field label="Waktu pembayaran" id="paymentTiming" error={errors.paymentTiming}>
@@ -636,6 +739,9 @@ export function JobForm({
                 onChange={handleTextChange}
                 placeholder="Setelah selesai"
                 className="h-11 rounded-xl"
+                minLength={2}
+                maxLength={100}
+                required
               />
             </Field>
 
@@ -678,12 +784,16 @@ export function JobForm({
                 checked={formData.isFirstOpportunity} 
                 onCheckedChange={(c) => setFormData(p => ({ ...p, isFirstOpportunity: !!c }))}
                 aria-describedby="isFirstOpportunity-help"
-                disabled={Boolean(
-                  !selectedCategory?.firstOpportunityAllowed ||
-                    !activeGuideline ||
-                    (formData.wageAmount &&
-                      Number(formData.wageAmount) < activeGuideline.minimumAmount),
-                )}
+                disabled={
+                  !formData.isFirstOpportunity &&
+                  Boolean(
+                    !selectedCategory?.firstOpportunityAllowed ||
+                      !activeGuideline ||
+                      (formData.wageAmount &&
+                        Number(formData.wageAmount) <
+                          activeGuideline.minimumAmount),
+                  )
+                }
               />
               <div>
                 <Label htmlFor="isFirstOpportunity">Jadikan Kesempatan Pertama</Label>
@@ -725,7 +835,12 @@ export function JobForm({
             <DialogTrigger asChild>
               <Button
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || referenceDataUnavailable}
+                onClick={(event) => {
+                  if (!formRef.current?.reportValidity()) {
+                    event.preventDefault();
+                  }
+                }}
                 className="w-full rounded-xl"
               >
                 Terbitkan pekerjaan
@@ -778,7 +893,7 @@ export function JobForm({
           <Button
             type="button"
             onClick={onSaveDraft}
-            disabled={isSubmitting}
+            disabled={isSubmitting || referenceDataUnavailable}
             variant="outline"
             className="h-11 rounded-xl border-primary/25 bg-card text-foreground hover:border-primary/40 hover:bg-primary/5"
           >

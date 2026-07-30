@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { requireSubjectClaim } from "@/server/auth/identity-claims";
-import { mapAuthProviderError } from "@/server/auth/provider-errors";
+import {
+  isExistingAccountSignUpError,
+  mapAuthProviderError,
+} from "@/server/auth/provider-errors";
 import { hasCompleteRoleProfile } from "@/server/auth/profile-completeness";
 import { safeApplicationPath } from "@/server/auth/redirects";
 import {
@@ -126,6 +129,16 @@ describe("onboarding input", () => {
 });
 
 describe("authentication provider errors", () => {
+  test("recognizes only duplicate-email sign-up errors for safe recovery", () => {
+    expect(
+      isExistingAccountSignUpError({ code: "user_already_exists" }),
+    ).toBe(true);
+    expect(isExistingAccountSignUpError({ code: "email_exists" })).toBe(true);
+    expect(isExistingAccountSignUpError({ code: "weak_password" })).toBe(
+      false,
+    );
+  });
+
   test("maps provider details to a safe sign-in error", () => {
     const error = mapAuthProviderError(
       { code: "invalid_credentials", status: 400 },

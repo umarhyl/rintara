@@ -266,6 +266,26 @@ describe("frontend flow surface", () => {
     expect(callback).toContain('new URL("/forgot-password", request.url)');
   });
 
+  test("offers safe recovery when registration cannot distinguish account state", async () => {
+    const adapter = await Bun.file("server/auth/adapters.ts").text();
+    const register = await Bun.file(
+      "features/auth/components/register-form.tsx",
+    ).text();
+
+    expect(adapter).toContain("isExistingAccountSignUpError(error)");
+    expect(adapter).toContain('"confirm-or-sign-in" as const');
+    expect(register).toContain(
+      'result.nextStep === "confirm-or-sign-in"',
+    );
+    expect(register).toContain(
+      "kami tidak mengonfirmasi apakah email sudah",
+    );
+    expect(register).toContain("Masuk ke akun");
+    expect(register).toContain('href="/forgot-password"');
+    expect(register).toContain("Pulihkan kata sandi");
+    expect(register).not.toContain("email sudah terdaftar");
+  });
+
   test("keeps one persistent authentication frame across both entry routes", async () => {
     const shell = await Bun.file(
       "features/auth/components/auth-shell.tsx",
@@ -398,7 +418,8 @@ describe("frontend flow surface", () => {
     const authStatus = await Bun.file("app/auth/status/route.ts").text();
 
     expect(register).toContain('pathname: "/sign-in"');
-    expect(register).toContain("query: { next: onboardingPath }");
+    expect(register).toContain("query: { next: nextPath }");
+    expect(register).toContain("router.replace(onboardingPath)");
     expect(applyAction).toContain("usePublicAccountState");
     expect(applyAction).not.toContain("supabase.auth");
     expect(applyAction).not.toContain("@/lib/supabase/client");
@@ -847,9 +868,14 @@ describe("frontend flow surface", () => {
     ).text();
     expect(jobForm).toContain("const persistedJobIdRef = useRef(jobId)");
     expect(jobForm).toContain("let currentJobId = persistedJobIdRef.current");
-    expect(jobForm).toMatch(
-      /const res = await createJobDraft\(payload\);\s*currentJobId = res\.jobId;\s*persistedJobIdRef\.current = currentJobId;\s*}\s*await publishJob\(currentJobId!\);/,
+    expect(jobForm).toContain(
+      "const createResult = await submitCreateJobDraft(payload)",
     );
+    expect(jobForm).toContain("currentJobId = createResult.jobId");
+    expect(jobForm).toContain(
+      "const publishResult = await submitPublishJob(currentJobId)",
+    );
+    expect(jobForm).toContain("if (!publishResult.ok)");
   });
 
   test("keeps admin list controls truthful and report selection addressable", async () => {

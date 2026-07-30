@@ -66,7 +66,7 @@ The final `.env.example` should document names without values. Expected categori
 | Check-in code pepper/key | Secret | Protect low-entropy code verification data |
 | Rate-limit configuration | Mixed | Abuse control |
 | Log level/release identifier | Non-secret | Operations and correlation |
-| Demo-seed safety flag | Non-secret | Explicitly enable controlled demo behavior |
+| Local/test seed safety flag | Non-secret | Explicitly enable synthetic local/test fixtures |
 | Maintenance secret | Secret | Authenticate bounded expiry operations |
 | Release identifier | Non-secret | Identify the deployed build in shallow health responses |
 
@@ -86,6 +86,9 @@ Rules:
   codes after a rotation.
 - `SUPABASE_SERVICE_ROLE_KEY` is required only on the server. Rotate it
   immediately if exposed; never prefix it with `NEXT_PUBLIC_`.
+- Seed commands are limited to loopback local/test databases and refuse
+  preview, demo, production, and every remote database. Prepare remote demo
+  accounts and jobs through the normal application flows.
 
 ## 5. Build Requirements
 

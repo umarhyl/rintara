@@ -1,7 +1,7 @@
 # Rintara Live Demo Runbook
 
-> **Version:** 1.0  
-> **Date:** July 18, 2026  
+> **Version:** 1.0
+> **Date:** July 30, 2026
 > **Target duration:** 4–5 minutes
 
 ## 1. Objective
@@ -32,7 +32,16 @@ Do not spend demo time on settings, admin configuration, or out-of-scope feature
 - Backup recording stored locally and playable without network.
 - No browser extensions or password managers that expose unrelated data.
 
-## 3. Seed Requirements
+## 3. Demo Data Requirements
+
+Use a dedicated Supabase demo project containing synthetic data only. Create
+accounts through normal registration and onboarding, then publish the required
+jobs through the employer UI. The repository `db:seed` command is for loopback
+local/test databases only and must never be run against the remote demo
+database.
+
+Set `RINTARA_APP_URL` to the deployed demo origin (never localhost), and
+allowlist that origin's `/auth/callback` in the same Supabase project.
 
 ### Employer account
 
@@ -66,10 +75,13 @@ Complete 30–60 minutes before presentation:
 
 - [ ] Confirm deployed release identifier.
 - [ ] Run production smoke test.
-- [ ] Run safe demo reset in the approved environment.
+- [ ] Rehearse or restore the synthetic demo state through approved application
+      flows.
 - [ ] Sign in to both isolated sessions.
 - [ ] Confirm role-specific dashboards.
 - [ ] Confirm seed category, Wage Guideline, and target boost job.
+- [ ] Confirm the Worker discovery page contains at least one published job
+      with a future application deadline.
 - [ ] Disable browser notification popups and unrelated tabs.
 - [ ] Set readable zoom and viewport.
 - [ ] Test projector/display connection.
@@ -163,24 +175,19 @@ Do not derail the main demo to create a report live.
 | Acceptance already completed | Continue from the agreement in dashboard |
 | Code expired | Generate a new code; explain the 15-minute protection |
 | Completion blocked | Confirm no seeded active report; if blocked unexpectedly, use backup workflow |
-| Credit cap reached | Use reset/backup employer; do not edit database manually |
+| Credit cap reached | Use the prepared backup employer; do not edit database manually |
 | Deployment unavailable | Attempt one controlled reload, then play backup recording |
 | Network unstable | Switch to backup network or recording |
 
 Never repair the demo through direct production database edits during presentation.
 
-## 8. Safe Reset
+## 8. Demo Recovery
 
-The reset operation must:
-
-- run only against an explicit demo-environment allowlist;
-- refuse production by default;
-- use synthetic stable fixture keys;
-- remove/recreate only known demo records;
-- preserve migration and audit integrity as designed; and
-- print a safe summary without secrets or full addresses.
-
-After reset, rerun the seed verification checklist. Do not reset while another team member is using the same demo dataset.
+There is no automated remote reset command in this repository. Restore the
+dedicated demo environment from an approved provider snapshot or rebuild its
+synthetic state through normal application flows. Never run `db:seed` against
+the remote demo database or repair it through direct production database edits.
+After recovery, rerun the checklist above.
 
 ## 9. Presenter Notes
 

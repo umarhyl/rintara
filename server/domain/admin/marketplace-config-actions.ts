@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireActiveUser } from "@/server/auth/identity";
 import { assertAdmin } from "@/server/auth/policies";
@@ -295,6 +295,40 @@ export async function createWageGuidelineAction(
         );
       }
 
+      if (parsed.data.isActive) {
+        const scopeLockKey = [
+          parsed.data.areaId,
+          parsed.data.categoryId,
+          parsed.data.unit,
+        ].join(":");
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${scopeLockKey}, 0))`,
+        );
+        const overlapping = await tx.execute<{ id: string }>(sql`
+          select id
+          from wage_guidelines
+          where area_id = ${parsed.data.areaId}::uuid
+            and category_id = ${parsed.data.categoryId}::uuid
+            and unit = ${parsed.data.unit}::wage_unit
+            and is_active = true
+            and effective_from < coalesce(${parsed.data.effectiveTo || null}::date, 'infinity'::date)
+            and coalesce(effective_to, 'infinity'::date) > ${parsed.data.effectiveFrom}::date
+          limit 1
+        `);
+
+        if (overlapping.length > 0) {
+          throw new ApplicationError(
+            "VALIDATION_FAILED",
+            "Periode Panduan Upah bertumpang tindih dengan panduan aktif lain.",
+            {
+              effectiveFrom: [
+                "Pilih periode yang tidak bertumpang tindih dengan panduan aktif.",
+              ],
+            },
+          );
+        }
+      }
+
       const [inserted] = await tx
         .insert(wageGuidelines)
         .values({
@@ -445,6 +479,57 @@ export async function setWageGuidelineActiveAction(
   try {
     const context = await requireAdminContext();
     const [guideline] = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({
+          id: wageGuidelines.id,
+          areaId: wageGuidelines.areaId,
+          categoryId: wageGuidelines.categoryId,
+          unit: wageGuidelines.unit,
+          effectiveFrom: wageGuidelines.effectiveFrom,
+          effectiveTo: wageGuidelines.effectiveTo,
+        })
+        .from(wageGuidelines)
+        .where(eq(wageGuidelines.id, parsed.id))
+        .limit(1)
+        .for("update");
+
+      if (!existing) {
+        throw new ApplicationError(
+          "NOT_FOUND",
+          "Panduan Upah tidak ditemukan.",
+        );
+      }
+
+      if (parsed.isActive) {
+        const scopeLockKey = [
+          existing.areaId,
+          existing.categoryId,
+          existing.unit,
+        ].join(":");
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${scopeLockKey}, 0))`,
+        );
+        const overlapping = await tx.execute<{ id: string }>(sql`
+          select id
+          from wage_guidelines
+          where area_id = ${existing.areaId}::uuid
+            and category_id = ${existing.categoryId}::uuid
+            and unit = ${existing.unit}::wage_unit
+            and is_active = true
+            and id <> ${existing.id}::uuid
+            and effective_from < coalesce(${existing.effectiveTo}::date, 'infinity'::date)
+            and coalesce(effective_to, 'infinity'::date) > ${existing.effectiveFrom}::date
+          limit 1
+        `);
+
+        if (overlapping.length > 0) {
+          throw new ApplicationError(
+            "VALIDATION_FAILED",
+            "Panduan Upah tidak dapat diaktifkan karena periodenya bertumpang tindih dengan panduan aktif lain.",
+          );
+        }
+      }
+
       const [updated] = await tx
         .update(wageGuidelines)
         .set({ isActive: parsed.isActive })
@@ -456,12 +541,7 @@ export async function setWageGuidelineActiveAction(
           unit: wageGuidelines.unit,
         });
 
-      if (!updated) {
-        throw new ApplicationError(
-          "NOT_FOUND",
-          "Panduan Upah tidak ditemukan.",
-        );
-      }
+      if (!updated) throw new ApplicationError("NOT_FOUND", "Panduan Upah tidak ditemukan.");
 
       await tx.insert(auditLogs).values({
         actorId: context.userId,

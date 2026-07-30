@@ -356,11 +356,15 @@ Never log passwords, session tokens, check-in codes, full addresses, application
 | --- | --- | --- |
 | Local | Development and tests | Local or isolated development database |
 | Preview | Review and acceptance | Synthetic data only; separate credentials |
-| Production | Public MVP and live demo | Managed backups, least-privilege credentials, controlled seed |
+| Demo | Live rehearsal and presentation | Dedicated Supabase project, synthetic accounts created through normal application flows |
+| Production | Public MVP | Managed backups, least-privilege credentials, no seed/reset command |
 
 Required configuration categories include database connection, authentication secrets and callbacks, application base URL, rate-limit configuration if used, and observability configuration. Environment names are documented in the repository README without secret values.
 
 Database migrations run as a controlled deployment step. Application instances must not race to run migrations on startup.
+Local/test seeds are restricted to loopback PostgreSQL. The repository seed
+command cannot reset a preview, demo, or production database. Remote demo data
+is prepared through normal registration, onboarding, and job-management flows.
 
 ## 15. Testing Architecture
 
@@ -369,7 +373,10 @@ Database migrations run as a controlled deployment step. Application instances m
 - Concurrency tests cover acceptance, completion, and credit redemption.
 - Query tests verify public/private projections.
 - Manual release smoke testing rehearses the golden path and required authorization scenarios.
-- Seed data creates two employers, multiple workers with category-specific history, compliant and non-compliant jobs, credits, and a report scenario.
+- Local seed data creates synthetic role fixtures, active reference data, and
+  two visible future-deadline jobs. The reset verifies discoverability before
+  committing.
+  commit; workflow state is created by the rehearsed golden path.
 
 ## 16. Architecture Decision Guardrails
 

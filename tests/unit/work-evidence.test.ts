@@ -3,10 +3,12 @@ import { describe, expect, mock, test } from "bun:test";
 mock.module("server-only", () => ({}));
 
 import sharp from "sharp";
-import { prepareWorkEvidence } from "@/server/infrastructure/storage/work-evidence";
 
 describe("work completion evidence processing", () => {
   test("normalizes accepted images to bounded WebP without EXIF metadata", async () => {
+    const { prepareWorkEvidence } = await import(
+      "@/server/infrastructure/storage/work-evidence"
+    );
     const input = await sharp({
       create: {
         width: 48,
@@ -36,6 +38,9 @@ describe("work completion evidence processing", () => {
   });
 
   test("rejects unsupported files and inputs above five megabytes", async () => {
+    const { prepareWorkEvidence } = await import(
+      "@/server/infrastructure/storage/work-evidence"
+    );
     await expect(
       prepareWorkEvidence(
         new File(["not an image"], "hasil.gif", { type: "image/gif" }),

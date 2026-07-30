@@ -350,7 +350,9 @@ No concurrency, uptime, or throughput claim may be published without measured ev
 
 - Critical errors SHOULD produce structured logs without sensitive data.
 - Production database backups MUST follow the selected provider's supported policy.
-- Demo seed/reset procedures MUST be deterministic and isolated from real production data.
+- Local/test seed/reset procedures MUST be deterministic and isolated from real
+  data. They MUST refuse preview, demo, production, and remote PostgreSQL
+  targets.
 - Health and deployment state SHOULD be verifiable without exposing application secrets.
 
 ### NFR-007 — Maintainability [P0]

@@ -386,6 +386,14 @@ during submission. Role selection and profile onboarding use the image-free
 operational shell. Both preserve form recovery, duplicate-submission
 prevention, and registration progress.
 
+If registration returns an ambiguous existing-account or pending-confirmation
+outcome, replace the form with a neutral **Lanjutkan dengan email ini** state.
+Do not claim that the address is registered or that a message was definitely
+sent. Keep the submitted email visible and provide two 44px-minimum actions:
+**Masuk ke akun**, preserving the validated destination, and **Pulihkan kata
+sandi**. The shared authentication state carries the email to either route
+without placing it in the URL.
+
 The sign-in password label includes a **Lupa kata sandi?** link. Recovery and
 new-password screens reuse the same documentary frame without the
 Masuk/Daftar segmented control. The recovery success message never confirms
@@ -510,6 +518,15 @@ clear simulation label when applicable; it is not described as a legal minimum.
 The schedule section shows both the application deadline and the derived
 selection cutoff 24 hours before the start time. The cutoff is display-only,
 not another employer input.
+
+Draft and publish failures stay on the form and preserve every valid value.
+Expected validation failures use inline field messages plus a specific summary
+such as **Draf belum tersimpan** or **Pekerjaan belum diterbitkan**; do not
+describe them as connection failures. Move focus to the first invalid field.
+Use connection-recovery copy only when the Server Action request itself rejects.
+If active area or category reference data is empty, show a blocking unavailable
+state and disable both actions. A checked First Opportunity option must always
+remain operable so the employer can clear it after related inputs change.
 
 ### 8.5 Applicant list
 

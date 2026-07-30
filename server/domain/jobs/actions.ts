@@ -15,7 +15,7 @@ import {
   users,
   wageGuidelines,
 } from "@/server/db/schema";
-import { eq, and, desc, gte, lte, or, isNull, gt } from "drizzle-orm";
+import { eq, and, asc, desc, gte, lte, or, isNull, gt } from "drizzle-orm";
 import { z } from "zod";
 import { jobDraftSchema } from "./validation";
 import { getJobSelectionCutoff } from "./selection-cutoff";
@@ -277,7 +277,11 @@ export async function publishJob(jobId: string) {
         lte(wageGuidelines.effectiveFrom, guidelineDate),
         or(isNull(wageGuidelines.effectiveTo), gt(wageGuidelines.effectiveTo, guidelineDate))!
       ))
-      .orderBy(desc(wageGuidelines.effectiveFrom), desc(wageGuidelines.createdAt))
+      .orderBy(
+        desc(wageGuidelines.effectiveFrom),
+        desc(wageGuidelines.createdAt),
+        asc(wageGuidelines.id),
+      )
       .limit(1)
       .for("share");
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Circle, CircleAlert, LoaderCircle, Mail, MailCheck } from "lucide-react";
+import { ArrowRight, Check, Circle, CircleAlert, LoaderCircle, Mail } from "lucide-react";
 import { submitSignUp } from "@/app/auth/actions";
 import { AuthPasswordField } from "@/features/auth/components/auth-password-field";
 import { useAuthSurfaceState } from "@/features/auth/components/auth-surface-state";
@@ -16,12 +16,12 @@ import { primePublicAuthState } from "@/features/auth/use-public-auth-state";
 
 export function RegisterForm({ nextPath }: { nextPath?: string }) {
   const router = useRouter();
-  const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
+  const continuationHeadingRef = useRef<HTMLHeadingElement>(null);
   const submittingRef = useRef(false);
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsError, setTermsError] = useState<string | null>(null);
-  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [continuationEmail, setContinuationEmail] = useState<string | null>(null);
   const {
     email,
     setEmail,
@@ -39,18 +39,45 @@ export function RegisterForm({ nextPath }: { nextPath?: string }) {
   const onboardingPath = nextPath
     ? `/onboarding/role?next=${encodeURIComponent(nextPath)}`
     : "/onboarding/role";
+  const signInHref = nextPath
+    ? { pathname: "/sign-in", query: { next: nextPath } }
+    : "/sign-in";
 
   useEffect(() => {
-    if (confirmationEmail) confirmationHeadingRef.current?.focus();
-  }, [confirmationEmail]);
+    if (continuationEmail) continuationHeadingRef.current?.focus();
+  }, [continuationEmail]);
 
-  if (confirmationEmail) {
+  if (continuationEmail) {
     return (
-      <div className="mt-6 border-y border-primary/25 bg-secondary/40 py-5" role="status" aria-live="polite">
-        <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground"><MailCheck className="size-5" aria-hidden="true" /></span>
-        <h2 ref={confirmationHeadingRef} tabIndex={-1} className="mt-4 text-xl font-semibold outline-none">Periksa emailmu</h2>
-        <p className="mt-2 text-base leading-7 text-muted-foreground">Tautan konfirmasi dikirim ke <strong className="text-foreground">{confirmationEmail}</strong>.</p>
-        <Button variant="outline" className="mt-4" asChild><Link href={{ pathname: "/sign-in", query: { next: onboardingPath } }}>Kembali ke halaman masuk</Link></Button>
+      <div
+        className="mt-6 border-y border-primary/25 bg-secondary/40 py-5"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <Mail className="size-5" aria-hidden="true" />
+        </span>
+        <h2
+          ref={continuationHeadingRef}
+          tabIndex={-1}
+          className="mt-4 text-xl font-semibold outline-none"
+        >
+          Lanjutkan dengan email ini
+        </h2>
+        <p className="mt-2 text-base leading-7 text-muted-foreground">
+          Untuk melindungi akunmu, kami tidak mengonfirmasi apakah email sudah
+          terdaftar. Jika ini pendaftaran baru, periksa email di{" "}
+          <strong className="text-foreground">{continuationEmail}</strong>.
+          Jika kamu pernah mendaftar, masuk atau pulihkan kata sandi.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <Button variant="outline" asChild>
+            <Link href={signInHref}>Masuk ke akun</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/forgot-password">Pulihkan kata sandi</Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -91,8 +118,8 @@ export function RegisterForm({ nextPath }: { nextPath?: string }) {
               return;
             }
 
-            if (result.requiresEmailConfirmation) {
-              setConfirmationEmail(email);
+            if (result.nextStep === "confirm-or-sign-in") {
+              setContinuationEmail(email);
               return;
             }
 

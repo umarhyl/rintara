@@ -31,6 +31,7 @@ databaseTest(
             'applications_job_worker_unique',
             'applications_one_accepted_per_job',
             'jobs_unfilled_expiry_idx',
+            'wage_guidelines_lookup_idx',
             'work_completion_evidence_session_unique',
             'work_proofs_agreement_unique',
             'opportunity_credits_source_job_unique'
@@ -42,6 +43,7 @@ databaseTest(
         "applications_one_accepted_per_job",
         "jobs_unfilled_expiry_idx",
         "opportunity_credits_source_job_unique",
+        "wage_guidelines_lookup_idx",
         "work_completion_evidence_session_unique",
         "work_proofs_agreement_unique",
       ]);

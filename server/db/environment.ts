@@ -120,20 +120,36 @@ export function assertMigrationAllowed() {
   }
 }
 
-export function assertSeedAllowed() {
+export function assertSeedAllowed(connectionUrl?: string) {
   const environment = getRintaraEnvironment();
 
   if (environment === "production") {
     throw new Error("Seed refused: production is never an allowed seed target.");
   }
 
-  const allowedEnvironments: string[] = ["local", "test", "demo"];
+  const allowedEnvironments: string[] = ["local", "test"];
 
   if (!allowedEnvironments.includes(environment)) {
-    throw new Error(`Seed refused in ${environment}. Use local, test, or demo.`);
+    throw new Error(`Seed refused in ${environment}. Use local or test.`);
   }
 
   if (process.env.RINTARA_ALLOW_SEED !== "true") {
     throw new Error("Seed refused. Set RINTARA_ALLOW_SEED=true explicitly.");
+  }
+
+  const seedDatabaseUrl = connectionUrl ?? getSeedDatabaseUrl();
+  const url = new URL(seedDatabaseUrl);
+  const isLoopback = normalizeDatabaseHost(url.hostname) === "loopback";
+
+  if (!isLoopback) {
+    throw new Error(
+      `Seed refused: RINTARA_ENV=${environment} may target only a loopback PostgreSQL database.`,
+    );
+  }
+
+  if (environment === "test" && url.pathname !== "/rintara_test") {
+    throw new Error(
+      "Seed refused: the test seed target must be the rintara_test database.",
+    );
   }
 }

@@ -156,7 +156,12 @@ Interests are self-declared and never treated as verified experience.
 | `created_by` | uuid | FK `users.id` |
 | `created_at`, `updated_at` | timestamptz | Required |
 
-Prevent overlapping active guidelines for the same area, category, and unit through a migration-level exclusion strategy or an admin transaction check plus a supporting index.
+Prevent overlapping active guidelines for the same area, category, and unit.
+Admin create/reactivate operations acquire a transaction-scoped PostgreSQL
+advisory lock derived from `(area_id, category_id, unit)`, then perform a
+half-open `[effective_from, effective_to)` overlap check using the supporting
+lookup index before writing. Inactive historical versions may overlap but
+cannot be activated while an active overlap exists.
 
 ## 6. Jobs and Applications
 
@@ -528,4 +533,10 @@ Implementation locations:
 - Deterministic synthetic seed: `server/db/seed.ts`
 - Runtime PostgreSQL boundary: `server/db/client.ts`
 
-Use the pooled `DATABASE_URL` for Vercel runtime traffic and the controlled `DIRECT_DATABASE_URL` for migrations when reachable. `db:seed` requires `RINTARA_ALLOW_SEED=true` and always refuses `RINTARA_ENV=production`.
+Use the pooled `DATABASE_URL` for Vercel runtime traffic and the controlled
+`DIRECT_DATABASE_URL` for migrations when reachable. `db:seed` requires
+`RINTARA_ALLOW_SEED=true`, always refuses `RINTARA_ENV=production`, and permits
+`local`/`test` only on loopback PostgreSQL (`test` additionally requires the
+`rintara_test` database). It refuses preview, demo, production, and every remote
+database. The reset and all fixture writes execute in one transaction and
+verify at least one visible, future-deadline published job before commit.

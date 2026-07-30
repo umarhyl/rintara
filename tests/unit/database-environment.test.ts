@@ -75,11 +75,31 @@ describe("database operation guards", () => {
     expect(() => assertSeedAllowed()).toThrow("RINTARA_ALLOW_SEED=true");
   });
 
-  test("allows explicit seed only in a safe environment", () => {
+  test("allows a local seed only against a loopback database", () => {
+    process.env.RINTARA_ENV = "local";
+    process.env.RINTARA_ALLOW_SEED = "true";
+
+    expect(() =>
+      assertSeedAllowed(
+        "postgresql://postgres:local@127.0.0.1:5432/rintara",
+      ),
+    ).not.toThrow();
+    expect(() =>
+      assertSeedAllowed(
+        "postgresql://postgres:remote@db.example.com:5432/postgres",
+      ),
+    ).toThrow("loopback");
+  });
+
+  test("refuses a demo seed even when seed opt-in is enabled", () => {
     process.env.RINTARA_ENV = "demo";
     process.env.RINTARA_ALLOW_SEED = "true";
 
-    expect(() => assertSeedAllowed()).not.toThrow();
+    expect(() =>
+      assertSeedAllowed(
+        "postgresql://postgres:demo@db.demo-project.example:5432/postgres",
+      ),
+    ).toThrow("Use local or test");
   });
 
   test("requires an explicit production migration opt-in", () => {

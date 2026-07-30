@@ -211,6 +211,11 @@ Shared authentication presentation:
   form without a documentary image.
 - Authentication errors remain on the sign-in screen with safe recovery copy;
   provider messages are not exposed.
+- When registration cannot distinguish a new unconfirmed signup from an
+  existing account, it shows one neutral continuation state instead of a
+  provider error. The state never confirms whether the email is registered and
+  offers direct **Masuk ke akun** and **Pulihkan kata sandi** actions while
+  retaining the email draft and validated destination.
 - **Lupa kata sandi?** opens `/forgot-password`. The request always shows the
   same confirmation regardless of whether the email is registered. A valid
   Supabase recovery callback opens `/reset-password`; an invalid or expired
@@ -229,6 +234,11 @@ Shared authentication presentation:
    audited.
 5. The next employer job form and public discovery read the updated active
    configuration.
+
+An active Wage Guideline period cannot overlap another active guideline for the
+same area, category, and unit. Creation or reactivation keeps the submitted
+configuration visible and explains the conflicting period without changing
+either record.
 
 Configuration lists use independent bounded cursors so advancing one list does
 not reset the other two.
@@ -258,6 +268,11 @@ Alternative paths:
 - Restricted category/risk: disable First Opportunity and show a safety explanation.
 - Past schedule/deadline, or an application deadline that is not earlier than
   the selection cutoff: highlight the field and retain all other input.
+- Expected server validation and lifecycle failures return to the form as a
+  typed result, highlight the first affected field, and retain all input.
+  Only an actual rejected transport request uses connection-recovery copy.
+- If no active area or category is available, show an unavailable state and
+  disable draft/publish actions until configuration is restored.
 - Published terms need change: employer cancels the job and creates a new draft; published terms are not silently edited.
 
 ## 6. Worker Discovers and Applies to a Job

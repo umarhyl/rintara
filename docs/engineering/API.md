@@ -104,6 +104,10 @@ adapters over Supabase Auth. Credential input is validated and provider errors
 are mapped to the application error catalog; provider messages, tokens, and
 user objects are never returned. Password recovery requests use one generic
 success response to avoid disclosing whether an email is registered.
+An existing-account signup error and a new signup awaiting email confirmation
+both map to the handled `confirm-or-sign-in` continuation outcome. The client
+must not infer or state which case occurred; it offers sign-in and password
+recovery while retaining the validated internal destination.
 
 `GET /auth/callback` exchanges the one-time PKCE code for a cookie-backed
 session. Its optional `next` value accepts only an application-relative path to
@@ -278,7 +282,9 @@ recommended reference amount, source label, optional source URL, effective date
 range, simulation flag, and active flag.
 
 Server behavior records an audit entry and revalidates admin configuration,
-employer job creation, and public discovery views.
+employer job creation, and public discovery views. Creating an active guideline
+acquires the scope advisory lock and rejects any half-open effective-period
+overlap with `VALIDATION_FAILED` on `effectiveFrom`.
 
 ### `setWageGuidelineActive(input)`
 
@@ -287,7 +293,8 @@ Access: active admin.
 Input: Wage Guideline ID and target active flag. This is the supported MVP edit
 path for existing guidelines; changing wage amounts requires creating a new
 guideline version with its own effective dates instead of mutating the old
-record.
+record. Reactivation uses the same scope lock and refuses an overlap without
+changing either guideline.
 
 ## 5. Job Queries and Commands
 
@@ -297,7 +304,10 @@ Access: active employer through the protected job create/edit flow.
 
 Returns active city/regency and category options plus active Wage Guidelines.
 Guidelines include their source label and simulation flag so the form can
-present the reference without implying a legal minimum.
+present the reference without implying a legal minimum. Active guidelines are
+ordered by `effective_from DESC, created_at DESC, id ASC`, matching the
+authoritative publish lookup even while legacy overlapping data is being
+repaired.
 
 ### `createJobDraft(input)`
 
@@ -308,6 +318,12 @@ Input includes every job field defined by FR-020 except server-owned status, wag
 `startsAt - 24 hours`.
 
 Returns: `{ jobId, status: "draft" }`.
+
+The job-form Server Action adapter converts expected `ApplicationError`
+failures into a serializable `{ ok: false, code, message, fieldErrors? }`
+result. Only allowlisted job fields and safe user-facing validation messages
+cross the React Server Action boundary; domain commands continue to throw
+typed errors for server-side callers and transaction rollback.
 
 ### `updateJobDraft(jobId, input)`
 

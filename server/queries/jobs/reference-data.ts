@@ -1,6 +1,6 @@
 import { db } from "@/server/db/client";
 import { areas, categories, wageGuidelines } from "@/server/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 export async function getJobReferenceData() {
   const activeAreas = await db
@@ -33,7 +33,12 @@ export async function getJobReferenceData() {
       effectiveTo: wageGuidelines.effectiveTo,
     })
     .from(wageGuidelines)
-    .where(eq(wageGuidelines.isActive, true));
+    .where(eq(wageGuidelines.isActive, true))
+    .orderBy(
+      desc(wageGuidelines.effectiveFrom),
+      desc(wageGuidelines.createdAt),
+      asc(wageGuidelines.id),
+    );
 
   return {
     areas: activeAreas,
