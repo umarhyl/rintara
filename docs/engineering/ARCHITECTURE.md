@@ -261,8 +261,14 @@ Full work addresses live in `job_private_details` and appear only in authorized 
 
 The interaction behavior and accessibility requirements remain authoritative in `docs/design/UI_UX_DESIGN.md`. The shipped runtime follows these guardrails:
 
-- Render public pages, authentication, onboarding, and dashboards as normal semantic markup. Use Server Components by default and add `"use client"` only for small islands that require browser state or APIs, including authentication controls, navigation, forms, sheets, and dialogs. The `/sign-in` and `/register` Server Pages normalize their own query input inside one shared route-group layout; the persistent client state island retains only ephemeral form drafts and pending state, while credential mutations remain Server Actions.
-- Load the two approved documentary assets through `next/image` with reserved responsive dimensions and appropriate `sizes`: `public/visuals/rintara-local-work-v2.webp` on the homepage and `public/visuals/rintara-auth-work-v1.webp` on sign-in and registration. Images must not become a gallery, autoplay surface, or client-rendered background system.
+- Render public pages, authentication, onboarding, and dashboards as normal semantic markup. Use Server Components by default and add `"use client"` only for small islands that require browser state or APIs, including authentication controls, navigation, forms, sheets, and dialogs. The `/sign-in` and `/register` Server Pages normalize their own query input inside one shared route-group provider. That provider retains only ephemeral form drafts and validated navigation state; each route owns its visual shell, while credential mutations remain Server Actions. `/register` may reuse the server-rendered compact `AuthHeader`, but it must not wrap its route-owned canvas in `AuthVisualFrame` or `AuthPanel`.
+- Load the approved homepage documentary asset through `next/image` with
+  reserved responsive dimensions and appropriate `sizes`:
+  `public/visuals/rintara-local-work-v2.webp`. `/register` renders the committed
+  local `public/visuals/rintara-register-curves.svg` as a route-owned,
+  non-interactive Mint, Chalk, and Forest ellipse layer. Sign-in, recovery, and
+  password reset remain image-free. Neither asset may become a gallery,
+  autoplay surface, or client-rendered background system.
 - The public header may use one passive scroll listener throttled through a
   single scheduled `requestAnimationFrame` to interpolate its contained,
   lightly frosted starting layout into a compact translucent floating surface
@@ -275,7 +281,11 @@ The interaction behavior and accessibility requirements remain authoritative in 
   signed-in account's own display name. It is navigation presentation only;
   every private route and operation still performs independent server-side
   role and relationship authorization.
-- Keep interaction motion finite and state-based. Prefer short transform, color, border, opacity, height, width, radius, padding, and shadow transitions; do not create ambient loops or automatic entrance or reveal choreography.
+- Keep interaction motion finite and state-based. Prefer short transform,
+  color, border, opacity, height, width, radius, padding, and shadow
+  transitions. The single 200ms CSS registration-entry reveal and finite role
+  interaction feedback are allowed; reduced motion makes them immediate. Do
+  not create other automatic entrances, ambient loops, or reveal choreography.
 - Do not mount decorative Canvas or WebGL renderers, particle fields, pointer-tracking or mouse-following effects, automatic scroll reveal, or fallback CSS particle layers.
 - `prefers-reduced-motion: reduce` collapses nonessential transitions and disables smooth scrolling while keeping every route, form, navigation control, image, and status immediately available. No appearance or theme-transition runtime is shipped.
 

@@ -32,7 +32,6 @@ export function SignInForm({
     setEmail,
     signInPassword,
     setSignInPassword,
-    setBusy,
   } = useAuthSurfaceState();
 
   const handleClearErrors = () => {
@@ -87,7 +86,6 @@ export function SignInForm({
 
         submittingRef.current = true;
         setPending(true);
-        setBusy(true);
 
         let completed = false;
 
@@ -122,7 +120,6 @@ export function SignInForm({
             "Koneksi terputus saat masuk. Periksa jaringan lalu coba lagi.",
           );
         } finally {
-          setBusy(false);
           if (!completed) {
             submittingRef.current = false;
             setPending(false);

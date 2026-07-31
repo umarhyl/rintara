@@ -144,8 +144,8 @@ marketplace spectacle, fake proof, and motion that delays content.
 **Key characteristics:**
 
 - Understand the offer, search, learn the mechanism, then act.
-- One landing scene and one separate authentication portrait, each
-  route-specific.
+- One landing documentary scene and one register-only ellipse canvas;
+  credential and recovery frames stay image-free and focused.
 - Published-job listings exist only on `/jobs`.
 - Tonal grouping before ornamental lines or repeated containers.
 - A geometric green Rintara **R**, with Mint inverse treatment on Deep Forest.
@@ -253,18 +253,24 @@ lists, and timelines. Growing lists remain bounded and paginated.
 
 ## Authentication and onboarding
 
-Sign-in and registration share the split entry composition:
+Sign-in, recovery, and password reset use the compact `AuthVisualFrame`: the
+Rintara identity and return action sit above a centered, image-free form.
 
-- `public/visuals/rintara-auth-work-v1.webp` occupies the portrait panel;
-- the inverse identity sits above it on desktop;
-- the focused form remains plain rather than card-heavy; and
-- mobile uses a short reserved-height crop before the form.
+`/register` reuses the compact `AuthHeader` for the Rintara identity and
+return-home action, then owns a separate full-canvas role-selection
+composition rather than using `AuthVisualFrame` or `AuthPanel`. The committed
+`public/visuals/rintara-register-curves.svg` layers Mint, Chalk, and Forest
+ellipses behind the content. Employer appears first and Worker second; both
+role graphic panels use Mint and remain distinguishable through their icon and
+copy. Below `md`, cards are single-column horizontal controls. At `md` and
+above, they become two balanced vertical controls with their descriptions
+visible. The Akun credential step opens on an opaque white surface. The shared
+auth provider may preserve ephemeral drafts between canonical routes, but it
+does not make their visual frames persistent.
 
-The photograph contains no overlay copy, link, testimonial, or fake UI.
-
-Role selection and Worker/Employer profile onboarding remain image-free and
-operational. They use the narrow 10.5rem Deep Forest identity rail and centered
-bordered form. Registration progress remains Akun, Peran, Profil.
+Worker/Employer profile onboarding remains operational and uses the narrow
+10.5rem Deep Forest identity rail with a centered bordered form. Registration
+progress remains visible from Peran through Akun and Profil.
 
 ## Shape and elevation
 
@@ -283,7 +289,10 @@ State feedback uses roughly 150 to 200ms color, border, opacity, or transform
 transitions. Public-header condensation follows the opening scroll position
 through one frame-throttled update and does not run an ambient animation loop.
 Content, authentication forms, cards, and below-fold sections remain visible
-without entrance choreography.
+without entrance choreography. The initial registration panel may use one
+200ms CSS opacity-and-translate reveal to orient the user. Registration
+interaction feedback uses the same finite motion budget; reduced-motion
+renders state changes immediately.
 
 Respect `prefers-reduced-motion`. Do not add scroll reveal, list stagger,
 parallax, particles, pointer tracking, ambient loops, canvas, or WebGL.
