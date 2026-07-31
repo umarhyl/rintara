@@ -54,9 +54,13 @@ The MVP must not collect:
 - bank-account or payment-card details;
 - continuous GPS location;
 - private chat;
-- full birth dates;
-- background-check records; or
-- work-evidence photo uploads.
+- full birth dates; or
+- background-check records.
+
+One private result photo per work session is collected as approved in ADR-013.
+It is normalized without embedded metadata, stored in private object storage,
+and served only to the related worker, employer, or authorized admin. It is
+excluded from public projections and Passport.
 
 Payment happens outside the platform. Do not ask users to place payment credentials in job descriptions, application notes, reports, or agreement fields.
 

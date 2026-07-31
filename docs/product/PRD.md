@@ -317,9 +317,9 @@ These product/data decisions remain open and require explicit team approval:
 
 ## 14. MVP Definition of Done
 
-- [ ] Public production URL is accessible.
-- [ ] Registration, sign-in, sign-out, role onboarding, and account-status checks work.
-- [ ] Employer can publish a transparent job and worker can discover and apply to it.
+- [x] Public production URL is accessible.
+- [x] Registration, sign-in, sign-out, role onboarding, and account-status checks work.
+- [x] Employer can publish a transparent job and worker can discover and apply to it.
 - [x] Employer can accept exactly one worker under concurrent requests.
 - [x] Both parties can confirm the Mini Agreement.
 - [x] Check-in, check-out, and completion verification work.
@@ -327,11 +327,11 @@ These product/data decisions remain open and require explicit team approval:
 - [x] Passport eligibility changes independently per category.
 - [x] A qualifying completion issues at most one credit and a credit creates one 24-hour boost.
 - [x] Reports and minimum admin moderation work.
-- [ ] Private addresses and cross-account resources are protected.
+- [x] Private addresses and cross-account resources are protected.
 - [ ] Required unit, integration, and authorization tests pass, and the release smoke checklist is rehearsed.
 - [ ] Mobile and desktop flows include loading, empty, validation, error, success, and retry states.
-- [ ] Demo seed and reset procedures cannot affect real production data.
-- [ ] Repository documentation, proposal, interface, and code use Rintara terminology and the same MVP scope.
+- [x] Demo seed and reset procedures cannot affect real production data.
+- [x] Repository documentation, proposal, interface, and code use Rintara terminology and the same MVP scope.
 
 ## 15. Change Control
 

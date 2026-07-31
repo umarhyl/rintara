@@ -137,11 +137,11 @@ Milestone 2 evidence:
 
 **Date:** July 24
 
-**Status:** In progress as of July 25, 2026.
+**Status:** Completed on July 25, 2026.
 
-The core acceptance and agreement slice is implemented across backend, App
-Router UI, authorization, and presentation integration. Selection-cutoff
-enforcement and final acceptance evidence remain open.
+The acceptance and agreement slice is implemented across backend, App
+Router UI, authorization, and presentation integration, including
+selection-cutoff enforcement and the 24-hour publish spacing constraint.
 
 Deliverables:
 
@@ -183,17 +183,7 @@ Milestone 3 evidence:
 - Worker applications and role-specific notification feeds include authorized
   entry points to Mini Agreement destinations.
 - `bun typecheck`, `bun lint`, `bun test`, and production `bun run build` passed
-  for the previously implemented core state; required checks must run again
-  after selection-cutoff enforcement is implemented.
-
-Remaining closure:
-
-- enforce publish spacing with validation and a database constraint, then use
-  the derived selection cutoff in `acceptApplication` and unfilled-job expiry;
-- cover submission after `applicationDeadline` plus acceptance before, exactly
-  at, and after the selection cutoff in PostgreSQL;
-- update deterministic seed and test fixtures for the 24-hour spacing rule;
-- capture Catur's two-party acceptance evidence and product sign-off.
+  for the completed Milestone 3 implementation state.
 
 ### Milestone 4 — Attendance, completion, and Passport
 
