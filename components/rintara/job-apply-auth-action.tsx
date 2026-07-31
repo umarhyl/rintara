@@ -155,7 +155,7 @@ function WorkerApplicationStatus({
           : {
               title: "Lamaran telah ditarik",
               description:
-                "Riwayatnya tetap tersimpan. Satu pekerja hanya dapat mengirim satu lamaran untuk pekerjaan yang sama.",
+                "Riwayatnya tetap tersimpan. Pekerjaan ini sudah tidak menerima pengiriman ulang lamaran.",
               label: "Lihat riwayat lamaran",
             };
 
