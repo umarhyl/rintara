@@ -69,31 +69,35 @@ export function RegisterForm({
   if (continuationEmail) {
     return (
       <div
-        className="mt-6 border-y border-primary/25 bg-secondary/40 py-5"
+        className="mt-6 grid gap-4 rounded-xl border border-primary/20 bg-[#edf5ec] p-6"
         role="status"
         aria-live="polite"
       >
-        <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <Mail className="size-5" aria-hidden="true" />
-        </span>
-        <h2
-          ref={continuationHeadingRef}
-          tabIndex={-1}
-          className="mt-4 text-xl font-semibold outline-none"
-        >
-          Lanjutkan dengan email ini
-        </h2>
-        <p className="mt-2 text-base leading-7 text-muted-foreground">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#1b512d] text-white">
+            <Mail className="size-5" aria-hidden="true" />
+          </span>
+          <h2
+            ref={continuationHeadingRef}
+            tabIndex={-1}
+            className="text-xl font-semibold outline-none"
+          >
+            Lanjutkan dengan email ini
+          </h2>
+        </div>
+
+        <p className="text-base leading-7 text-muted-foreground">
           Untuk melindungi akunmu, kami tidak mengonfirmasi apakah email sudah
           terdaftar. Jika ini pendaftaran baru, periksa email di{" "}
-          <strong className="text-foreground">{continuationEmail}</strong>.
+          <strong className="font-semibold text-foreground">{continuationEmail}</strong>.
           Jika kamu pernah mendaftar, masuk atau pulihkan kata sandi.
         </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Button variant="outline" asChild>
+
+        <div className="mt-2 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+          <Button variant="outline" className="h-11 bg-white" asChild>
             <Link href={signInHref}>Masuk ke akun</Link>
           </Button>
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" className="h-11 hover:bg-black/5" asChild>
             <Link href="/forgot-password">Pulihkan kata sandi</Link>
           </Button>
         </div>
