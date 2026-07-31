@@ -18,7 +18,6 @@ export default async function SignInPage({
       title="Masuk ke Rintara"
       description="Lanjutkan pekerjaan, lamaran, dan kesepakatanmu."
     >
-      {/* active="sign-in" */}
       <SignInForm
         initialErrorMessage={authenticationFailed ? "Tautan masuk tidak dapat diproses atau sudah kedaluwarsa. Silakan masuk kembali." : null}
         nextPath={nextPath}

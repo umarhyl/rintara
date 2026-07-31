@@ -26,7 +26,7 @@ export function ForgotPasswordForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialErrorMessage,
   );
-  const { email, setEmail, setBusy } = useAuthSurfaceState();
+  const { email, setEmail } = useAuthSurfaceState();
 
   if (sent) {
     return (
@@ -64,7 +64,6 @@ export function ForgotPasswordForm({
 
         submittingRef.current = true;
         setPending(true);
-        setBusy(true);
         setErrorMessage(null);
 
         const form = new FormData(event.currentTarget);
@@ -86,7 +85,6 @@ export function ForgotPasswordForm({
         } finally {
           submittingRef.current = false;
           setPending(false);
-          setBusy(false);
         }
       }}
     >

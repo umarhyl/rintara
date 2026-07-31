@@ -2,8 +2,6 @@
 
 import { createContext, useContext, useMemo, useState } from "react";
 
-export type AuthMode = "sign-in" | "register";
-
 type AuthSurfaceState = {
   email: string;
   setEmail: (value: string) => void;
@@ -13,10 +11,6 @@ type AuthSurfaceState = {
   setRegisterPassword: (value: string) => void;
   termsAccepted: boolean;
   setTermsAccepted: (value: boolean) => void;
-  busy: boolean;
-  setBusy: (value: boolean) => void;
-  visualMode: AuthMode | null;
-  setVisualMode: (value: AuthMode) => void;
 };
 
 const AuthSurfaceContext = createContext<AuthSurfaceState | null>(null);
@@ -30,8 +24,6 @@ export function AuthSurfaceProvider({
   const [signInPassword, setSignInPassword] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [visualMode, setVisualMode] = useState<AuthMode | null>(null);
 
   const value = useMemo(
     () => ({
@@ -43,19 +35,8 @@ export function AuthSurfaceProvider({
       setRegisterPassword,
       termsAccepted,
       setTermsAccepted,
-      busy,
-      setBusy,
-      visualMode,
-      setVisualMode,
     }),
-    [
-      busy,
-      email,
-      registerPassword,
-      signInPassword,
-      termsAccepted,
-      visualMode,
-    ],
+    [email, registerPassword, signInPassword, termsAccepted],
   );
 
   return (

@@ -42,7 +42,8 @@
   appearance switch.
 - Public content is visible immediately. Do not gate pages, forms, cards, or
   ordinary sections behind automatic entrance, list stagger, scroll-reveal,
-  pointer-tracking, particle, or decorative canvas effects.
+  pointer-tracking, particle, or decorative canvas effects. The non-blocking
+  registration reveal defined below is the only entrance exception.
 - Documentary images never add a step before the relevant task or become a
   gallery, parallax scene, or heavy motion system.
 
@@ -126,14 +127,15 @@ All published-job browsing and empty/loading/error states remain owned by
 
 ### 4.1 New worker
 
-1. Visitor selects **Create account**.
-2. Authentication provider completes the approved registration flow.
-3. Rintara asks the user to choose **Find work** or **Offer work**.
-4. User selects **Find work**.
-5. Worker enters display name, selects an active city/regency, and may add a short biography, an availability note, and up to eight category interests.
-6. The interface explains that interests are self-declared and are never treated as Work Proof or First Opportunity eligibility.
-7. Server revalidates the active area and categories, then creates the account, worker profile, and interests together while fixing the active role as `worker`.
-8. Worker lands on the worker dashboard. An accepted application is shown
+1. Visitor selects **Daftar**.
+2. On the **Peran** step, Rintara presents Employer first and Worker second;
+   the visitor selects **Worker**.
+3. On the **Akun** step, the visitor supplies approved credentials and the
+   authentication provider completes registration.
+4. On the **Profil** step, the Worker enters a display name, selects an active city/regency, and may add a short biography, an availability note, and up to eight category interests.
+5. The interface explains that interests are self-declared and are never treated as Work Proof or First Opportunity eligibility.
+6. Server revalidates the active area and categories, then creates the account, worker profile, and interests together while fixing the active role as `worker`.
+7. Worker lands on the worker dashboard. An accepted application is shown
    first when it needs agreement confirmation; otherwise the page leads with
    recent jobs and the Worker's latest application activity.
 
@@ -152,9 +154,10 @@ Recovery and rules:
 
 ### 4.2 New employer
 
-1. Visitor completes registration.
-2. User selects **Offer work**.
-3. Employer enters display/business name, type, an active city/regency, and optional description.
+1. Visitor opens registration and selects **Employer** on the **Peran** step.
+2. On the **Akun** step, the visitor supplies approved credentials and the
+   authentication provider completes registration.
+3. On the **Profil** step, the Employer enters display/business name, type, an active city/regency, and optional description.
 4. Server revalidates the active area and creates the employer profile and role together.
 5. Employer lands on the employer dashboard with a **Post a job** primary
    action. The dashboard surfaces one real next action from the Employer's
@@ -188,27 +191,35 @@ can be stored.
 
 Shared authentication presentation:
 
-- Registration, role selection, and profile setup retain the visible
-  three-stage journey: Akun, Peran, Profil.
-- Sign-in and registration use a stable split composition on large screens:
-  the separate portrait documentary asset
-  `public/visuals/rintara-auth-work-v1.webp` occupies the visual panel and the
-  focused form remains in a plain readable column. On narrow screens, the
-  image becomes a short reserved-height crop before the form.
-- `/sign-in` and `/register` remain valid entry URLs, but share one persistent
-  authentication frame. Moving between **Masuk** and **Daftar** changes only
-  the focused form panel; the documentary image, header, and shared field
-  state remain mounted. Browser history and refresh continue to restore the
-  mode represented by the URL.
-- The mode change uses a compact two-option segmented control above the active
-  form. A single selected pill slides between **Masuk** and **Daftar** to make
-  the state change continuous. Each option retains the canonical URL, and the
-  alternate option is unavailable while a credential request is pending.
-  Email is shared across modes, while current-password and new-password drafts
-  remain separate.
-- Role selection and Worker/Employer profile onboarding remain operational:
-  they use the narrow 10.5rem Deep Forest identity rail and centered bordered
-  form without a documentary image.
+- Registration follows the three-stage journey Peran, Akun, Profil, and the
+  progress indicator is visible from the initial role choice onward.
+- Sign-in, recovery, and password reset use the compact image-free
+  `AuthVisualFrame`, with the Rintara identity, return action, and focused form
+  in a readable column.
+- `/register` renders the reusable compact `AuthHeader` with the Rintara logo
+  and return-home action, then owns a full-canvas role-selection screen rather
+  than using `AuthVisualFrame` or `AuthPanel`. The local
+  `public/visuals/rintara-register-curves.svg` layers Mint, Chalk, and Forest
+  ellipses behind the content. Employer appears first and Worker second. Both
+  graphic panels use Mint and remain distinguishable through icon and copy.
+  Below `md`, cards stay single-column and horizontal; at `md` and above they
+  become a two-column vertical pair. Supporting descriptions remain visually
+  hidden below `md` and become visible at `md` and above.
+- Choosing a role advances to the credential step on an opaque white surface.
+- `/sign-in` and `/register` remain canonical entry URLs. Their shared
+  `AuthSurfaceProvider` preserves only ephemeral field drafts and validated
+  navigation state; it does not keep one visual frame mounted across routes.
+  Browser history and refresh continue to restore the route represented by
+  the URL.
+- Direct **Masuk** and **Daftar** links sit below the focused task and retain
+  the canonical routes. Email is shared across modes, while current-password
+  and new-password drafts remain separate.
+- The initial role-selection panel uses one finite 200ms CSS
+  opacity-and-translate reveal. Role interactions share that finite motion
+  budget, never gate content, become immediate for reduced-motion users, and
+  do not stagger individual controls.
+- Worker/Employer profile onboarding remains operational in its separate
+  narrow 10.5rem Deep Forest identity rail and centered bordered form.
 - Authentication errors remain on the sign-in screen with safe recovery copy;
   provider messages are not exposed.
 - When registration cannot distinguish a new unconfirmed signup from an
