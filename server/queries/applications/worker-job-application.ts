@@ -26,7 +26,7 @@ type ApplicationStatus =
   | "withdrawn";
 
 export type WorkerJobApplicationState =
-  | { state: "eligible" }
+  | { state: "eligible"; isResubmission?: boolean }
   | {
       state: "existing";
       applicationStatus: ApplicationStatus;
@@ -104,7 +104,11 @@ export async function getWorkerJobApplicationState(
     return { state: "unavailable" };
   }
 
-  if (row.applicationId && row.applicationStatus) {
+  if (
+    row.applicationId &&
+    row.applicationStatus &&
+    row.applicationStatus !== "withdrawn"
+  ) {
     return {
       state: "existing",
       applicationStatus: row.applicationStatus,
@@ -119,6 +123,13 @@ export async function getWorkerJobApplicationState(
     row.applicationDeadline > now;
 
   if (!acceptsApplications) {
+    if (row.applicationId && row.applicationStatus === "withdrawn") {
+      return {
+        state: "existing",
+        applicationStatus: "withdrawn",
+      };
+    }
+
     return { state: "unavailable" };
   }
 
@@ -126,5 +137,10 @@ export async function getWorkerJobApplicationState(
     return { state: "ineligible" };
   }
 
-  return { state: "eligible" };
+  return {
+    state: "eligible",
+    ...(row.applicationStatus === "withdrawn"
+      ? { isResubmission: true }
+      : {}),
+  };
 }

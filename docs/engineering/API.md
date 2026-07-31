@@ -389,8 +389,11 @@ Input: UUID `jobId` path/action argument plus bounded note.
 Behavior validates current job state, visibility, deadline, uniqueness, and
 category eligibility. It derives `workerId`, stores the eligibility snapshot,
 and creates one employer notification plus a safe application audit entry in
-the same transaction. Neither record copies the application note or private
-job details.
+the same transaction. When the unique existing application is `withdrawn`, the
+command reactivates that row, replaces the note, refreshes `submittedAt` and
+the eligibility snapshot, and clears `withdrawnAt`. Accepted, rejected, and
+already-submitted records return `APPLICATION_ALREADY_EXISTS`. Notifications
+and audit records never copy the application note or private job details.
 
 Errors include `JOB_NOT_AVAILABLE`, `APPLICATION_ALREADY_EXISTS`, and `FIRST_OPPORTUNITY_INELIGIBLE`.
 

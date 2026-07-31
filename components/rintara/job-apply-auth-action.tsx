@@ -252,7 +252,12 @@ function WorkerApplicationAction({ jobId }: { jobId: string }) {
   }
 
   if (check.value.state === "eligible") {
-    return <JobApplicationForm jobId={jobId} />;
+    return (
+      <JobApplicationForm
+        jobId={jobId}
+        isResubmission={check.value.isResubmission}
+      />
+    );
   }
 
   return <WorkerApplicationStatus value={check.value} />;

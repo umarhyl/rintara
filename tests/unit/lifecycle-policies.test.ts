@@ -71,6 +71,7 @@ const lifecycleSuites: readonly LifecycleSuite[] = [
       ["submitted", "accepted"],
       ["submitted", "rejected"],
       ["submitted", "withdrawn"],
+      ["withdrawn", "submitted"],
     ],
     policy: assertApplicationTransition,
   },

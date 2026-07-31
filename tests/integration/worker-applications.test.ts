@@ -535,31 +535,84 @@ databaseTest(
         applicationAuditRows.map(({ action }) => action).sort(),
       ).toEqual(["submit_application", "withdraw_application"]);
 
+      await expect(
+        getWorkerJobApplicationState(
+          normalJobId,
+          workerContext,
+          database,
+          now,
+        ),
+      ).resolves.toEqual({
+        state: "eligible",
+        isResubmission: true,
+      });
+
+      const replacementNote =
+        "Saya memperbaiki catatan dan tetap tersedia mengikuti seluruh jadwal.";
+      const resubmitted = await submitApplication(normalJobId, {
+        note: replacementNote,
+      });
+      expect(resubmitted).toEqual({
+        applicationId: application.applicationId,
+        status: "submitted",
+      });
+
+      const [resubmittedRow] = await database
+        .select()
+        .from(schema.applications)
+        .where(eq(schema.applications.id, application.applicationId))
+        .limit(1);
+      expect(resubmittedRow).toMatchObject({
+        id: application.applicationId,
+        status: "submitted",
+        note: replacementNote,
+        withdrawnAt: null,
+        decidedAt: null,
+      });
+
+      const notificationsAfterResubmission = await listMyNotifications(
+        {},
+        employerContext,
+        database,
+      );
+      expect(notificationsAfterResubmission.items).toHaveLength(3);
+      expect(notificationsAfterResubmission.items[0]).toMatchObject({
+        type: "application_submitted",
+        title: "Lamaran dikirim ulang",
+        href: `/employer/jobs/${normalJobId}/applicants`,
+      });
+      expect(notificationsAfterResubmission.items[0]!.body).not.toContain(
+        replacementNote,
+      );
+
       const activeApplications = await listMyApplications(
         { view: "active" },
         workerContext,
         database,
         now,
       );
-      expect(activeApplications.items.map(({ id }) => id)).toEqual([
-        paginatedApplicationId,
-      ]);
+      expect(activeApplications.items.map(({ id }) => id)).toContain(
+        application.applicationId,
+      );
       const historicalApplications = await listMyApplications(
         { view: "history" },
         workerContext,
         database,
         now,
       );
-      expect(historicalApplications.items.map(({ id }) => id)).toEqual([
+      expect(historicalApplications.items.map(({ id }) => id)).not.toContain(
         application.applicationId,
-      ]);
+      );
 
+      await expect(
+        withdrawApplication(application.applicationId),
+      ).resolves.toMatchObject({ status: "withdrawn" });
       await expect(
         withdrawApplication(application.applicationId),
       ).rejects.toMatchObject({ code: "APPLICATION_NOT_WITHDRAWABLE" });
       expect(
         (await listMyNotifications({}, employerContext, database)).items,
-      ).toHaveLength(2);
+      ).toHaveLength(4);
       expect(
         (
           await database
@@ -567,7 +620,12 @@ databaseTest(
             .from(schema.auditLogs)
             .where(eq(schema.auditLogs.entityId, application.applicationId))
         ).map(({ action }) => action).sort(),
-      ).toEqual(["submit_application", "withdraw_application"]);
+      ).toEqual([
+        "resubmit_application",
+        "submit_application",
+        "withdraw_application",
+        "withdraw_application",
+      ]);
     } finally {
       await client.end({ timeout: 5 });
     }

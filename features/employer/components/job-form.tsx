@@ -78,6 +78,20 @@ type ReferenceData = {
   wageGuidelines: WageGuidelineReference[];
 };
 
+type PaymentKind = "" | "cash" | "non_cash";
+
+const nonCashPaymentMethods = [
+  { value: "QRIS", label: "QRIS" },
+  { value: "Transfer bank", label: "Transfer bank" },
+  { value: "Dompet digital", label: "Dompet digital" },
+] as const;
+
+function paymentKindFromMethod(paymentMethod?: string): PaymentKind {
+  if (!paymentMethod) return "";
+
+  return /^(tunai|cash)/i.test(paymentMethod) ? "cash" : "non_cash";
+}
+
 const selectionCutoffFormatter = new Intl.DateTimeFormat("id-ID", {
   dateStyle: "medium",
   timeStyle: "short",
@@ -111,6 +125,7 @@ type JobFormFailure = {
 const errorFieldIds: Record<string, string> = {
   categoryId: "category",
   areaId: "area",
+  paymentMethod: "paymentKind",
   toolsProvided: "providedTools",
   toolsRequired: "requiredTools",
 };
@@ -194,6 +209,9 @@ export function JobForm({
   const submittingRef = useRef(false);
   const persistedJobIdRef = useRef(jobId);
   const [formOpenedAt] = useState(Date.now);
+  const [paymentKind, setPaymentKind] = useState<PaymentKind>(() =>
+    paymentKindFromMethod(initialData?.paymentMethod),
+  );
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -279,6 +297,20 @@ export function JobForm({
       if (!current[name]) return current;
       const next = { ...current };
       delete next[name];
+      return next;
+    });
+  };
+
+  const handlePaymentKindChange = (value: PaymentKind) => {
+    setPaymentKind(value);
+    setFormData((current) => ({
+      ...current,
+      paymentMethod: value === "cash" ? "Tunai (COD)" : "",
+    }));
+    setErrors((current) => {
+      if (!current.paymentMethod) return current;
+      const next = { ...current };
+      delete next.paymentMethod;
       return next;
     });
   };
@@ -718,19 +750,69 @@ export function JobForm({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Metode pembayaran" id="paymentMethod" error={errors.paymentMethod}>
-              <Input
-                {...fieldA11y("paymentMethod", errors.paymentMethod)}
-                name="paymentMethod"
-                value={formData.paymentMethod}
-                onChange={handleTextChange}
-                placeholder="Transfer BCA / Tunai"
-                className="h-11 rounded-xl"
-                minLength={2}
-                maxLength={100}
+            <Field label="Jenis pembayaran" id="paymentKind" error={errors.paymentMethod}>
+              <Select
+                name="paymentKind"
+                value={paymentKind}
+                onValueChange={(value) =>
+                  handlePaymentKindChange(value as PaymentKind)
+                }
                 required
-              />
+              >
+                <SelectTrigger
+                  {...fieldA11y("paymentKind", errors.paymentMethod)}
+                  className="h-11 w-full rounded-xl"
+                >
+                  <SelectValue placeholder="Pilih jenis pembayaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Tunai (COD)</SelectItem>
+                  <SelectItem value="non_cash">Non-tunai</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
+            {paymentKind === "non_cash" ? (
+              <Field
+                label="Metode non-tunai"
+                id="paymentMethod"
+                error={errors.paymentMethod}
+              >
+                <Select
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onValueChange={(value) =>
+                    handleSelectChange("paymentMethod", value)
+                  }
+                  required
+                >
+                  <SelectTrigger
+                    {...fieldA11y("paymentMethod", errors.paymentMethod)}
+                    className="h-11 w-full rounded-xl"
+                  >
+                    <SelectValue placeholder="Pilih metode non-tunai" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nonCashPaymentMethods.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                    {formData.paymentMethod &&
+                    !nonCashPaymentMethods.some(
+                      (method) => method.value === formData.paymentMethod,
+                    ) ? (
+                      <SelectItem value={formData.paymentMethod}>
+                        {formData.paymentMethod}
+                      </SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm leading-5 text-muted-foreground">
+                  Pembayaran dilakukan langsung di luar Rintara. Jangan
+                  masukkan nomor rekening atau data akun pembayaran.
+                </p>
+              </Field>
+            ) : null}
             <Field label="Waktu pembayaran" id="paymentTiming" error={errors.paymentTiming}>
               <Input
                 {...fieldA11y("paymentTiming", errors.paymentTiming)}

@@ -174,9 +174,9 @@ erDiagram
         text note
         bool eligibleAtSubmission
         enum status
-        datetime submittedAt
+        datetime submittedAt "refreshed on resubmission"
         datetime decidedAt "nullable"
-        datetime withdrawnAt "nullable"
+        datetime withdrawnAt "nullable, cleared on resubmission"
     }
     agreement["agreements"] {
         uuid id PK

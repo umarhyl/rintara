@@ -1,5 +1,5 @@
 export type WorkerJobApplicationState =
-  | { state: "eligible" }
+  | { state: "eligible"; isResubmission?: boolean }
   | {
       state: "existing";
       applicationStatus: "submitted" | "accepted" | "rejected" | "withdrawn";
@@ -22,11 +22,16 @@ export function parseWorkerJobApplicationState(
     return null;
   }
 
-  if (
-    value.state === "eligible" ||
-    value.state === "ineligible" ||
-    value.state === "unavailable"
-  ) {
+  if (value.state === "eligible") {
+    return {
+      state: "eligible",
+      ...("isResubmission" in value && value.isResubmission === true
+        ? { isResubmission: true }
+        : {}),
+    };
+  }
+
+  if (value.state === "ineligible" || value.state === "unavailable") {
     return { state: value.state };
   }
 

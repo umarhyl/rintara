@@ -129,7 +129,9 @@ describe("public job application account flow", () => {
     expect(action).toContain('value.state === "ineligible"');
     expect(action).toContain('value.state === "unavailable"');
     expect(action).toContain('value.applicationStatus');
-    expect(action).toContain("<JobApplicationForm jobId={jobId} />");
+    expect(action).toContain(
+      "isResubmission={check.value.isResubmission}",
+    );
     expect(action).toContain(
       'href={{ pathname: "/sign-in", query: { next: `/jobs/${jobId}` } }}',
     );
@@ -153,6 +155,15 @@ describe("public job application account flow", () => {
   test("accepts only safe worker application presentation states", () => {
     expect(parseWorkerJobApplicationState({ state: "eligible" })).toEqual({
       state: "eligible",
+    });
+    expect(
+      parseWorkerJobApplicationState({
+        state: "eligible",
+        isResubmission: true,
+      }),
+    ).toEqual({
+      state: "eligible",
+      isResubmission: true,
     });
     expect(
       parseWorkerJobApplicationState({
