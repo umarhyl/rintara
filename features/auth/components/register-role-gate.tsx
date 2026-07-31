@@ -43,8 +43,6 @@ export function RegisterRoleGate({
 
   useEffect(() => {
     if (selectedRole && !showForm) {
-      setExiting(true);
-
       const timer = window.setTimeout(() => {
         setShowForm(true);
         setEntering(true);
@@ -56,6 +54,11 @@ export function RegisterRoleGate({
       return () => window.clearTimeout(timer);
     }
   }, [selectedRole, showForm]);
+
+  function handleRoleSelect(role: Exclude<SelectedRole, null>) {
+    setSelectedRole(role);
+    setExiting(true);
+  }
 
   function handleBack() {
     setEntering(true);
@@ -132,7 +135,7 @@ export function RegisterRoleGate({
             <button
               key={card.value}
               type="button"
-              onClick={() => setSelectedRole(card.value)}
+              onClick={() => handleRoleSelect(card.value)}
               disabled={!!selectedRole}
               className={cn(
                 "group relative flex flex-col items-center rounded-2xl border border-border bg-card p-6 text-center shadow-xs outline-none transition-all duration-200",
