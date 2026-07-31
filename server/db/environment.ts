@@ -153,3 +153,37 @@ export function assertSeedAllowed(connectionUrl?: string) {
     );
   }
 }
+
+export function assertDemoJobSeedAllowed(connectionUrl?: string) {
+  const environment = getRintaraEnvironment();
+
+  if (environment === "production") {
+    throw new Error(
+      "Demo job seed refused: production is never an allowed target.",
+    );
+  }
+
+  if (!["local", "demo"].includes(environment)) {
+    throw new Error(
+      `Demo job seed refused in ${environment}. Use local or demo.`,
+    );
+  }
+
+  if (process.env.RINTARA_ALLOW_DEMO_JOB_SEED !== "true") {
+    throw new Error(
+      "Demo job seed refused. Set RINTARA_ALLOW_DEMO_JOB_SEED=true explicitly.",
+    );
+  }
+
+  const seedDatabaseUrl = connectionUrl ?? getSeedDatabaseUrl();
+  const url = new URL(seedDatabaseUrl);
+
+  if (
+    environment === "local" &&
+    normalizeDatabaseHost(url.hostname) !== "loopback"
+  ) {
+    throw new Error(
+      "Demo job seed refused: a local environment may target only loopback PostgreSQL.",
+    );
+  }
+}

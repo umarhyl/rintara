@@ -35,17 +35,30 @@ Do not spend demo time on settings, admin configuration, or out-of-scope feature
 ## 3. Demo Data Requirements
 
 Use a dedicated Supabase demo project containing synthetic data only. Create
-accounts through normal registration and onboarding, then publish the required
-jobs through the employer UI. The repository `db:seed` command is for loopback
-local/test databases only and must never be run against the remote demo
-database.
+accounts through normal registration and onboarding. The destructive
+repository `db:seed` command remains restricted to loopback local/test
+databases and must never be run against the remote demo database.
+
+After the Employer profile, area, categories, and Wage Guidelines exist, the
+non-destructive `db:seed:demo-jobs` command may insert the approved synthetic
+presentation catalog. It never creates Auth users or profiles and never deletes
+or updates existing records. It may insert the approved missing Semarang area,
+low-risk categories, and simulated Wage Guidelines using the existing active
+Admin account. It refuses production; requires
+`RINTARA_ENV=demo` and `RINTARA_ALLOW_DEMO_JOB_SEED=true`; and attaches jobs
+only when exactly one active Employer profile matches. If multiple Employers
+exist, select the intended existing account with
+`RINTARA_DEMO_EMPLOYER_USER_ID` or
+`RINTARA_DEMO_EMPLOYER_AUTH_SUBJECT`. Do not set both selectors.
 
 Set `RINTARA_APP_URL` to the deployed demo origin (never localhost), and
 allowlist that origin's `/auth/callback` in the same Supabase project.
+Enable Supabase Auth **Confirm email**, configure a demo-safe sender/template,
+and verify one initial registration email plus one resend before rehearsal.
 
 ### Employer account
 
-- Demo email: **emploer@employer.com**.
+- Demo email: **employer@employer.com**.
 - Active employer profile completed through the normal onboarding flow.
 - Zero or fewer than three active Opportunity Credits.
 - One pre-created published general job eligible to receive a boost.
@@ -154,6 +167,12 @@ Do not reveal the code to the audience longer than necessary or include it in sc
 Employer verifies completion.
 
 Switch to worker and show the new Work Proof in Rintara Passport. Emphasize that beginner status changes only for the completed category.
+
+For the cash fixture, switch to Employer and mark cash as given, then switch to
+Worker and select **Sudah saya terima**. State explicitly that this records
+external-payment confirmation only; Rintara never holds or moves funds. Keep
+the 48-hour automatic path as a tested fallback rather than waiting during the
+live demo.
 
 ### 3:45–4:30 — Credit and boost
 

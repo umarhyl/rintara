@@ -303,6 +303,27 @@ remains in the private bucket selected by ADR-013. The worker may replace the
 row only while its work session is `checked_in`; the work-session row
 serializes replacement against checkout.
 
+### `cash_payment_confirmations`
+
+This table stores statements about an external cash payment after verified
+completion. It never represents funds held or moved by Rintara.
+
+| Column | Type | Rules |
+| --- | --- | --- |
+| `id` | uuid | Primary key |
+| `agreement_id` | uuid | Unique FK `agreements.id`, restricted delete |
+| `status` | cash_payment_confirmation_status | `awaiting_worker`, `confirmed_received`, `reported_not_received`, or `auto_confirmed` |
+| `employer_marked_paid_at` | timestamptz | Server timestamp for latest Employer statement |
+| `worker_responded_at` | timestamptz nullable | Required only for explicit Worker responses |
+| `confirmed_at` | timestamptz nullable | Required for received/automatic confirmation |
+| `auto_confirm_at` | timestamptz | Exactly Employer mark plus 48 hours |
+| `created_at`, `updated_at` | timestamptz | Required |
+
+A check constraint enforces status/timestamp consistency and the exact
+48-hour deadline. `(status, auto_confirm_at)` supports bounded overdue scans.
+Commands lock the related agreement/confirmation row; the unique agreement
+index is the final boundary against concurrent duplicate creation.
+
 ### `work_proofs`
 
 | Column | Type | Rules |
@@ -502,6 +523,21 @@ duplicate session.
 6. If reward criteria pass and active credit count is below three, insert unique credit; otherwise audit skip reason.
 7. Write notifications and audit record.
 8. Commit.
+
+### Confirm external cash payment
+
+1. Lock the related completed agreement and verify its immutable payment method
+   is cash.
+2. Employer marking inserts the unique `awaiting_worker` row, or resets a
+   `reported_not_received` row with a new 48-hour deadline.
+3. Worker response locks that row and changes it to `confirmed_received` or
+   `reported_not_received`.
+4. The maintenance batch locks overdue `awaiting_worker` rows with
+   `SKIP LOCKED` and conditionally changes them to `auto_confirmed`.
+5. Write notifications and append-only audit records in the same transaction.
+
+Worker response and automatic confirmation serialize on the same row. A
+not-received response cannot be overwritten by the maintenance operation.
 
 ### Redeem credit
 

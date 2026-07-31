@@ -189,6 +189,33 @@ redeemed -> revoked through authorized moderation
 
 `redeemed`, `expired`, and `revoked` cannot be redeemed again. Administrative revocation is the only transition allowed from `redeemed` and preserves its redemption history.
 
+### 6.5A Cash payment confirmation
+
+This is a post-completion record of party statements, not payment processing.
+It is available only when the immutable agreement snapshot's payment method
+begins with `Tunai` or `Cash` and the Job, Mini Agreement, and Work Session are
+completed/verified.
+
+```text
+no record -> awaiting_worker
+awaiting_worker -> confirmed_received | reported_not_received | auto_confirmed
+reported_not_received -> awaiting_worker | confirmed_received
+auto_confirmed -> reported_not_received
+```
+
+- Only the related Employer may mark cash as given. The first mark creates one
+  confirmation per agreement; a repeat while awaiting or final is idempotent.
+- Only the related Worker may state received or not received.
+- The 48-hour window starts from the latest valid Employer mark. A Worker
+  `reported_not_received` response blocks automatic confirmation.
+- A bounded authenticated maintenance operation changes only overdue
+  `awaiting_worker` rows to `auto_confirmed`. The Worker may later correct an
+  automatic result to `reported_not_received`.
+- After `reported_not_received`, the Employer may mark the cash as given again,
+  which starts a new 48-hour window. Audit records preserve the prior event.
+- Confirmation does not delay or revoke completion, Work Proof, or Opportunity
+  Credit and is not proof that Rintara moved or guaranteed funds.
+
 ### 6.6 Job Boost
 
 ```text
@@ -344,7 +371,7 @@ Allowed report reasons include suspicious job, task or wage mismatch, absence, u
 
 - Notifications are private to their recipient.
 - Notifications may contain entity IDs and safe summaries, but not full addresses, codes, tokens, or sensitive moderator notes.
-- Critical audit actions include publish/cancel job, application acceptance, agreement confirmation, check-in/out, completion, proof issuance/revocation, credit issue/redeem/revoke, report moderation, user suspension, and Wage Guideline changes.
+- Critical audit actions include publish/cancel job, application acceptance, agreement confirmation, check-in/out, completion, cash payment statements/automatic confirmation, proof issuance/revocation, credit issue/redeem/revoke, report moderation, user suspension, and Wage Guideline changes.
 - Audit metadata must be structured and minimized.
 
 ## 15. Database-Enforced Invariants
@@ -355,6 +382,7 @@ At minimum, PostgreSQL enforces:
 - at most one accepted application per job through a partial unique index;
 - unique agreement by application and job;
 - unique work session by agreement;
+- unique cash payment confirmation by agreement;
 - unique completion evidence by work session and unique private storage path;
 - unique Work Proof by agreement;
 - unique Opportunity Credit by source job;
@@ -381,4 +409,6 @@ The exact schema and index definitions are in `docs/engineering/DATABASE.md`.
 - Do not issue credits at job publication, application, acceptance, or check-in.
 - Do not let UI code decide authorization or final eligibility.
 - Do not hard-delete records to repair state.
-- Do not introduce bidding, escrow, payments, chat, AI matching, or multi-worker behavior under an existing domain name.
+- Do not introduce bidding, escrow, payment processing, chat, AI matching, or
+  multi-worker behavior under an existing domain name. The approved cash
+  confirmation model stores party statements only.

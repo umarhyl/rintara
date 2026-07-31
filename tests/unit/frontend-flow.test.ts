@@ -288,12 +288,53 @@ describe("frontend flow surface", () => {
       'result.nextStep === "confirm-or-sign-in"',
     );
     expect(register).toContain(
-      "kami tidak mengonfirmasi apakah email sudah",
+      "kami tidak mengonfirmasi apakah alamat ini sudah",
     );
     expect(register).toContain("Masuk ke akun");
     expect(register).toContain('href="/forgot-password"');
     expect(register).toContain("Pulihkan kata sandi");
+    expect(register).toContain("Kirim ulang email");
+    expect(register).toContain("submitVerificationEmailRequest");
     expect(register).not.toContain("email sudah terdaftar");
+  });
+
+  test("keeps registration consent beside readable document dialogs", async () => {
+    const register = await Bun.file(
+      "features/auth/components/register-form.tsx",
+    ).text();
+    const policyDialog = await Bun.file(
+      "features/auth/components/registration-policy-dialog.tsx",
+    ).text();
+
+    expect(register).toContain('<Checkbox\n            id="terms"');
+    expect(register).toContain('<RegistrationPolicyDialog kind="terms" />');
+    expect(register).toContain('<RegistrationPolicyDialog kind="privacy" />');
+    expect(policyDialog).toContain('trigger: "Ketentuan Penggunaan"');
+    expect(policyDialog).toContain('trigger: "Kebijakan Privasi"');
+    expect(policyDialog).toContain("h-[calc(100dvh-2rem)]");
+    expect(policyDialog).toContain("max-w-3xl");
+    expect(policyDialog).toContain("overflow-y-auto");
+    expect(policyDialog).toContain("<DialogClose asChild>");
+    expect(policyDialog).toContain("Kembali");
+    expect(policyDialog).toContain("Tekan Esc");
+  });
+
+  test("provides a safe email-verification retry after an invalid callback", async () => {
+    const callback = await Bun.file("app/auth/callback/route.ts").text();
+    const verificationPage = await Bun.file(
+      "app/(public-auth)/verify-email/page.tsx",
+    ).text();
+    const verificationForm = await Bun.file(
+      "features/auth/components/email-verification-form.tsx",
+    ).text();
+    const adapter = await Bun.file("server/auth/adapters.ts").text();
+
+    expect(callback).toContain('flow === "signup"');
+    expect(callback).toContain('new URL("/verify-email", request.url)');
+    expect(verificationPage).toContain("verification_failed");
+    expect(verificationForm).toContain("Jika akun masih menunggu verifikasi");
+    expect(adapter).toContain('type: "signup"');
+    expect(adapter).toContain("prevent account discovery");
   });
 
   test("keeps focused auth pages and a responsive register shell", async () => {
@@ -864,6 +905,30 @@ describe("frontend flow surface", () => {
     );
     expect(workActions).toContain('revalidatePath("/employer/jobs")');
     expect(workActions).toContain('revalidatePath("/jobs")');
+  });
+
+  test("shows cash receipt confirmation only after completed cash work", async () => {
+    const workerWork = await Bun.file(
+      "app/worker/work/[id]/page.tsx",
+    ).text();
+    const employerWork = await Bun.file(
+      "app/employer/work/[id]/page.tsx",
+    ).text();
+    const workActionControls = await Bun.file(
+      "components/rintara/work-actions.tsx",
+    ).text();
+    const confirmationActions = await Bun.file(
+      "server/domain/payment-confirmations/actions.ts",
+    ).text();
+
+    expect(workerWork).toContain("Konfirmasi pembayaran eksternal");
+    expect(workActionControls).toContain("Sudah saya terima");
+    expect(workActionControls).toContain("Belum saya terima");
+    expect(workActionControls).toContain("Tandai tunai sudah dibayar");
+    expect(employerWork).toContain("work.cashPayment.eligible");
+    expect(confirmationActions).toContain("isCashPaymentMethod");
+    expect(confirmationActions).toContain('agreementStatus !== "completed"');
+    expect(confirmationActions).toContain("CASH_PAYMENT_CONFIRMATION_WINDOW_MS");
   });
 
   test("renders the worker Passport from authorized Work Proof data", async () => {

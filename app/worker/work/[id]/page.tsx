@@ -4,6 +4,7 @@ import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import {
   CheckInForm,
   CheckOutButton,
+  ConfirmCashPaymentReceiptButtons,
   WorkEvidenceUpload,
 } from "@/components/rintara/work-actions";
 import { WorkEvidenceView } from "@/components/rintara/work-evidence-view";
@@ -212,6 +213,50 @@ export default async function WorkerWorkPage({
           </section>
         </aside>
       </div>
+
+      {work.session.status === "verified" && work.cashPayment.eligible ? (
+        <section className="grid gap-5 rounded-xl border border-border bg-card p-5 sm:p-6" aria-labelledby="worker-cash-payment-title">
+          <div>
+            <p className="text-sm font-semibold text-primary">Konfirmasi pembayaran eksternal</p>
+            <h2 id="worker-cash-payment-title" className="mt-2 text-xl font-semibold">
+              {work.cashPayment.status === null
+                ? "Pemberi kerja belum menandai pembayaran"
+                : work.cashPayment.status === "awaiting_worker"
+                  ? "Apakah pembayaran tunai sudah diterima?"
+                  : work.cashPayment.status === "reported_not_received"
+                    ? "Tercatat belum diterima"
+                    : work.cashPayment.status === "auto_confirmed"
+                      ? "Dikonfirmasi otomatis setelah 48 jam"
+                      : "Pembayaran sudah diterima"}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {work.cashPayment.status === "awaiting_worker"
+                ? `Berikan jawaban sebelum ${formatDateTime(work.cashPayment.autoConfirmAt)}. Tanpa respons, sistem mencatat diterima secara otomatis.`
+                : work.cashPayment.status === "auto_confirmed"
+                  ? "Jika sebenarnya belum menerima uang tunai, kamu masih dapat melaporkannya di bawah."
+                  : work.cashPayment.status === "reported_not_received"
+                    ? "Pemberi kerja sudah diberi tahu. Konfirmasi lagi apabila pembayaran kemudian diterima."
+                    : "Rintara tidak memproses uang; status ini hanya mencatat konfirmasi para pihak."}
+            </p>
+          </div>
+          <dl className="grid gap-3 border-y border-border/70 py-4 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">Metode</dt>
+              <dd className="mt-1 font-medium">{work.snapshot.paymentMethod}</dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Waktu yang disepakati</dt>
+              <dd className="mt-1 font-medium">{work.snapshot.paymentTiming}</dd>
+            </div>
+          </dl>
+          {work.allowedActions.confirmCashPaymentReceipt ? (
+            <ConfirmCashPaymentReceiptButtons
+              agreementId={work.agreementId}
+              allowReceived={work.cashPayment.status !== "auto_confirmed"}
+            />
+          ) : null}
+        </section>
+      ) : null}
 
       {work.session.evidence ? (
         <WorkEvidenceView evidence={work.session.evidence} />

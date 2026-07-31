@@ -396,6 +396,17 @@ above, they become a two-column vertical pair and expose the descriptions.
 The progress indicator is visible at Peran. Choosing either role advances to
 the Akun credential step on an opaque white surface, followed by Profil.
 
+Keep the consent checkbox directly operable beside the sentence **Saya
+menyetujui Ketentuan Penggunaan dan Kebijakan Privasi Rintara**. Only the two
+document names are underlined dialog triggers; opening them must not toggle the
+checkbox. Each trigger opens a centered document surface with a maximum width
+of 48rem and height `calc(100dvh - 2rem)`, leaving a visible overlay on both
+sides at wider breakpoints. Keep **Kembali** in the fixed dialog header and
+scroll only the document body. Escape and pointer activation on the empty
+overlay close the dialog, return focus to its trigger, and preserve all
+registration input. The dialog uses an accessible title and description and
+must not rely on a separate close icon.
+
 **Masuk** and **Daftar** remain canonical `/sign-in` and `/register` routes,
 linked directly from their focused tasks. `AuthSurfaceProvider` preserves the
 email draft and validated destination across those routes; current-password
@@ -407,12 +418,19 @@ not delay access to content. Profile onboarding keeps the separate operational
 shell. All states preserve form recovery and duplicate-submission prevention.
 
 If registration returns an ambiguous existing-account or pending-confirmation
-outcome, replace the form with a neutral **Lanjutkan dengan email ini** state.
-Do not claim that the address is registered or that a message was definitely
-sent. Keep the submitted email visible and provide two 44px-minimum actions:
-**Masuk ke akun**, preserving the validated destination, and **Pulihkan kata
-sandi**. The shared authentication state carries the email to either route
-without placing it in the URL.
+outcome, replace the form with a neutral **Verifikasi emailmu** state. Explain
+conditionally that a new registration receives a verification link; do not
+claim that the address is registered or that a message was definitely sent.
+Keep the submitted email visible and provide 44px-minimum **Kirim ulang email**,
+**Masuk ke akun**, and **Pulihkan kata sandi** actions. Disable resend for a
+visible 60-second cooldown after initial signup and each successful request.
+The shared authentication state carries the email to either route without
+placing it in the URL.
+
+Invalid or expired signup links open the compact `/verify-email` recovery
+screen. It includes a labeled email field, generic success or retry feedback,
+**Kirim ulang email verifikasi**, and **Kembali ke halaman masuk**. Its copy
+must remain identical for unknown, confirmed, and pending accounts.
 
 The sign-in password label includes a **Lupa kata sandi?** link. Recovery and
 new-password screens reuse the same focused authentication frame. The recovery
@@ -589,6 +607,13 @@ Present the current lifecycle step and only the allowed next action.
   sees that the job is completed with a link to the completed job.
 - Code entry supports numeric keyboards, paste, clear error, and expiry guidance.
 - Never display the previous plaintext code after leaving the generation result.
+- For a verified cash job, show a distinct **Konfirmasi pembayaran eksternal**
+  section below work completion. Always repeat that Rintara does not process
+  money. Employer receives **Tandai tunai sudah dibayar**; Worker receives
+  **Sudah saya terima** and **Belum saya terima** with the exact 48-hour
+  deadline. `reported_not_received` uses warning copy and permits an Employer
+  retry. `auto_confirmed` states why it happened and retains a Worker action to
+  report non-receipt. Non-cash jobs never render these controls.
 
 ### 8.8 Worker profile
 

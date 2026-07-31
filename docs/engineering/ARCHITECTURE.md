@@ -212,6 +212,18 @@ The following operations require database transactions:
 - conditionally issue one Opportunity Credit;
 - write notifications and audit record.
 
+### Cash payment confirmation
+
+- remains a PostgreSQL record of external cash-payment statements and never a
+  funds, wallet, transfer, or settlement path;
+- uses named `markCashPaymentPaid` and `confirmCashPaymentReceipt` commands with
+  server-side role, party, completed-state, and cash-method checks;
+- locks one confirmation row so Worker response wins safely against automatic
+  confirmation and a not-received response is never overwritten;
+- uses a bounded hourly maintenance batch for overdue unanswered rows, with
+  conditional updates, `SKIP LOCKED`, notifications, and system audit actor;
+- stays independent from `verifyCompletion`, Work Proof, and credit issuance.
+
 ### `redeemOpportunityCredit`
 
 - claim an eligible credit exactly once;
@@ -261,7 +273,7 @@ Full work addresses live in `job_private_details` and appear only in authorized 
 
 The interaction behavior and accessibility requirements remain authoritative in `docs/design/UI_UX_DESIGN.md`. The shipped runtime follows these guardrails:
 
-- Render public pages, authentication, onboarding, and dashboards as normal semantic markup. Use Server Components by default and add `"use client"` only for small islands that require browser state or APIs, including authentication controls, navigation, forms, sheets, and dialogs. The `/sign-in` and `/register` Server Pages normalize their own query input inside one shared route-group provider. That provider retains only ephemeral form drafts and validated navigation state; each route owns its visual shell, while credential mutations remain Server Actions. `/register` may reuse the server-rendered compact `AuthHeader`, but it must not wrap its route-owned canvas in `AuthVisualFrame` or `AuthPanel`.
+- Render public pages, authentication, onboarding, and dashboards as normal semantic markup. Use Server Components by default and add `"use client"` only for small islands that require browser state or APIs, including authentication controls, navigation, forms, sheets, and dialogs. The `/sign-in`, `/register`, and `/verify-email` Server Pages normalize their own query input inside one shared route-group provider. That provider retains only ephemeral form drafts and validated navigation state; each route owns its visual shell, while credential mutations remain Server Actions. `/register` may reuse the server-rendered compact `AuthHeader`, but it must not wrap its route-owned canvas in `AuthVisualFrame` or `AuthPanel`.
 - Load the approved homepage documentary asset through `next/image` with
   reserved responsive dimensions and appropriate `sizes`:
   `public/visuals/rintara-local-work-v2.webp`. `/register` renders the committed

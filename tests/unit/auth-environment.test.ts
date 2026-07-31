@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   getAuthenticationCallbackUrl,
+  getEmailVerificationCallbackUrl,
   getPasswordRecoveryCallbackUrl,
 } from "@/server/auth/environment";
 
@@ -33,6 +34,27 @@ describe("authentication callback configuration", () => {
     process.env.RINTARA_APP_URL = "https://rintara.example";
     expect(getPasswordRecoveryCallbackUrl()).toBe(
       "https://rintara.example/auth/callback?next=%2Freset-password",
+    );
+  });
+
+  test("keeps the selected role and safe destination through email verification", () => {
+    process.env.RINTARA_APP_URL = "https://rintara.example";
+    expect(
+      getEmailVerificationCallbackUrl("/jobs/job-1", "worker"),
+    ).toBe(
+      "https://rintara.example/auth/callback?next=%2Fonboarding%2Fworker%3Fnext%3D%252Fjobs%252Fjob-1&flow=signup",
+    );
+  });
+
+  test("rejects unsafe email-verification destinations and roles", () => {
+    process.env.RINTARA_APP_URL = "https://rintara.example";
+    expect(
+      getEmailVerificationCallbackUrl(
+        "https://attacker.example",
+        "admin" as "worker",
+      ),
+    ).toBe(
+      "https://rintara.example/auth/callback?next=%2Fonboarding%2Frole%3Fnext%3D%252Faccount%252Fcontinue&flow=signup",
     );
   });
 });

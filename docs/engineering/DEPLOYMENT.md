@@ -78,6 +78,10 @@ Rules:
 - Secrets are rotated after accidental disclosure.
 - `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
 - `RINTARA_APP_URL` is the canonical origin used to build `/auth/callback`; each environment must allowlist that callback in its isolated Supabase project.
+- Supabase Auth email/password registration must have **Confirm email** enabled.
+  Configure the environment's supported sender/template and verify that both
+  initial signup and resend links reach the allowlisted `/auth/callback` before
+  accepting the release candidate.
 - Production must set `RINTARA_ENV=production`; startup/build access to the
   runtime database configuration fails instead of falling back to a placeholder
   when `DATABASE_URL` is missing.
@@ -199,8 +203,14 @@ Configure the platform scheduler to call
 schedule must run frequently enough that selection-cutoff state does not remain
 stale during the pilot.
 
-The committed Vercel configuration runs this operation daily at `17:00 UTC`
-(`00:00 Asia/Jakarta`) so it remains compatible with the Hobby plan. Set
+Configure `GET /api/maintenance/confirm-cash-payments` at least hourly so an
+unanswered cash receipt is persisted no later than one scheduler interval after
+its exact 48-hour deadline. If the selected Vercel plan cannot run hourly Cron,
+use an approved external scheduler with `RINTARA_MAINTENANCE_SECRET`; do not
+silently degrade this operation to daily.
+
+The committed Vercel configuration runs job expiry daily at `17:00 UTC`
+(`00:00 Asia/Jakarta`) and cash confirmation hourly. Set
 `CRON_SECRET` to a random value of at least 32 bytes in the Vercel Production
 environment; Vercel sends it automatically as a bearer token. Manual schedulers
 may instead use `RINTARA_MAINTENANCE_SECRET`.

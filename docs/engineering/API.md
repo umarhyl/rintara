@@ -98,7 +98,7 @@ on their internal format. Malformed or incompatible cursors return
 
 ### 2.5 Authentication and onboarding
 
-`signUp(input)`, `signIn(input)`, `signOut()`,
+`signUp(input)`, `resendSignUpVerification(input)`, `signIn(input)`, `signOut()`,
 `requestPasswordRecovery(input)`, and `updatePassword(input)` are Server Action
 adapters over Supabase Auth. Credential input is validated and provider errors
 are mapped to the application error catalog; provider messages, tokens, and
@@ -109,12 +109,21 @@ both map to the handled `confirm-or-sign-in` continuation outcome. The client
 must not infer or state which case occurred; it offers sign-in and password
 recovery while retaining the validated internal destination.
 
+New self-service registrations use Supabase's email-confirmation mode. Both
+initial signup and `resendSignUpVerification` set an allowlisted callback that
+retains the selected `worker` or `employer` onboarding route and validated
+internal destination. Resend validates and normalizes the email, returns the
+same handled result for unknown, confirmed, and pending accounts, maps provider
+rate limiting to `RATE_LIMITED`, and never returns provider user data.
+
 `GET /auth/callback` exchanges the one-time PKCE code for a cookie-backed
 session. Its optional `next` value accepts only an application-relative path to
 prevent open redirects. A password recovery request uses the same allowlisted
 callback with `next=/reset-password`; the reset screen requires the resulting
-provider session. General callback failure returns to sign-in, while recovery
-failure returns to `/forgot-password`, in both cases with a generic error.
+provider session. General callback failure returns to sign-in, recovery failure
+returns to `/forgot-password`, and signup-verification failure returns to
+`/verify-email`. Each case uses a generic error; the verification screen can
+request another one-time signup link without disclosing account state.
 
 `completeOnboarding(input)` derives `auth_subject` exclusively from verified
 Supabase claims. Accepted input is one of:
@@ -641,6 +650,37 @@ type VerifyCompletionResult = {
 Repeated successful requests return the same proof and credit outcome. Errors
 include `WORK_NOT_CHECKED_OUT` and `ACTIVE_REPORT_BLOCKS_COMPLETION`.
 
+### `markCashPaymentPaid(agreementId)`
+
+Access: active related Employer. Requires completed Job/Mini Agreement,
+verified Work Session, and a `Tunai`/`Cash` agreement-snapshot payment method.
+
+Creates the unique `awaiting_worker` confirmation with a server-time deadline
+exactly 48 hours later. A retry while awaiting or already confirmed returns the
+stored result. From `reported_not_received`, it starts a new response window.
+
+### `confirmCashPaymentReceipt(input)`
+
+Access: active related Worker.
+
+Input is strict `{ agreementId, received: boolean }`. An explicit response
+records `confirmed_received` or `reported_not_received`. The latter blocks
+automatic confirmation. A Worker can correct `auto_confirmed` to
+`reported_not_received` and can later change a not-received response to
+received. Both commands return only:
+
+```ts
+type CashPaymentConfirmationResult = {
+  agreementId: string;
+  status: "awaiting_worker" | "confirmed_received" |
+    "reported_not_received" | "auto_confirmed";
+  employerMarkedPaidAt: string;
+  workerRespondedAt: string | null;
+  confirmedAt: string | null;
+  autoConfirmAt: string;
+};
+```
+
 ## 8. Passport, Credit, and Boost Contracts
 
 ### `getMyPassport(input?: PageInput)`
@@ -759,6 +799,14 @@ scheduler.
 Runs one bounded `expireUnfilledJobs` batch and returns only processed job and
 application counts. The maintenance secret must contain at least 32 characters.
 
+### `GET /api/maintenance/confirm-cash-payments`
+
+Uses the same protected maintenance credentials. Runs one bounded
+`autoConfirmCashPayments` batch for `awaiting_worker` rows whose exact 48-hour
+deadline has passed. It returns only `{ confirmedPaymentCount }`. Conditional
+updates and row locks make retries safe and prevent overwriting Worker
+responses.
+
 Authentication provider callback routes follow provider documentation and are not reimplemented as Rintara domain endpoints.
 
 ## 12. Error Catalog
@@ -786,6 +834,8 @@ Authentication provider callback routes follow provider documentation and are no
 | `ACTIVE_REPORT_BLOCKS_COMPLETION` | Moderation must finish first | 409 |
 | `WORK_EVIDENCE_REQUIRED` | Worker has not stored the required result photo before checkout | 409 |
 | `WORK_EVIDENCE_INVALID` | Photo format, content, or size is invalid | 400 |
+| `CASH_PAYMENT_CONFIRMATION_NOT_AVAILABLE` | Work/method does not permit cash confirmation | 409 |
+| `CASH_PAYMENT_CONFIRMATION_NOT_PENDING` | Explicit receipt is already final or state changed | 409 |
 | `REPORT_ALREADY_EXISTS` | The reporter already has an active report for the same target | 409 |
 | `CREDIT_NOT_AVAILABLE` | Credit is redeemed, expired, revoked, or absent | 409 |
 | `RATE_LIMITED` | Too many attempts | 429 |

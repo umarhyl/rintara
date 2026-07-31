@@ -206,6 +206,12 @@ Shared authentication presentation:
   become a two-column vertical pair. Supporting descriptions remain visually
   hidden below `md` and become visible at `md` and above.
 - Choosing a role advances to the credential step on an opaque white surface.
+- The credential step keeps one explicit consent checkbox. The linked
+  **Ketentuan Penggunaan** and **Kebijakan Privasi** text each opens a
+  bounded-width, near-full-height document dialog without changing the
+  checkbox. The document body scrolls independently while its **Kembali**
+  action stays available; Escape or the empty overlay also closes it and
+  returns focus to the originating link without clearing form input.
 - `/sign-in` and `/register` remain canonical entry URLs. Their shared
   `AuthSurfaceProvider` preserves only ephemeral field drafts and validated
   navigation state; it does not keep one visual frame mounted across routes.
@@ -223,10 +229,17 @@ Shared authentication presentation:
 - Authentication errors remain on the sign-in screen with safe recovery copy;
   provider messages are not exposed.
 - When registration cannot distinguish a new unconfirmed signup from an
-  existing account, it shows one neutral continuation state instead of a
-  provider error. The state never confirms whether the email is registered and
-  offers direct **Masuk ke akun** and **Pulihkan kata sandi** actions while
-  retaining the email draft and validated destination.
+  existing account, it shows a neutral **Verifikasi emailmu** continuation
+  state instead of a provider error. It conditionally explains that a new
+  registration receives a verification link, never confirms whether the email
+  is registered, and offers **Kirim ulang email**, **Masuk ke akun**, and
+  **Pulihkan kata sandi** while retaining the email draft, selected role, and
+  validated destination. Resend has a visible 60-second cooldown in addition
+  to provider rate limiting.
+- A valid one-time registration callback establishes the cookie-backed session
+  and continues to the selected Worker or Employer onboarding route. An invalid
+  or expired callback opens `/verify-email`, where the user can request another
+  generic verification email and return to sign-in.
 - **Lupa kata sandi?** opens `/forgot-password`. The request always shows the
   same confirmation regardless of whether the email is registered. A valid
   Supabase recovery callback opens `/reset-password`; an invalid or expired
@@ -447,6 +460,25 @@ Alternative paths:
 - Repeated click/network retry: return the existing successful proof and credit outcome.
 - Employer already holds three active credits: completion and proof still succeed; explain that no additional credit was added because the active limit is three.
 - Non-First Opportunity job: completion and proof succeed without a credit.
+
+### 10.1 Confirm external cash payment
+
+This appears only after verified completion when the agreement snapshot uses a
+cash method.
+
+1. Employer selects **Tandai tunai sudah dibayar** and confirms that Rintara
+   only records the statement and does not process money.
+2. Worker receives a notification and opens the completed work screen.
+3. Worker selects **Sudah saya terima** or **Belum saya terima**.
+4. A received response completes the record. A not-received response notifies
+   the Employer and prevents automatic confirmation.
+5. If the Worker gives no response for 48 hours, authenticated maintenance
+   records `auto_confirmed` and notifies both parties. The Worker may still
+   correct that automatic result to **Belum saya terima**.
+6. After a not-received response, Employer may mark cash as given again to
+   start a new 48-hour window.
+
+This flow never changes completion, Passport, Work Proof, or credit state.
 
 ## 11. Redeem Opportunity Credit
 

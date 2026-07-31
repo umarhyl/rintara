@@ -2,12 +2,14 @@ import { describe, expect, test } from "bun:test";
 
 import {
   applicationStatusSchema,
+  assertCashPaymentConfirmationTransition,
   assertApplicationTransition,
   assertJobTransition,
   assertMiniAgreementTransition,
   assertOpportunityCreditTransition,
   assertReportTransition,
   assertWorkSessionTransition,
+  cashPaymentConfirmationStatusSchema,
   jobStatusSchema,
   miniAgreementStatusSchema,
   opportunityCreditStatusSchema,
@@ -120,6 +122,25 @@ const lifecycleSuites: readonly LifecycleSuite[] = [
       ["reviewing", "rejected"],
     ],
     policy: assertReportTransition,
+  },
+  {
+    name: "cash payment confirmation",
+    statuses: [
+      "awaiting_worker",
+      "confirmed_received",
+      "reported_not_received",
+      "auto_confirmed",
+    ],
+    statusSchema: cashPaymentConfirmationStatusSchema,
+    allowed: [
+      ["awaiting_worker", "confirmed_received"],
+      ["awaiting_worker", "reported_not_received"],
+      ["awaiting_worker", "auto_confirmed"],
+      ["reported_not_received", "awaiting_worker"],
+      ["reported_not_received", "confirmed_received"],
+      ["auto_confirmed", "reported_not_received"],
+    ],
+    policy: assertCashPaymentConfirmationTransition,
   },
 ] as const;
 
