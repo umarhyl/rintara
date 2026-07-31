@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import { ApplicationError } from "@/server/errors/application-error";
 import {
   getEmailVerificationCallbackUrl,
@@ -44,22 +45,42 @@ export async function signUp(
   continuation: SignUpContinuation = {},
 ) {
   const credentials = parseCredentials(signUpSchema, input);
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new ApplicationError(
+      "INTERNAL_ERROR",
+      "Layanan autentikasi sedang tidak tersedia. Silakan coba lagi.",
+    );
+  }
+
+  // Temporary demo path: create self-service accounts as email-confirmed so
+  // registration can establish a session and continue straight to onboarding.
+  const admin = createSupabaseAdminClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: createError } = await admin.auth.admin.createUser({
     ...credentials,
-    options: {
-      emailRedirectTo: getEmailVerificationCallbackUrl(
+    email_confirm: true,
+    user_metadata: {
+      rintara_onboarding_path: getRegistrationOnboardingPath(
         continuation.nextPath,
         continuation.selectedRole,
       ),
-      data: {
-        rintara_onboarding_path: getRegistrationOnboardingPath(
-          continuation.nextPath,
-          continuation.selectedRole,
-        ),
-      },
     },
   });
+
+  if (createError && !isExistingAccountSignUpError(createError)) {
+    throw mapAuthProviderError(createError, "sign-up");
+  }
+
+  if (createError) {
+    return { state: "confirm-or-sign-in" as const };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword(credentials);
 
   if (error) {
     if (isExistingAccountSignUpError(error)) {
@@ -69,11 +90,7 @@ export async function signUp(
     throw mapAuthProviderError(error, "sign-up");
   }
 
-  return {
-    state: data.session === null
-      ? ("confirm-or-sign-in" as const)
-      : ("signed-in" as const),
-  };
+  return { state: "signed-in" as const };
 }
 
 export async function resendSignUpVerification(
