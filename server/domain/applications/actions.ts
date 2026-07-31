@@ -123,7 +123,10 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
       }
 
       const [existingApplication] = await tx
-        .select({ id: applications.id })
+        .select({
+          id: applications.id,
+          status: applications.status,
+        })
         .from(applications)
         .where(
           and(
@@ -133,7 +136,7 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
         )
         .limit(1);
 
-      if (existingApplication) {
+      if (existingApplication && existingApplication.status !== "withdrawn") {
         throw new ApplicationError(
           "APPLICATION_ALREADY_EXISTS",
           "You have already applied to this job.",
@@ -161,21 +164,51 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
         );
       }
 
-      const [application] = await tx
-        .insert(applications)
-        .values({
-          jobId: job.id,
-          workerId: context.userId,
-          note,
-          firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
-        })
-        .returning({ id: applications.id, status: applications.status });
+      const isResubmission = existingApplication?.status === "withdrawn";
+      const [application] = isResubmission
+        ? await tx
+            .update(applications)
+            .set({
+              note,
+              firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
+              status: "submitted",
+              submittedAt: now,
+              decidedAt: null,
+              withdrawnAt: null,
+            })
+            .where(
+              and(
+                eq(applications.id, existingApplication.id),
+                eq(applications.status, "withdrawn"),
+              ),
+            )
+            .returning({ id: applications.id, status: applications.status })
+        : await tx
+            .insert(applications)
+            .values({
+              jobId: job.id,
+              workerId: context.userId,
+              note,
+              firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
+            })
+            .returning({ id: applications.id, status: applications.status });
+
+      if (!application) {
+        throw new ApplicationError(
+          "APPLICATION_ALREADY_EXISTS",
+          "You already have an active application for this job.",
+        );
+      }
 
       await tx.insert(notifications).values({
         recipientId: job.employerId,
         type: "application_submitted",
-        title: "Lamaran baru diterima",
-        body: `Ada lamaran baru untuk "${job.title}".`,
+        title: isResubmission
+          ? "Lamaran dikirim ulang"
+          : "Lamaran baru diterima",
+        body: isResubmission
+          ? `Lamaran yang sebelumnya ditarik telah dikirim ulang untuk "${job.title}".`
+          : `Ada lamaran baru untuk "${job.title}".`,
         entityType: "job",
         entityId: job.id,
         createdAt: now,
@@ -183,13 +216,21 @@ export async function submitApplication(jobIdInput: unknown, input: unknown) {
 
       await tx.insert(auditLogs).values({
         actorId: context.userId,
-        action: "submit_application",
+        action: isResubmission
+          ? "resubmit_application"
+          : "submit_application",
         entityType: "application",
         entityId: application.id,
         requestId: context.requestId,
         metadata: {
           jobId: job.id,
           firstOpportunityEligibleAtSubmission: firstOpportunityEligible,
+          ...(isResubmission
+            ? {
+                previousStatus: "withdrawn",
+                newStatus: "submitted",
+              }
+            : {}),
         },
         createdAt: now,
       });

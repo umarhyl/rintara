@@ -223,15 +223,19 @@ Public query modules must not join this table.
 | `note` | text | Required, bounded |
 | `first_opportunity_eligible_at_submission` | boolean | Server calculated |
 | `status` | application_status | Default `submitted` |
-| `submitted_at` | timestamptz | Required |
+| `submitted_at` | timestamptz | Required; refreshed on resubmission |
 | `decided_at` | timestamptz nullable | Set for accepted/rejected |
-| `withdrawn_at` | timestamptz nullable | Set for withdrawal |
+| `withdrawn_at` | timestamptz nullable | Set for withdrawal; cleared on resubmission |
 
 Constraints and indexes:
 
 ```sql
 UNIQUE (job_id, worker_id)
 ```
+
+Resubmission updates the unique withdrawn row in one transaction. It changes
+`withdrawn -> submitted`, replaces the note and eligibility snapshot, refreshes
+`submitted_at`, and clears `withdrawn_at`; it never inserts a second row.
 
 ```sql
 CREATE UNIQUE INDEX applications_one_accepted_per_job

@@ -217,6 +217,7 @@ filled/in_progress -> cancelled only through authorized workflow
 ```text
 Application:
 submitted -> accepted | rejected | withdrawn
+withdrawn -> submitted while the job still accepts applications
 ```
 
 ```text

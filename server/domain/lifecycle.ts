@@ -79,7 +79,7 @@ const applicationTransitions = {
   submitted: ["accepted", "rejected", "withdrawn"],
   accepted: [],
   rejected: [],
-  withdrawn: [],
+  withdrawn: ["submitted"],
 } satisfies Record<ApplicationStatus, readonly ApplicationStatus[]>;
 
 const miniAgreementTransitions = {

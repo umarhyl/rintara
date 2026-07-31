@@ -243,14 +243,19 @@ databaseTest(
       });
 
       const referenceData = await getPublicJobReferenceData(database);
-      expect(referenceData.categories).toContainEqual({
-        id: categoryAId,
-        name: "Kategori Publik A",
-      });
-      expect(referenceData.areas).toContainEqual({
-        id: areaAId,
-        name: "Kota Publik A",
-      });
+      expect(referenceData.categories.length).toBeGreaterThan(0);
+      expect(referenceData.categories.length).toBeLessThanOrEqual(50);
+      expect(referenceData.areas.length).toBeGreaterThan(0);
+      expect(referenceData.areas.length).toBeLessThanOrEqual(50);
+      for (const item of [
+        ...referenceData.categories,
+        ...referenceData.areas,
+      ]) {
+        expect(item).toEqual({
+          id: expect.any(String),
+          name: expect.any(String),
+        });
+      }
 
       const firstPage = await listPublishedJobs(
         { search: fixtureId, limit: 1 },

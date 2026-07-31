@@ -155,7 +155,7 @@ function WorkerApplicationStatus({
           : {
               title: "Lamaran telah ditarik",
               description:
-                "Riwayatnya tetap tersimpan. Satu pekerja hanya dapat mengirim satu lamaran untuk pekerjaan yang sama.",
+                "Riwayatnya tetap tersimpan. Pekerjaan ini sudah tidak menerima pengiriman ulang lamaran.",
               label: "Lihat riwayat lamaran",
             };
 
@@ -252,7 +252,12 @@ function WorkerApplicationAction({ jobId }: { jobId: string }) {
   }
 
   if (check.value.state === "eligible") {
-    return <JobApplicationForm jobId={jobId} />;
+    return (
+      <JobApplicationForm
+        jobId={jobId}
+        isResubmission={check.value.isResubmission}
+      />
+    );
   }
 
   return <WorkerApplicationStatus value={check.value} />;

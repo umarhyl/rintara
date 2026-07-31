@@ -146,9 +146,15 @@ Rules:
 submitted -> accepted
           -> rejected
           -> withdrawn
+withdrawn -> submitted
 ```
 
-Only `submitted` applications can transition. Acceptance rejects all other submitted applications for the same job in the same transaction.
+Only a withdrawn application may return to `submitted`, and only while the job
+still accepts applications. Resubmission replaces the note, refreshes the
+submission timestamp and category eligibility snapshot, and reuses the same
+application record. Accepted and rejected applications remain terminal.
+Acceptance rejects all other submitted applications for the same job in the
+same transaction.
 
 ### 6.3 Agreement
 

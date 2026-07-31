@@ -129,11 +129,16 @@ Acceptance criteria:
 
 ### FR-030 — Submit and withdraw an application [P0]
 
-An active worker MUST be able to submit one short application note to an eligible published job and withdraw it before acceptance.
+An active worker MUST be able to submit one short application note to an
+eligible published job, withdraw it before acceptance, and resubmit the same
+application with a replacement note while the job still accepts applications.
 
 Acceptance criteria:
 
 - The database prevents more than one application per worker per job.
+- Resubmission reactivates the withdrawn record, replaces its note, refreshes
+  its submission time and eligibility snapshot, and does not create a second
+  application row.
 - Application rejects a closed, deadline-passed, filled, expired, cancelled, or
   worker-owned job.
 - At or after `applicationDeadline`, a new submission returns
@@ -143,6 +148,7 @@ Acceptance criteria:
 - A First Opportunity application is accepted only when the worker has no non-revoked verified Work Proof in that category.
 - The application cannot propose or modify a wage.
 - Withdrawal is allowed only while status is `submitted`.
+- Rejected and accepted applications cannot be resubmitted.
 
 ### FR-031 — Review applicants [P0]
 

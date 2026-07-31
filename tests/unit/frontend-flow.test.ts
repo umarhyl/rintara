@@ -423,7 +423,11 @@ describe("frontend flow surface", () => {
     expect(applyAction).toContain("usePublicAccountState");
     expect(applyAction).not.toContain("supabase.auth");
     expect(applyAction).not.toContain("@/lib/supabase/client");
-    expect(applyAction).toContain("<JobApplicationForm jobId={jobId} />");
+    expect(applyAction).toContain("<JobApplicationForm");
+    expect(applyAction).toContain("jobId={jobId}");
+    expect(applyAction).toContain(
+      "isResubmission={check.value.isResubmission}",
+    );
     expect(applyAction).toContain("query: { next: `/jobs/${jobId}` }");
     expect(authState).toContain('fetch("/auth/status"');
     expect(authState).toContain("AUTH_STATE_CACHE_MS = 15_000");

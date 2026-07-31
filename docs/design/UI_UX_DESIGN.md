@@ -178,6 +178,10 @@ comparable terms, and the next action before unsupported promotion.
   Form sections stay in one column through laptop widths and gain a compact
   review rail only on wide screens. Field borders communicate affordance;
   section grouping uses tonal surfaces instead of repeated dividers.
+- Job payment terms first ask for cash/COD or non-cash. Choosing non-cash
+  reveals a bounded method choice such as QRIS, bank transfer, or digital
+  wallet. The form never asks for an account number, wallet identifier, card
+  data, or payment credential; execution remains outside Rintara.
 - The green geometric Rintara **R** is the product identity. It may use the
   Mint inverse treatment on Deep Forest, but route vectors are not repeated as
   decoration.
@@ -489,7 +493,10 @@ Worker action states:
 - apply;
 - view submitted application;
 - open the Mini Agreement for an accepted application;
-- view recorded rejected or withdrawn history without offering another form;
+- resubmit a withdrawn application with a replacement note while the job still
+  accepts applications;
+- view recorded rejected history, or withdrawn history after the job becomes
+  unavailable, without offering another form;
 - ineligible for this First Opportunity category;
 - job unavailable;
 - sign in to apply; and

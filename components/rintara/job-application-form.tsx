@@ -100,7 +100,13 @@ function feedbackFor(
   };
 }
 
-export function JobApplicationForm({ jobId }: { jobId: string }) {
+export function JobApplicationForm({
+  jobId,
+  isResubmission = false,
+}: {
+  jobId: string;
+  isResubmission?: boolean;
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const submittingRef = useRef(false);
   const [feedback, setFeedback] = useState<ApplicationFeedback | null>(null);
@@ -150,6 +156,12 @@ export function JobApplicationForm({ jobId }: { jobId: string }) {
 
   return (
     <form ref={formRef} action={handleSubmit} className="grid gap-5">
+      {isResubmission ? (
+        <div className="rounded-xl border border-[#73e2a7]/35 bg-[#73e2a7]/10 p-4 text-sm leading-6 text-white">
+          Kamu dapat melamar lagi. Tulis catatan baru untuk menggantikan
+          catatan yang sebelumnya ditarik.
+        </div>
+      ) : null}
       <div>
         <label htmlFor="application-note" className="text-sm font-semibold text-white">
           Catatan lamaran
@@ -200,7 +212,8 @@ export function JobApplicationForm({ jobId }: { jobId: string }) {
           </>
         ) : (
           <>
-            Kirim lamaran <Send aria-hidden="true" />
+            {isResubmission ? "Kirim ulang lamaran" : "Kirim lamaran"}{" "}
+            <Send aria-hidden="true" />
           </>
         )}
       </Button>

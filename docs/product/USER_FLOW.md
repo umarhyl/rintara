@@ -255,7 +255,8 @@ continue loading within stable section-level placeholders.
    1. job title, category, and tasks;
    2. general area and private full address;
    3. schedule and estimated duration;
-   4. wage amount, unit, payment method, and payment timing;
+   4. wage amount, unit, payment type (cash/COD or non-cash), the selected
+      non-cash method when applicable, and payment timing;
    5. tools and risk questions;
    6. application deadline and First Opportunity option; Rintara derives and
       displays the employer selection cutoff 24 hours before the start time.
@@ -299,8 +300,9 @@ Alternative paths:
    privacy notice follow; the full address remains hidden.
 6. For a First Opportunity job, the server checks the worker's category proof.
 7. For an active Worker, the detail action privately reads the current
-   application state before showing a form. A previous application is shown as
-   its recorded status, even if the job later leaves public discovery.
+   application state before showing a form. A withdrawn application may show a
+   fresh form while the job still accepts applications; otherwise a previous
+   application is shown as its recorded status.
 8. Eligible worker selects **Apply**, writes a short note, reviews the fixed
    wage, and submits.
 9. Worker sees the submitted status in **My applications** and the Employer
@@ -326,9 +328,15 @@ Alternative paths:
 - Employer account selects a worker action: show role-appropriate guidance, not an application form.
 - Worker is already verified in that category: explain that the specific job is reserved for a first opportunity and suggest other jobs.
 - Duplicate application: show the existing application rather than creating another.
+- Withdrawn application on a job that still accepts applications: show a new
+  note form, then reactivate the same application record when submitted.
 - Job closes during submission: show that it is no longer available and return to discovery.
 - Worker may withdraw while status is `submitted`; the Employer receives one
   safe update and a repeated withdrawal does not create another notification.
+- Worker may resubmit a withdrawn application only while the job remains
+  published, visible, before its application deadline, and the worker remains
+  eligible. The new note replaces the withdrawn note and the Employer receives
+  a safe resubmission notification.
 
 ## 7. Employer Reviews and Accepts an Applicant
 
