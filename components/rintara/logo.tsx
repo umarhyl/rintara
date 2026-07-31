@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -20,41 +21,18 @@ export function RintaraLogo({
       )}
       aria-label="Rintara, kembali ke beranda"
     >
-      <span
-        className={cn(
-          "grid size-9 place-items-center transition-colors duration-150",
-          tone === "inverse"
-            ? "text-[#73e2a7]"
-            : "text-primary group-hover/logo:text-[#1b512d]",
-        )}
-      >
-        <svg
-          viewBox="0 0 36 36"
-          className="size-8"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M8.5 29V10.5A3.5 3.5 0 0 1 12 7h16"
-            stroke="currentColor"
-            strokeWidth="3.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M15 15h6.2a4.4 4.4 0 0 1 0 8.8H15"
-            stroke="currentColor"
-            strokeWidth="3.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="m21 23.8 7.2 6.2"
-            stroke="currentColor"
-            strokeWidth="3.25"
-            strokeLinecap="round"
-          />
-        </svg>
+      <span className="grid size-9 place-items-center">
+        <Image
+          src={
+            tone === "inverse"
+              ? "/brand/rintara-mark-inverse.svg"
+              : "/brand/rintara-mark.svg"
+          }
+          alt=""
+          width={217}
+          height={270}
+          className="h-8 w-auto transition-transform duration-150 group-hover/logo:scale-[1.03]"
+        />
       </span>
       <span
         className={cn(

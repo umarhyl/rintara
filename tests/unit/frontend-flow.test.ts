@@ -622,8 +622,10 @@ describe("frontend flow surface", () => {
     expect(header).not.toContain("IntersectionObserver");
     expect(header).toContain("data-condensed");
     expect(header).toContain("CONDENSE_DISTANCE = 220");
-    expect(header).toContain("EXPANDED_MAX_WIDTH = 80 * 16");
-    expect(header).toContain("CONDENSED_MAX_WIDTH = 64 * 16");
+    expect(header).not.toContain("EXPANDED_MAX_WIDTH");
+    expect(header).not.toContain("CONDENSED_MAX_WIDTH");
+    expect(header).not.toContain("surface.style.maxWidth");
+    expect(header).toContain("w-full max-w-none");
     expect(header).toContain("window.scrollY / CONDENSE_DISTANCE");
     expect(header).toContain("smoothStep(rawProgress)");
     expect(header).toContain("surface.style.backgroundColor");
@@ -661,7 +663,7 @@ describe("frontend flow surface", () => {
       "features/onboarding/components/employer-onboarding-form.tsx",
     ).text();
 
-    expect(shell).toContain('["Akun", "Peran", "Profil"]');
+    expect(shell).toContain('["Peran", "Akun", "Profil"]');
     expect(shell).not.toContain("JourneyStory");
     expect(roleSelection).toContain("useState<Role | null>(null)");
     expect(roleSelection).toContain("{role ? (");
