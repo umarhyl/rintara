@@ -105,10 +105,14 @@ export default function ForWorkersPage() {
           </div>
 
           <aside className="bg-[#def4c6] p-6 text-[#163f27] sm:p-8 lg:p-10">
-            <Search className="size-6" aria-hidden="true" />
-            <h2 className="mt-5 text-2xl font-semibold tracking-[-0.02em]">
-              Nilai pekerjaan dari informasinya
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white/65 text-[#163f27]">
+                <Search className="size-5" aria-hidden="true" />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.02em]">
+                Nilai pekerjaan dari informasinya
+              </h2>
+            </div>
             <ul className="mt-7 grid gap-6">
               {decisionPoints.map((point) => {
                 const Icon = point.icon;
@@ -140,10 +144,14 @@ export default function ForWorkersPage() {
       >
         <div className="mx-auto grid max-w-[80rem] gap-9 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.28fr)] lg:gap-14">
           <div className="lg:sticky lg:top-24 lg:h-fit">
-            <FileCheck2 className="size-6 text-primary" aria-hidden="true" />
-            <h2 className="mt-5 max-w-md text-3xl font-semibold tracking-[-0.025em]">
-              Dari lamaran menjadi Bukti Kerja
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#e5f1e8] text-[#1b512d]">
+                <FileCheck2 className="size-5" aria-hidden="true" />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+                Dari lamaran menjadi Bukti Kerja
+              </h2>
+            </div>
             <p className="mt-4 max-w-md text-base leading-7 text-muted-foreground">
               Setiap langkah meneruskan konteks pekerjaan yang sama, sehingga
               kamu tidak perlu menebak apa yang terjadi setelah diterima.
@@ -176,18 +184,20 @@ export default function ForWorkersPage() {
       <section className="bg-[#f1f6e6] px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
         <div className="mx-auto grid max-w-[80rem] gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:items-center">
           <div>
-            <span className="grid size-11 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
-              <BadgeCheck className="size-5" aria-hidden="true" />
-            </span>
-            <h2 className="mt-5 max-w-2xl text-3xl font-semibold tracking-[-0.025em]">
-              Baru di satu kategori bukan berarti mulai tanpa nilai
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
+                <BadgeCheck className="size-5" aria-hidden="true" />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+                Baru di satu kategori bukan berarti mulai tanpa nilai
+              </h2>
+            </div>
             <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
               Kesempatan Pertama tetap pekerjaan berbayar. Rintara menghitung
               kelayakan untuk kategori pekerjaan tersebut dari Bukti Kerja
               terverifikasi, bukan dari pernyataan yang kamu pilih sendiri.
             </p>
-            <Button className="mt-7" asChild>
+            <Button className="mt-7 h-auto py-[15px] px-4" asChild>
               <Link href="/jobs?opportunity=first">
                 Lihat Kesempatan Pertama
                 <ArrowRight aria-hidden="true" />
@@ -196,9 +206,13 @@ export default function ForWorkersPage() {
           </div>
 
           <aside className="rounded-xl bg-white p-6 sm:p-7">
-            <LockKeyhole className="size-5 text-primary" aria-hidden="true" />
-            <h2 className="mt-4 text-lg font-semibold">Alamat tetap privat</h2>
-            <p className="mt-2 text-base leading-7 text-muted-foreground">
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e5f1e8] text-[#1b512d]">
+                <LockKeyhole className="size-5 text-primary" aria-hidden="true" />
+              </span>
+              <h2 className="text-lg font-semibold">Alamat tetap privat</h2>
+            </div>
+            <p className="mt-3 text-base leading-7 text-muted-foreground">
               Daftar pekerjaan hanya menampilkan area umum. Alamat lengkap
               tersedia kepada pekerja setelah satu lamaran diterima dan masuk ke
               konteks kesepakatan.

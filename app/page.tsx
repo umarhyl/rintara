@@ -282,13 +282,15 @@ export default async function Home() {
                             pathname: "/jobs",
                             query: { category: category.id },
                           }}
-                          className="flex min-h-44 h-full flex-col items-start justify-between gap-7 rounded-xl border border-[#d4ded6] bg-white p-4 text-left outline-none transition-[border-color,background-color] duration-150 hover:border-primary hover:bg-[#fbfdfb] focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/25 active:border-primary active:bg-secondary/35 sm:min-h-40 sm:p-5"
+                          className="flex min-h-20 h-full items-center gap-3.5 rounded-xl border border-[#d4ded6] bg-white p-4 text-left outline-none transition-[border-color,background-color] duration-150 hover:border-primary hover:bg-[#fbfdfb] focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/25 active:border-primary active:bg-secondary/35 sm:p-5"
                         >
-                          <CategoryIcon
-                            className="size-7 text-primary"
-                            strokeWidth={1.8}
-                            aria-hidden="true"
-                          />
+                          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#def4c6]/60 text-[#1b512d]">
+                            <CategoryIcon
+                              className="size-5 text-primary"
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                          </span>
                           <span className="break-words text-sm font-semibold leading-5 text-foreground sm:text-base sm:leading-6">
                             {category.name}
                           </span>
@@ -341,17 +343,19 @@ export default async function Home() {
 
           <div className="mt-8 grid overflow-hidden rounded-xl bg-white lg:grid-cols-2">
             <article className="flex flex-col items-start p-6 sm:p-8 lg:p-10">
-              <span className="grid size-11 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
-                <UserRound className="size-5" aria-hidden="true" />
-              </span>
-              <h3 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">
-                Untuk pekerja
-              </h3>
-              <p className="mt-3 max-w-lg text-base leading-7 text-muted-foreground">
+              <div className="flex items-center gap-3.5">
+                <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
+                  <UserRound className="size-5" aria-hidden="true" />
+                </span>
+                <h3 className="text-2xl font-semibold tracking-[-0.02em]">
+                  Untuk pekerja
+                </h3>
+              </div>
+              <p className="mt-3.5 max-w-lg text-base leading-7 text-muted-foreground">
                 Bandingkan pekerjaan, pahami Kesempatan Pertama, lalu bangun
                 Bukti Kerja dari pekerjaan yang selesai.
               </p>
-              <Button className="mt-7" asChild>
+              <Button className="mt-7 h-auto py-[15px] px-4" asChild>
                 <Link href="/for-workers">
                   Pelajari jalur pekerja
                   <ArrowRight aria-hidden="true" />
@@ -360,18 +364,20 @@ export default async function Home() {
             </article>
 
             <article className="flex flex-col items-start bg-[#1b512d] p-6 text-white sm:p-8 lg:p-10">
-              <span className="grid size-11 place-items-center rounded-lg bg-[#73e2a7] text-[#1b512d]">
-                <Building2 className="size-5" aria-hidden="true" />
-              </span>
-              <h3 className="mt-6 text-2xl font-semibold tracking-[-0.02em]">
-                Untuk pemberi kerja
-              </h3>
-              <p className="mt-3 max-w-lg text-base leading-7 text-white/72">
+              <div className="flex items-center gap-3.5">
+                <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#73e2a7] text-[#1b512d]">
+                  <Building2 className="size-5" aria-hidden="true" />
+                </span>
+                <h3 className="text-2xl font-semibold tracking-[-0.02em]">
+                  Untuk pemberi kerja
+                </h3>
+              </div>
+              <p className="mt-3.5 max-w-lg text-base leading-7 text-white/72">
                 Susun ketentuan yang jelas, terima satu pekerja, dan selesaikan
                 alurnya dalam satu ruang kerja.
               </p>
               <Button
-                className="mt-7 bg-[#def4c6] text-[#1b512d] hover:bg-[#cfe9b4]"
+                className="mt-7 h-auto py-[15px] px-4 bg-[#def4c6] text-[#1b512d] hover:bg-[#cfe9b4]"
                 asChild
               >
                 <Link href="/for-employers">
@@ -404,33 +410,37 @@ export default async function Home() {
                   key={item.title}
                   className={
                     index === 0
-                      ? "rounded-xl bg-white p-6 shadow-[0_22px_55px_-46px_rgb(27_81_45/0.7)] sm:p-8"
+                      ? "flex flex-col justify-between rounded-xl bg-white p-6 shadow-[0_22px_55px_-46px_rgb(27_81_45/0.7)] sm:p-8"
                       : index === 1
-                        ? "rounded-xl bg-[#dcecdf] p-6 sm:p-7"
-                        : "rounded-xl bg-[#def4c6] p-6 sm:p-7"
+                        ? "flex flex-col justify-between rounded-xl bg-[#dcecdf] p-6 sm:p-7"
+                        : "flex flex-col justify-between rounded-xl bg-[#def4c6] p-6 sm:p-7"
                   }
                 >
-                  <span className="grid size-10 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <h3
-                    className={
-                      index === 0
-                        ? "mt-8 max-w-md text-2xl font-semibold tracking-[-0.02em] sm:text-3xl"
-                        : "mt-8 text-xl font-semibold tracking-[-0.02em]"
-                    }
-                  >
-                    {item.title}
-                  </h3>
-                  <p className="mt-3 max-w-lg text-base leading-7 text-muted-foreground">
-                    {item.description}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-3.5">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#def4c6] text-[#1b512d]">
+                        <Icon className="size-5" aria-hidden="true" />
+                      </span>
+                      <h3
+                        className={
+                          index === 0
+                            ? "text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-2xl"
+                            : "text-lg font-semibold tracking-[-0.02em] text-foreground"
+                        }
+                      >
+                        {item.title}
+                      </h3>
+                    </div>
+                    <p className="mt-3.5 max-w-lg text-base leading-7 text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
                 </article>
               );
             })}
           </div>
 
-          <Button variant="outline" className="mt-7 bg-white" asChild>
+          <Button variant="outline" className="mt-7 h-auto py-[15px] px-4 bg-white" asChild>
             <Link href="/how-it-works">
               Lihat cara kerja
               <ArrowRight aria-hidden="true" />

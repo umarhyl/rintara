@@ -82,10 +82,14 @@ export default function ForEmployersPage() {
           </div>
 
           <aside className="bg-[#1b512d] p-6 text-white sm:p-8 lg:p-10">
-            <ShieldCheck className="size-6 text-[#73e2a7]" aria-hidden="true" />
-            <h2 className="mt-5 text-2xl font-semibold tracking-[-0.02em]">
-              Satu konteks sampai selesai
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white/10 text-[#73e2a7]">
+                <ShieldCheck className="size-5" aria-hidden="true" />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.02em]">
+                Satu konteks sampai selesai
+              </h2>
+            </div>
             <dl className="mt-7 grid gap-5">
               <div>
                 <dt className="text-sm font-semibold text-[#bfe8c9]">
@@ -177,10 +181,14 @@ export default function ForEmployersPage() {
       >
         <div className="mx-auto grid max-w-[80rem] gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)] lg:gap-14">
           <div>
-            <LockKeyhole className="size-6 text-primary" aria-hidden="true" />
-            <h2 className="mt-5 max-w-xl text-3xl font-semibold tracking-[-0.025em]">
-              Publikasikan yang perlu dibandingkan, lindungi yang tetap privat
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#e5f1e8] text-[#1b512d]">
+                <LockKeyhole className="size-5 text-primary" aria-hidden="true" />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+                Publikasikan yang perlu dibandingkan, lindungi yang tetap privat
+              </h2>
+            </div>
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
               Informasi publik membantu pekerja mengambil keputusan. Alamat
               lengkap disimpan terpisah dan tidak masuk ke daftar pekerjaan.
@@ -208,13 +216,17 @@ export default function ForEmployersPage() {
             id="kredit-kesempatan"
             className="h-fit scroll-mt-24 rounded-xl bg-[#1b512d] p-6 text-white sm:p-8"
           >
-            <CalendarCheck2
-              className="size-6 text-[#73e2a7]"
-              aria-hidden="true"
-            />
-            <h2 className="mt-5 text-2xl font-semibold tracking-[-0.02em]">
-              Penghargaan mengikuti hasil terverifikasi
-            </h2>
+            <div className="flex items-center gap-3.5">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-white/10 text-[#73e2a7]">
+                <CalendarCheck2
+                  className="size-5"
+                  aria-hidden="true"
+                />
+              </span>
+              <h2 className="text-2xl font-semibold tracking-[-0.02em]">
+                Penghargaan mengikuti hasil terverifikasi
+              </h2>
+            </div>
             <p className="mt-3 text-base leading-7 text-white/72">
               Penyelesaian Kesempatan Pertama yang memenuhi syarat dapat
               menerbitkan satu Kredit Kesempatan. Kredit bukan uang dan dapat
