@@ -28,7 +28,7 @@ function redirectProtectedAccessError(
   }
 
   if (error.code === "ONBOARDING_REQUIRED") {
-    redirect("/onboarding/role");
+    redirect("/register");
   }
 
   if (error.code === "ACCOUNT_INACTIVE") {
