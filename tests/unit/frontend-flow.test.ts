@@ -818,6 +818,32 @@ describe("frontend flow surface", () => {
     expect(form).not.toContain(".reset()");
   });
 
+  test("shows an explicit completed work state to both parties", async () => {
+    const workerWork = await Bun.file(
+      "app/worker/work/[id]/page.tsx",
+    ).text();
+    const employerWork = await Bun.file(
+      "app/employer/work/[id]/page.tsx",
+    ).text();
+    const workActions = await Bun.file(
+      "server/domain/work/actions.ts",
+    ).text();
+
+    expect(workerWork).toContain("Pekerjaan terverifikasi");
+    expect(workerWork).toContain("Lihat Bukti Kerja");
+    expect(workerWork).toContain('href="/worker/passport"');
+    expect(employerWork).toContain("Pekerjaan selesai");
+    expect(employerWork).toContain("Lihat pekerjaan selesai");
+    expect(employerWork).toContain(
+      "work.session.status === \"verified\"",
+    );
+    expect(workActions).toContain(
+      "revalidatePath(`/employer/jobs/${result.jobId}`)",
+    );
+    expect(workActions).toContain('revalidatePath("/employer/jobs")');
+    expect(workActions).toContain('revalidatePath("/jobs")');
+  });
+
   test("prevents same-tick duplicate submissions without clearing valid input", async () => {
     const guardedForms = [
       "features/auth/components/sign-in-form.tsx",
