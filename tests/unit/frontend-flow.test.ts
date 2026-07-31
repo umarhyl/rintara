@@ -844,6 +844,29 @@ describe("frontend flow surface", () => {
     expect(workActions).toContain('revalidatePath("/jobs")');
   });
 
+  test("renders the worker Passport from authorized Work Proof data", async () => {
+    const passportPage = await Bun.file(
+      "app/worker/passport/page.tsx",
+    ).text();
+    const passportQuery = await Bun.file(
+      "server/queries/profiles/get-worker-passport.ts",
+    ).text();
+
+    expect(passportPage).toContain("getMyPassport");
+    expect(passportPage).toContain("passport.entries.map");
+    expect(passportPage).toContain("passport.summary.completedJobs");
+    expect(passportPage).toContain("passport.nextCursor");
+    expect(passportQuery).toContain('assertRole(');
+    expect(passportQuery).toContain('"worker"');
+    expect(passportQuery).toContain(
+      'eq(workProofs.verificationStatus, "verified")',
+    );
+    expect(passportQuery).toContain("isNull(workProofs.revokedAt)");
+    expect(passportQuery).toContain(
+      "eq(workProofs.workerId, actor.userId)",
+    );
+  });
+
   test("prevents same-tick duplicate submissions without clearing valid input", async () => {
     const guardedForms = [
       "features/auth/components/sign-in-form.tsx",

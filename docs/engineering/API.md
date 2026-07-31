@@ -643,9 +643,13 @@ include `WORK_NOT_CHECKED_OUT` and `ACTIVE_REPORT_BLOCKS_COMPLETION`.
 
 ## 8. Passport, Credit, and Boost Contracts
 
-### `getMyPassport(page)`
+### `getMyPassport(input?: PageInput)`
 
-Access: active worker. Returns the caller's Work Proof entries, including revoked entries only where the UI needs to explain their status.
+Access: active worker. Returns a summary and a cursor-paginated page of the
+caller's non-revoked verified Work Proof entries in completion-time order.
+Each entry contains only its category, job-title snapshot, general-area
+snapshot, work dates, and verification state. Worker identity is derived from
+the trusted session.
 
 ### `getMyCreditSummary()`
 

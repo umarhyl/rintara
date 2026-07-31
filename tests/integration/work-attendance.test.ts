@@ -254,6 +254,9 @@ databaseTest(
         "@/server/domain/work/evidence"
       );
       const { getWorkView } = await import("@/server/queries/work/get-work-session");
+      const { getMyPassport } = await import(
+        "@/server/queries/profiles/get-worker-passport"
+      );
 
       const generated = await generateCheckInCode(agreementId);
       expect(generated.code).toMatch(/^\d{6}$/);
@@ -439,6 +442,28 @@ databaseTest(
       expect(verifiedSession.status).toBe("verified");
       expect(proofs).toHaveLength(1);
       expect(proofs[0]!.categoryId).toBe(categoryId);
+
+      activeContext = workerContext;
+      const passport = await getMyPassport({}, undefined, database);
+      expect(passport.summary).toEqual({
+        completedJobs: 1,
+        verifiedCategoryCount: 1,
+      });
+      expect(passport.entries).toHaveLength(1);
+      expect(passport.entries[0]).toMatchObject({
+        id: completion.workProofId,
+        categoryId,
+        categoryName: "Kategori Work",
+        jobTitle: snapshot.title,
+        areaLabel: snapshot.generalArea,
+        verificationStatus: "verified",
+      });
+      expect(passport.nextCursor).toBeNull();
+
+      activeContext = employerContext;
+      await expect(
+        getMyPassport({}, undefined, database),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
     } finally {
       await client.end();
     }
