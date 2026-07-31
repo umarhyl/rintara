@@ -1,4 +1,3 @@
-import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
 import { AuthPanel } from "@/features/auth/components/auth-shell";
 import { SignInForm } from "@/features/auth/components/sign-in-form";
 import { safeApplicationPath } from "@/server/auth/redirects";
@@ -19,10 +18,7 @@ export default async function SignInPage({
       title="Masuk ke Rintara"
       description="Lanjutkan pekerjaan, lamaran, dan kesepakatanmu."
     >
-      <AuthRouteSwitch
-        active="sign-in"
-        nextPath={nextPath !== "/account/continue" ? nextPath : undefined}
-      />
+      {/* active="sign-in" */}
       <SignInForm
         initialErrorMessage={authenticationFailed ? "Tautan masuk tidak dapat diproses atau sudah kedaluwarsa. Silakan masuk kembali." : null}
         nextPath={nextPath}
