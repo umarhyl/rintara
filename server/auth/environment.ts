@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { safeApplicationPath } from "./redirects";
 
+export const REGISTRATION_ONBOARDING_COOKIE =
+  "rintara_registration_onboarding";
+
 const applicationUrlSchema = z
   .string()
   .url()
@@ -54,8 +57,8 @@ export function getRegistrationOnboardingPath(
         safeNextPath ? `?next=${encodeURIComponent(safeNextPath)}` : ""
       }`
     : safeNextPath
-      ? `/onboarding/role?next=${encodeURIComponent(safeNextPath)}`
-      : "/onboarding/role";
+      ? `/register?next=${encodeURIComponent(safeNextPath)}`
+      : "/register";
 }
 
 export function getPasswordRecoveryCallbackUrl(): string {

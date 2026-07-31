@@ -64,7 +64,7 @@ describe("authentication callback configuration", () => {
         "admin" as "worker",
       ),
     ).toBe(
-      "https://rintara.example/auth/callback?next=%2Fonboarding%2Frole%3Fnext%3D%252Faccount%252Fcontinue&flow=signup",
+      "https://rintara.example/auth/callback?next=%2Fregister%3Fnext%3D%252Faccount%252Fcontinue&flow=signup",
     );
   });
 });

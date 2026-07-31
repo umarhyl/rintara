@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import {
   requestPasswordRecovery,
   resendSignUpVerification,
@@ -8,6 +9,10 @@ import {
   updatePassword,
 } from "@/server/auth/adapters";
 import { ApplicationError } from "@/server/errors/application-error";
+import {
+  getRegistrationOnboardingPath,
+  REGISTRATION_ONBOARDING_COOKIE,
+} from "@/server/auth/environment";
 
 export type AuthFormResult =
   | { ok: true; nextStep?: "confirm-or-sign-in" }
@@ -19,6 +24,26 @@ function safeAuthFailure(error: unknown): AuthFormResult {
   }
 
   return { ok: false, message: "Layanan autentikasi sedang tidak tersedia. Silakan coba lagi." };
+}
+
+async function rememberRegistrationOnboarding(
+  nextPath?: string,
+  selectedRole?: "worker" | "employer" | null,
+) {
+  if (!selectedRole) return;
+
+  const cookieStore = await cookies();
+  cookieStore.set(
+    REGISTRATION_ONBOARDING_COOKIE,
+    getRegistrationOnboardingPath(nextPath, selectedRole),
+    {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 24 * 60 * 60,
+    },
+  );
 }
 
 export async function submitSignIn(credentials: { email: string; password: string }): Promise<AuthFormResult> {
@@ -44,6 +69,10 @@ export async function submitSignUp(credentials: {
         selectedRole: credentials.selectedRole,
       },
     );
+    await rememberRegistrationOnboarding(
+      credentials.nextPath,
+      credentials.selectedRole,
+    );
     return {
       ok: true,
       nextStep:
@@ -66,6 +95,7 @@ export async function submitVerificationEmailRequest(input: {
       { email: input.email },
       { nextPath: input.nextPath, selectedRole: input.selectedRole },
     );
+    await rememberRegistrationOnboarding(input.nextPath, input.selectedRole);
     return { ok: true };
   } catch (error) {
     return safeAuthFailure(error);

@@ -206,6 +206,12 @@ Shared authentication presentation:
   become a two-column vertical pair. Supporting descriptions remain visually
   hidden below `md` and become visible at `md` and above.
 - Choosing a role advances to the credential step on an opaque white surface.
+- That registration choice is the only role-selection step. A short-lived,
+  HTTP-only navigation hint and Auth metadata carry the safe onboarding path
+  across email verification or a subsequent sign-in; neither is trusted to
+  persist the role. Successful verification continues directly to the matching
+  Worker or Employer profile form, where the onboarding transaction persists
+  the immutable role.
 - The credential step keeps one explicit consent checkbox. The linked
   **Ketentuan Penggunaan** and **Kebijakan Privasi** text each opens a
   bounded-width, near-full-height document dialog without changing the

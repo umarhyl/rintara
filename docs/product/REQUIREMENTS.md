@@ -36,6 +36,9 @@ Acceptance criteria:
   to an existing, confirmed, or pending account.
 - A successful email verification retains the selected Worker or Employer role
   and any validated internal continuation destination.
+- Registration role selection MUST NOT be repeated after verification. The
+  verified account continues directly to its selected role's profile form;
+  server-side onboarding remains the only operation that persists the role.
 - Registration keeps an explicit consent checkbox and exposes **Ketentuan
   Penggunaan** and **Kebijakan Privasi** as separate readable document dialogs
   before submission. Opening either document does not change consent state.

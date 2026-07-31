@@ -2,6 +2,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeApplicationPath } from "@/server/auth/redirects";
+import { REGISTRATION_ONBOARDING_COOKIE } from "@/server/auth/environment";
 
 const supportedEmailOtpTypes = new Set<EmailOtpType>([
   "email",
@@ -46,10 +47,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/reset-password", request.url));
   }
 
-  const onboardingHint = data.user?.user_metadata?.rintara_onboarding_path;
+  const metadataHint = data.user?.user_metadata?.rintara_onboarding_path;
+  const cookieHint = request.cookies.get(
+    REGISTRATION_ONBOARDING_COOKIE,
+  )?.value;
   const destination = safeApplicationPath(
-    typeof onboardingHint === "string" ? onboardingHint : null,
-    "/account/continue",
+    typeof metadataHint === "string" ? metadataHint : (cookieHint ?? null),
+    "/register",
   );
-  return NextResponse.redirect(new URL(destination, request.url));
+  const response = NextResponse.redirect(new URL(destination, request.url));
+  response.cookies.set(REGISTRATION_ONBOARDING_COOKIE, "", {
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
 }
