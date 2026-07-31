@@ -3,6 +3,7 @@ import {
   getAuthenticationCallbackUrl,
   getEmailVerificationCallbackUrl,
   getPasswordRecoveryCallbackUrl,
+  getRegistrationOnboardingPath,
 } from "@/server/auth/environment";
 
 const originalApplicationUrl = process.env.RINTARA_APP_URL;
@@ -44,6 +45,15 @@ describe("authentication callback configuration", () => {
     ).toBe(
       "https://rintara.example/auth/callback?next=%2Fonboarding%2Fworker%3Fnext%3D%252Fjobs%252Fjob-1&flow=signup",
     );
+  });
+
+  test("keeps a safe onboarding hint for token-hash email templates", () => {
+    expect(getRegistrationOnboardingPath("/jobs/job-1", "worker")).toBe(
+      "/onboarding/worker?next=%2Fjobs%2Fjob-1",
+    );
+    expect(
+      getRegistrationOnboardingPath("https://attacker.example", "employer"),
+    ).toBe("/onboarding/employer?next=%2Faccount%2Fcontinue");
   });
 
   test("rejects unsafe email-verification destinations and roles", () => {
