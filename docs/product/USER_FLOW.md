@@ -240,6 +240,11 @@ Shared authentication presentation:
   and continues to the selected Worker or Employer onboarding route. An invalid
   or expired callback opens `/verify-email`, where the user can request another
   generic verification email and return to sign-in.
+- Supabase email templates may use either the PKCE `/auth/callback` code flow
+  or the SSR `/auth/confirm` token-hash flow. Both establish the same
+  cookie-backed session. The token-hash flow reads only a safe registration
+  navigation hint from Auth metadata; the role remains persisted exclusively
+  by the authorized onboarding transaction.
 - **Lupa kata sandi?** opens `/forgot-password`. The request always shows the
   same confirmation regardless of whether the email is registered. A valid
   Supabase recovery callback opens `/reset-password`; an invalid or expired

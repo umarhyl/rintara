@@ -321,6 +321,9 @@ describe("frontend flow surface", () => {
 
   test("provides a safe email-verification retry after an invalid callback", async () => {
     const callback = await Bun.file("app/auth/callback/route.ts").text();
+    const tokenHashConfirmation = await Bun.file(
+      "app/auth/confirm/route.ts",
+    ).text();
     const verificationPage = await Bun.file(
       "app/(public-auth)/verify-email/page.tsx",
     ).text();
@@ -335,6 +338,9 @@ describe("frontend flow surface", () => {
     expect(verificationForm).toContain("Jika akun masih menunggu verifikasi");
     expect(adapter).toContain('type: "signup"');
     expect(adapter).toContain("prevent account discovery");
+    expect(tokenHashConfirmation).toContain("supabase.auth.verifyOtp");
+    expect(tokenHashConfirmation).toContain('type === "recovery"');
+    expect(tokenHashConfirmation).toContain("rintara_onboarding_path");
   });
 
   test("keeps focused auth pages and a responsive register shell", async () => {

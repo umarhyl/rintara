@@ -1,0 +1,55 @@
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { safeApplicationPath } from "@/server/auth/redirects";
+
+const supportedEmailOtpTypes = new Set<EmailOtpType>([
+  "email",
+  "recovery",
+  "invite",
+  "email_change",
+]);
+
+function failureUrl(request: NextRequest, type: EmailOtpType | null) {
+  const recovery = type === "recovery";
+  const url = new URL(recovery ? "/forgot-password" : "/verify-email", request.url);
+  url.searchParams.set(
+    "error",
+    recovery ? "recovery_failed" : "verification_failed",
+  );
+  return url;
+}
+
+export async function GET(request: NextRequest) {
+  const tokenHash = request.nextUrl.searchParams.get("token_hash");
+  const rawType = request.nextUrl.searchParams.get("type");
+  const type =
+    rawType && supportedEmailOtpTypes.has(rawType as EmailOtpType)
+      ? (rawType as EmailOtpType)
+      : null;
+
+  if (!tokenHash || !type) {
+    return NextResponse.redirect(failureUrl(request, type));
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type,
+  });
+
+  if (error) {
+    return NextResponse.redirect(failureUrl(request, type));
+  }
+
+  if (type === "recovery") {
+    return NextResponse.redirect(new URL("/reset-password", request.url));
+  }
+
+  const onboardingHint = data.user?.user_metadata?.rintara_onboarding_path;
+  const destination = safeApplicationPath(
+    typeof onboardingHint === "string" ? onboardingHint : null,
+    "/account/continue",
+  );
+  return NextResponse.redirect(new URL(destination, request.url));
+}

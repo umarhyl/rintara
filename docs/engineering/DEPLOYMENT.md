@@ -79,6 +79,12 @@ Rules:
 - `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
 - `RINTARA_APP_URL` is the canonical origin used to build `/auth/callback`; each environment must allowlist that callback in its isolated Supabase project.
 - Supabase Auth email/password registration must have **Confirm email** enabled.
+- Auth templates using the Supabase SSR token-hash pattern target
+  `/auth/confirm`; templates retaining provider `ConfirmationURL` return
+  through `/auth/callback`. Both routes must remain deployed.
+- Supabase default SMTP is restricted to project-team addresses and a small
+  provider-controlled rate limit. Configure an approved SMTP provider before
+  testing registration or recovery with general public addresses.
   Configure the environment's supported sender/template and verify that both
   initial signup and resend links reach the allowlisted `/auth/callback` before
   accepting the release candidate.

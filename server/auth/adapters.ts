@@ -5,6 +5,7 @@ import { ApplicationError } from "@/server/errors/application-error";
 import {
   getEmailVerificationCallbackUrl,
   getPasswordRecoveryCallbackUrl,
+  getRegistrationOnboardingPath,
 } from "./environment";
 import {
   isExistingAccountSignUpError,
@@ -51,6 +52,12 @@ export async function signUp(
         continuation.nextPath,
         continuation.selectedRole,
       ),
+      data: {
+        rintara_onboarding_path: getRegistrationOnboardingPath(
+          continuation.nextPath,
+          continuation.selectedRole,
+        ),
+      },
     },
   });
 
