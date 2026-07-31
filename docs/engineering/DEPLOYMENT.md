@@ -203,14 +203,16 @@ Configure the platform scheduler to call
 schedule must run frequently enough that selection-cutoff state does not remain
 stale during the pilot.
 
-Configure `GET /api/maintenance/confirm-cash-payments` at least hourly so an
-unanswered cash receipt is persisted no later than one scheduler interval after
-its exact 48-hour deadline. If the selected Vercel plan cannot run hourly Cron,
-use an approved external scheduler with `RINTARA_MAINTENANCE_SECRET`; do not
-silently degrade this operation to daily.
+Configure `GET /api/maintenance/confirm-cash-payments` as a bounded daily scan
+on Vercel Hobby. The response deadline remains exactly 48 hours in stored
+domain state; the automatic result is persisted on the first daily run after
+that deadline, so persistence can lag by up to one daily scheduler interval.
+The Worker response continues to win safely until the conditional automatic
+update commits.
 
 The committed Vercel configuration runs job expiry daily at `17:00 UTC`
-(`00:00 Asia/Jakarta`) and cash confirmation hourly. Set
+(`00:00 Asia/Jakarta`) and cash confirmation daily shortly afterward. Hobby
+Cron timing is approximate within its scheduling window. Set
 `CRON_SECRET` to a random value of at least 32 bytes in the Vercel Production
 environment; Vercel sends it automatically as a bearer token. Manual schedulers
 may instead use `RINTARA_MAINTENANCE_SECRET`.

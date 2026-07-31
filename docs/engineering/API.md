@@ -805,7 +805,8 @@ Uses the same protected maintenance credentials. Runs one bounded
 `autoConfirmCashPayments` batch for `awaiting_worker` rows whose exact 48-hour
 deadline has passed. It returns only `{ confirmedPaymentCount }`. Conditional
 updates and row locks make retries safe and prevent overwriting Worker
-responses.
+responses. The Vercel Hobby schedule scans daily, so an overdue record is
+persisted on the first daily invocation after its deadline.
 
 Authentication provider callback routes follow provider documentation and are not reimplemented as Rintara domain endpoints.
 

@@ -220,7 +220,8 @@ Deliverables:
 - active-report completion block.
 - bounded post-completion cash payment confirmation, approved through change
   control on July 31, 2026, without payment processing;
-- 48-hour unanswered receipt auto-confirmation with hourly maintenance.
+- 48-hour unanswered receipt deadline with Vercel Hobby-compatible daily
+  maintenance persistence.
 
 Exit criteria:
 
@@ -322,8 +323,8 @@ Not allowed after freeze:
 Change-control exception recorded July 31, 2026: the team approved only a
 post-completion confirmation record for external cash payment. This exception
 does not authorize payment processing, balances, credentials, escrow, fees,
-settlement, or dispute resolution. It adds one bounded state machine and an
-hourly maintenance requirement; all affected specifications, migration, UI,
+settlement, or dispute resolution. It adds one bounded state machine and a
+daily Vercel Hobby-compatible maintenance requirement; all affected specifications, migration, UI,
 authorization, audit, and tests must ship together.
 
 ## 5. Hardening and Release

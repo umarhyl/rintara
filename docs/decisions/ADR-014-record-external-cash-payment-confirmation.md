@@ -20,8 +20,9 @@ Keep all payment execution outside Rintara. For a completed cash job only:
 
 - the related Employer may record that cash was given;
 - the related Worker may record received or not received;
-- an unanswered Employer mark becomes `auto_confirmed` after exactly 48 hours
-  through bounded authenticated maintenance;
+- an unanswered Employer mark becomes eligible for `auto_confirmed` at the
+  exact 48-hour deadline and is persisted by the next bounded authenticated
+  daily maintenance run on Vercel Hobby;
 - a Worker may correct an automatic result to not received; and
 - all changes are transactional, notified, and audited.
 

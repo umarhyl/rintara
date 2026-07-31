@@ -220,7 +220,8 @@ The following operations require database transactions:
   server-side role, party, completed-state, and cash-method checks;
 - locks one confirmation row so Worker response wins safely against automatic
   confirmation and a not-received response is never overwritten;
-- uses a bounded hourly maintenance batch for overdue unanswered rows, with
+- uses a bounded daily maintenance batch compatible with Vercel Hobby for
+  overdue unanswered rows, with
   conditional updates, `SKIP LOCKED`, notifications, and system audit actor;
 - stays independent from `verifyCompletion`, Work Proof, and credit issuance.
 

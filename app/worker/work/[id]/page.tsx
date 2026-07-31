@@ -226,7 +226,7 @@ export default async function WorkerWorkPage({
                   : work.cashPayment.status === "reported_not_received"
                     ? "Tercatat belum diterima"
                     : work.cashPayment.status === "auto_confirmed"
-                      ? "Dikonfirmasi otomatis setelah 48 jam"
+                      ? "Dikonfirmasi otomatis setelah batas 48 jam"
                       : "Pembayaran sudah diterima"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">

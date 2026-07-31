@@ -25,7 +25,7 @@ describe("maintenance scheduling configuration", () => {
     expect(source).toContain("configuredSecretBytes.length >= 32");
   });
 
-  test("runs bounded cash payment auto-confirmation hourly", async () => {
+  test("runs bounded cash payment auto-confirmation daily on Vercel Hobby", async () => {
     const configuration = JSON.parse(
       await Bun.file("vercel.json").text(),
     ) as {
@@ -37,7 +37,7 @@ describe("maintenance scheduling configuration", () => {
 
     expect(configuration.crons).toContainEqual({
       path: "/api/maintenance/confirm-cash-payments",
-      schedule: "0 * * * *",
+      schedule: "15 17 * * *",
     });
     expect(route).toContain("autoConfirmCashPayments");
     expect(route).toContain("isAuthorizedMaintenanceRequest");
