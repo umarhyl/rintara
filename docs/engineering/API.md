@@ -194,9 +194,9 @@ Errors: `JOB_NOT_FOUND` rather than revealing hidden/draft ownership state to an
 
 Access: public.
 
-Returns active pilot areas and categories for discovery filters. Internal area
-codes, category risk fields, Wage Guideline records, and inactive records are
-excluded.
+Returns up to 50 active pilot areas and 50 active categories for discovery
+filters in stable name/ID order. Internal area codes, category risk fields,
+Wage Guideline records, and inactive records are excluded.
 
 ## 4. Profile Queries and Commands
 
