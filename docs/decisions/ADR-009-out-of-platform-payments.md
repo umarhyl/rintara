@@ -1,6 +1,6 @@
 # ADR-009: Keep Payment Execution Outside Rintara for the MVP
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-014
 - **Date:** 2026-07-18
 - **Deciders:** Rintara team
 - **Related:** `docs/product/PRD.md`, `docs/product/BUSINESS_RULES.md`

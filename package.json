@@ -14,7 +14,8 @@
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run server/db/migrate.ts",
-    "db:seed": "bun run server/db/seed.ts"
+    "db:seed": "bun run server/db/seed.ts",
+    "db:seed:demo-jobs": "bun run server/db/seed-demo-jobs.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

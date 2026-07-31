@@ -5,10 +5,16 @@ import { useRouter } from "next/navigation";
 import {
   Camera,
   Check,
+  CircleX,
+  HandCoins,
   ImageUp,
   KeyRound,
   LoaderCircle,
 } from "lucide-react";
+import {
+  confirmCashPaymentReceipt,
+  markCashPaymentPaid,
+} from "@/server/domain/payment-confirmations/actions";
 import {
   checkIn,
   checkOut,
@@ -49,6 +55,10 @@ const messages: Record<string, string> = {
     "Unggah satu foto hasil pekerjaan sebelum check-out.",
   RATE_LIMITED:
     "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+  CASH_PAYMENT_CONFIRMATION_NOT_AVAILABLE:
+    "Konfirmasi pembayaran tunai belum tersedia untuk pekerjaan ini.",
+  CASH_PAYMENT_CONFIRMATION_NOT_PENDING:
+    "Status konfirmasi pembayaran sudah berubah. Muat ulang halaman.",
 };
 
 function messageFor(error: unknown) {
@@ -517,5 +527,136 @@ export function VerifyCompletionButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function MarkCashPaymentPaidButton({
+  agreementId,
+  isRetry = false,
+}: {
+  agreementId: string;
+  isRetry?: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const submissionLockRef = useRef(false);
+
+  function handleSubmit() {
+    if (isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await markCashPaymentPaid(agreementId);
+        setOpen(false);
+        router.refresh();
+      } catch (caughtError) {
+        submissionLockRef.current = false;
+        setError(messageFor(caughtError));
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" className="h-11 w-full" disabled={isPending}>
+          <HandCoins aria-hidden="true" />
+          {isRetry ? "Tandai sudah dibayar lagi" : "Tandai tunai sudah dibayar"}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Uang tunai sudah diberikan?</DialogTitle>
+          <DialogDescription>
+            Rintara hanya mencatat pernyataanmu dan tidak memproses pembayaran.
+            Pekerja memiliki waktu 48 jam untuk mengonfirmasi sudah atau belum
+            menerima.
+          </DialogDescription>
+        </DialogHeader>
+        {error ? (
+          <p className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={isPending}>
+              Kembali
+            </Button>
+          </DialogClose>
+          <Button type="button" disabled={isPending} onClick={handleSubmit}>
+            {isPending ? (
+              <><LoaderCircle className="animate-spin" aria-hidden="true" />Menyimpan</>
+            ) : "Ya, sudah diberikan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ConfirmCashPaymentReceiptButtons({
+  agreementId,
+  allowReceived = true,
+}: {
+  agreementId: string;
+  allowReceived?: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const submissionLockRef = useRef(false);
+
+  function handleResponse(received: boolean) {
+    if (isPending || submissionLockRef.current) return;
+    submissionLockRef.current = true;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await confirmCashPaymentReceipt({ agreementId, received });
+        router.refresh();
+      } catch (caughtError) {
+        submissionLockRef.current = false;
+        setError(messageFor(caughtError));
+      }
+    });
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {allowReceived ? (
+        <Button
+          type="button"
+          className="h-11"
+          disabled={isPending}
+          onClick={() => handleResponse(true)}
+        >
+          <Check aria-hidden="true" />
+          Sudah saya terima
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11"
+        disabled={isPending}
+        onClick={() => handleResponse(false)}
+      >
+        {isPending ? (
+          <LoaderCircle className="animate-spin" aria-hidden="true" />
+        ) : (
+          <CircleX aria-hidden="true" />
+        )}
+        Belum saya terima
+      </Button>
+      {error ? (
+        <p className="rounded-xl border border-destructive/25 bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

@@ -5,12 +5,19 @@ import { safeApplicationPath } from "@/server/auth/redirects";
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const next = safeApplicationPath(request.nextUrl.searchParams.get("next"));
+  const flow = request.nextUrl.searchParams.get("flow");
 
   function failedAuthenticationUrl() {
     if (next === "/reset-password") {
       const recoveryUrl = new URL("/forgot-password", request.url);
       recoveryUrl.searchParams.set("error", "recovery_failed");
       return recoveryUrl;
+    }
+
+    if (flow === "signup") {
+      const verificationUrl = new URL("/verify-email", request.url);
+      verificationUrl.searchParams.set("error", "verification_failed");
+      return verificationUrl;
     }
 
     const signInUrl = new URL("/sign-in", request.url);

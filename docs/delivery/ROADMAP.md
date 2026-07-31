@@ -58,7 +58,9 @@ Deliverables:
 
 Exit criteria:
 
-- No active document describes Karivo, bidding, escrow, payments, chat, Supabase-specific realtime behavior, or Fast Rematch as MVP scope.
+- No active document describes Karivo, bidding, escrow, payment processing,
+  chat, Supabase-specific realtime behavior, or Fast Rematch as MVP scope. The
+  bounded external cash-confirmation record is not payment processing.
 - Team can explain the golden path and category-specific eligibility.
 
 ### Milestone 1 — Foundation
@@ -216,6 +218,10 @@ Deliverables:
   cap;
 - worker Passport update;
 - active-report completion block.
+- bounded post-completion cash payment confirmation, approved through change
+  control on July 31, 2026, without payment processing;
+- 48-hour unanswered receipt deadline with Vercel Hobby-compatible daily
+  maintenance persistence.
 
 Exit criteria:
 
@@ -313,6 +319,13 @@ Not allowed after freeze:
 - new roles, statuses, categories, or reward types;
 - payment, bidding, chat, matching, portfolio upload, or location features;
 - infrastructure migration without a critical blocker.
+
+Change-control exception recorded July 31, 2026: the team approved only a
+post-completion confirmation record for external cash payment. This exception
+does not authorize payment processing, balances, credentials, escrow, fees,
+settlement, or dispute resolution. It adds one bounded state machine and a
+daily Vercel Hobby-compatible maintenance requirement; all affected specifications, migration, UI,
+authorization, audit, and tests must ship together.
 
 ## 5. Hardening and Release
 
@@ -444,7 +457,10 @@ Only after production feedback and P0 stability:
 
 ### Phase 3 — Evaluated expansion
 
-Potential new categories, multi-worker staffing, verified organizations, payment support, matching, or native applications require new research, risk analysis, architecture decisions, and a revised PRD. They are not automatic extensions of the MVP.
+Potential new categories, multi-worker staffing, verified organizations,
+payment processing/support, matching, or native applications require new
+research, risk analysis, architecture decisions, and a revised PRD. They are
+not automatic extensions of the bounded cash-confirmation exception.
 
 ## 10. Roadmap Change Rule
 

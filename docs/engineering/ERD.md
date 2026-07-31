@@ -116,6 +116,7 @@ erDiagram
     user ||--o{ agreement : "participates in"
     agreement ||--o| workSession : "activates"
     workSession ||--o| workCompletionEvidence : "requires before checkout"
+    agreement ||--o| cashPaymentConfirmation : "records cash receipt"
     agreement ||--o| workProof : "produces"
     user ||--o{ workProof : "earns or verifies"
     category ||--o{ workProof : "proves experience in"
@@ -214,6 +215,15 @@ erDiagram
         uuid uploadedBy FK
         datetime uploadedAt
     }
+    cashPaymentConfirmation["cash_payment_confirmations"] {
+        uuid id PK
+        uuid agreementId FK, UK
+        enum status
+        datetime employerMarkedPaidAt
+        datetime workerRespondedAt "nullable"
+        datetime confirmedAt "nullable"
+        datetime autoConfirmAt
+    }
     workProof["work_proofs"] {
         uuid id PK
         uuid agreementId FK, UK
@@ -242,6 +252,7 @@ erDiagram
 | Job | Agreement | 1:0..1 | One accepted worker per MVP job |
 | Agreement | Work session | 1:0..1 | Created once when both parties confirm |
 | Work session | Completion evidence | 1:0..1 | Required after check-in and before checkout |
+| Agreement | Cash payment confirmation | 1:0..1 | Optional after verified completion for cash methods only |
 | Agreement | Work Proof | 1:0..1 | Created only after verified completion |
 
 Rintara Passport is a read model over `work_proofs`; there is no editable `passports` table.

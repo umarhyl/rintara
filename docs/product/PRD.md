@@ -52,9 +52,14 @@ The MVP proves one connected product loop:
 5. Attendance, one private result photo, and completion are confirmed.
 6. Rintara issues one verified Work Proof to the worker's Rintara Passport.
 7. For a valid First Opportunity job, the employer earns one Opportunity Credit.
-8. The employer can redeem the credit for a 24-hour job boost.
+8. For cash jobs, the parties record external payment receipt confirmation.
+9. The employer can redeem the credit for a 24-hour job boost.
 
-Payments happen outside Rintara in the MVP. Rintara records the agreed wage, payment method, and payment timing, but does not hold, move, or guarantee funds.
+Payments happen outside Rintara in the MVP. Rintara records the agreed wage,
+payment method, and payment timing, but does not hold, move, or guarantee
+funds. For completed cash jobs, it may additionally record the Employer's
+statement that cash was given and the Worker's receipt response. An unanswered
+receipt request is recorded as automatically confirmed after 48 hours.
 
 ## 3. Problem Statement
 
@@ -183,6 +188,7 @@ The MVP must:
 | Mini Agreement | Immutable snapshot confirmed independently by both parties |
 | Attendance and result evidence | Short-lived check-in code, one private result photo, and worker check-out |
 | Verified completion | Atomic completion, Work Proof issuance, and optional credit issuance |
+| Cash payment confirmation | Post-completion external-payment statements with a 48-hour response window |
 | Rintara Passport | Read model derived from verified Work Proof records |
 | Opportunity Credit and boost | Maximum three active credits; one credit gives one job a 24-hour boost |
 | Reports and moderation | Minimum report queue and audited admin actions |
@@ -204,7 +210,7 @@ Detailed acceptance criteria are in `docs/product/REQUIREMENTS.md`.
 ### 8.3 Explicitly out of scope
 
 - Bidding, auctions, or wage negotiation.
-- Payments, escrow, Midtrans, wallets, platform balances, or transaction fees.
+- Payment processing, escrow, Midtrans, wallets, platform balances, or transaction fees.
 - Real-time chat, video calls, email, SMS, or WhatsApp integration.
 - Fast Rematch, automatic matching, AI scoring, or recommendations.
 - Direct worker search by employers.
@@ -239,7 +245,7 @@ Electrical work, working at height, heavy machinery, medical work, unverified ch
 | Employer terminology | Use “Employer,” never “Client” in domain code or product copy |
 | Beginner status | Calculated per category from non-revoked verified Work Proof |
 | Wage interaction | Fixed and visible; applications do not change it |
-| Payment | Recorded as an agreement term; executed outside Rintara |
+| Payment | Executed outside Rintara; terms and bounded cash receipt confirmation are recorded |
 | Job capacity | One accepted worker per job |
 | Hiring cutoffs | `applicationDeadline` closes new applications; employer selection closes 24 hours before `startsAt` |
 | First Opportunity badge | Derived after the employer earns the first non-revoked credit |
@@ -338,3 +344,10 @@ Every proposed P0 change must state:
 5. explicit team approval.
 
 After the feature-freeze date in `docs/delivery/ROADMAP.md`, only critical bugs, security, accessibility, data integrity, and submission consistency may change the release candidate.
+
+Approved exception on July 31, 2026: add bounded post-completion cash receipt
+statements and 48-hour automatic confirmation under ADR-014. User value is a
+shared acknowledgement after external cash payment. Impact is one table, two
+party commands, one maintenance batch, work-screen UI, notifications/audit,
+and regression coverage. No payment processing or current P0 capability is
+removed; this exception does not authorize further financial scope.

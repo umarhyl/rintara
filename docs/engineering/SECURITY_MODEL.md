@@ -245,4 +245,7 @@ MVP rules:
 
 ## 16. Review Triggers
 
-Revisit this model before adding payments, identity verification, file uploads, chat, GPS, public Passport sharing, third-party APIs, multi-worker jobs, or a new source of truth.
+Revisit this model before adding payment processing or credentials, identity
+verification, another file-upload use case, chat, GPS, public Passport sharing,
+third-party APIs, multi-worker jobs, or a new source of truth. The bounded cash
+receipt statements approved July 31, 2026 do not authorize any of those paths.

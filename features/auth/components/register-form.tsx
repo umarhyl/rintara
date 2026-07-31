@@ -4,8 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Circle, CircleAlert, LoaderCircle, Mail } from "lucide-react";
-import { submitSignUp } from "@/app/auth/actions";
+import {
+  submitSignUp,
+  submitVerificationEmailRequest,
+} from "@/app/auth/actions";
 import { AuthPasswordField } from "@/features/auth/components/auth-password-field";
+import { RegistrationPolicyDialog } from "@/features/auth/components/registration-policy-dialog";
 import { useAuthSurfaceState } from "@/features/auth/components/auth-surface-state";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,6 +34,9 @@ export function RegisterForm({
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [continuationEmail, setContinuationEmail] = useState<string | null>(null);
+  const [resendPending, setResendPending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const {
     email,
@@ -60,6 +67,15 @@ export function RegisterForm({
     if (continuationEmail) continuationHeadingRef.current?.focus();
   }, [continuationEmail]);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(
+      () => setResendCooldown((current) => Math.max(0, current - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
+
   const handleClearErrors = () => {
     if (errorMessage) setErrorMessage(null);
     if (emailError) setEmailError(false);
@@ -69,31 +85,86 @@ export function RegisterForm({
   if (continuationEmail) {
     return (
       <div
-        className="mt-6 border-y border-primary/25 bg-secondary/40 py-5"
-        role="status"
-        aria-live="polite"
+        className="mt-6 grid gap-4 rounded-xl border border-primary/20 bg-[#edf5ec] p-6"
+        aria-labelledby="email-verification-heading"
       >
-        <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-          <Mail className="size-5" aria-hidden="true" />
-        </span>
-        <h2
-          ref={continuationHeadingRef}
-          tabIndex={-1}
-          className="mt-4 text-xl font-semibold outline-none"
-        >
-          Lanjutkan dengan email ini
-        </h2>
-        <p className="mt-2 text-base leading-7 text-muted-foreground">
-          Untuk melindungi akunmu, kami tidak mengonfirmasi apakah email sudah
-          terdaftar. Jika ini pendaftaran baru, periksa email di{" "}
-          <strong className="text-foreground">{continuationEmail}</strong>.
-          Jika kamu pernah mendaftar, masuk atau pulihkan kata sandi.
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#1b512d] text-white">
+            <Mail className="size-5" aria-hidden="true" />
+          </span>
+          <h2
+            id="email-verification-heading"
+            ref={continuationHeadingRef}
+            tabIndex={-1}
+            className="text-xl font-semibold outline-none"
+          >
+            Verifikasi emailmu
+          </h2>
+        </div>
+
+        <p className="text-base leading-7 text-muted-foreground">
+          Jika ini pendaftaran baru, tautan verifikasi dikirim ke{" "}
+          <strong className="font-semibold text-foreground">{continuationEmail}</strong>.
+          Buka tautan tersebut untuk mengaktifkan akun dan melanjutkan ke profil.
+          Periksa juga folder spam.
         </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <Button variant="outline" asChild>
+
+        <p className="text-sm leading-6 text-muted-foreground">
+          Demi keamanan, kami tidak mengonfirmasi apakah alamat ini sudah
+          terdaftar. Jika kamu pernah mendaftar, kamu tetap bisa masuk atau
+          memulihkan kata sandi.
+        </p>
+
+        {resendMessage ? (
+          <p className="text-sm font-medium text-primary" role="status" aria-live="polite">
+            {resendMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-2 grid gap-2.5 sm:grid-cols-2">
+          <Button
+            type="button"
+            className="h-11"
+            disabled={resendPending || resendCooldown > 0}
+            onClick={() => {
+              if (resendPending || resendCooldown > 0) return;
+              void (async () => {
+                setResendPending(true);
+                setResendMessage(null);
+                try {
+                  const result = await submitVerificationEmailRequest({
+                    email: continuationEmail,
+                    nextPath,
+                    selectedRole,
+                  });
+                  if (!result.ok) {
+                    setResendMessage(result.message);
+                    return;
+                  }
+                  setResendCooldown(60);
+                  setResendMessage(
+                    "Jika akun masih menunggu verifikasi, tautan baru telah dikirim.",
+                  );
+                } catch {
+                  setResendMessage(
+                    "Koneksi terputus. Periksa jaringan lalu coba lagi.",
+                  );
+                } finally {
+                  setResendPending(false);
+                }
+              })();
+            }}
+          >
+            {resendPending
+              ? "Mengirim ulang…"
+              : resendCooldown > 0
+                ? `Kirim ulang (${resendCooldown} dtk)`
+                : "Kirim ulang email"}
+          </Button>
+          <Button variant="outline" className="h-11 bg-white" asChild>
             <Link href={signInHref}>Masuk ke akun</Link>
           </Button>
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" className="h-11 hover:bg-black/5" asChild>
             <Link href="/forgot-password">Pulihkan kata sandi</Link>
           </Button>
         </div>
@@ -163,6 +234,7 @@ export function RegisterForm({
               email: trimmedEmail,
               password: registerPassword,
               nextPath,
+              selectedRole,
             });
 
             if (!result.ok) {
@@ -172,6 +244,7 @@ export function RegisterForm({
 
             if (result.nextStep === "confirm-or-sign-in") {
               setContinuationEmail(trimmedEmail);
+              setResendCooldown(60);
               return;
             }
 
@@ -264,7 +337,13 @@ export function RegisterForm({
             aria-describedby={termsError ? "terms-error" : undefined}
             disabled={pending}
           />
-          <Label htmlFor="terms" className="font-normal leading-6">Saya menyetujui ketentuan dan kebijakan privasi Rintara.</Label>
+          <p className="text-sm leading-6 text-foreground">
+            <Label htmlFor="terms" className="inline cursor-pointer font-normal">
+              Saya menyetujui
+            </Label>{" "}
+            <RegistrationPolicyDialog kind="terms" /> dan{" "}
+            <RegistrationPolicyDialog kind="privacy" /> Rintara.
+          </p>
         </div>
         {termsError ? <p id="terms-error" className="pl-7 text-sm leading-6 text-destructive" role="alert">{termsError}</p> : null}
       </div>

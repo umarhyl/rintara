@@ -26,11 +26,12 @@ Accepted ADRs are historical records. Do not rewrite their decision after implem
 | [ADR-006](./ADR-006-transactional-domain-operations.md) | Accepted | Protect critical lifecycle operations with transactions, constraints, and idempotency |
 | [ADR-007](./ADR-007-postgresql-backed-notifications.md) | Accepted | Use PostgreSQL-backed in-app notifications without dedicated realtime infrastructure |
 | [ADR-008](./ADR-008-private-location-separation.md) | Accepted | Separate full work addresses from public job data |
-| [ADR-009](./ADR-009-out-of-platform-payments.md) | Accepted | Keep payment execution outside Rintara for the MVP |
+| [ADR-009](./ADR-009-out-of-platform-payments.md) | Superseded by ADR-014 | Keep payment execution outside Rintara for the MVP |
 | [ADR-010](./ADR-010-wage-guideline-source.md) | Proposed | Select and govern the Wage Guideline source |
 | [ADR-011](./ADR-011-managed-platform-selection.md) | Accepted | Use Vercel and Supabase Managed PostgreSQL |
 | [ADR-012](./ADR-012-authentication-provider-selection.md) | Accepted | Use Supabase Auth |
 | [ADR-013](./ADR-013-private-work-completion-evidence.md) | Accepted | Require one private result photo before worker check-out |
+| [ADR-014](./ADR-014-record-external-cash-payment-confirmation.md) | Accepted | Record bounded external cash receipt statements without processing payment |
 
 ## When to Create an ADR
 

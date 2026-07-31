@@ -90,6 +90,9 @@ Use stable lookup labels in tests instead of relying on insertion order.
 - Report status remains separate from workflow state.
 - Agreement activates only after both confirmations.
 - Work session is created once at activation.
+- Cash payment confirmation allows only cash/completed agreements, preserves a
+  not-received Worker response against automatic confirmation, auto-confirms
+  only after 48 hours, and permits correction of an automatic result.
 
 ### Credits and boosts
 
@@ -108,6 +111,8 @@ Use stable lookup labels in tests instead of relying on insertion order.
 - Partial unique index allows only one accepted application per job.
 - Agreement is unique by application and job.
 - Work session and Work Proof are unique by agreement.
+- Cash payment confirmation is unique by agreement and its status/timestamps
+  satisfy the database check constraints.
 - Opportunity Credit is unique by source job.
 - Job Boost is unique by credit.
 - Wage amount and guideline values reject invalid ranges.

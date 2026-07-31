@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { ApplicationError } from "@/server/errors/application-error";
 import {
-  getAuthenticationCallbackUrl,
+  getEmailVerificationCallbackUrl,
   getPasswordRecoveryCallbackUrl,
 } from "./environment";
 import {
@@ -33,12 +33,25 @@ function parseCredentials(
   return result.data;
 }
 
-export async function signUp(input: unknown, nextPath?: string) {
+type SignUpContinuation = {
+  nextPath?: string;
+  selectedRole?: "worker" | "employer" | null;
+};
+
+export async function signUp(
+  input: unknown,
+  continuation: SignUpContinuation = {},
+) {
   const credentials = parseCredentials(signUpSchema, input);
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     ...credentials,
-    options: { emailRedirectTo: getAuthenticationCallbackUrl(nextPath) },
+    options: {
+      emailRedirectTo: getEmailVerificationCallbackUrl(
+        continuation.nextPath,
+        continuation.selectedRole,
+      ),
+    },
   });
 
   if (error) {
@@ -54,6 +67,47 @@ export async function signUp(input: unknown, nextPath?: string) {
       ? ("confirm-or-sign-in" as const)
       : ("signed-in" as const),
   };
+}
+
+export async function resendSignUpVerification(
+  input: unknown,
+  continuation: SignUpContinuation = {},
+) {
+  const result = passwordRecoveryRequestSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new ApplicationError(
+      "VALIDATION_FAILED",
+      "Masukkan alamat email yang valid.",
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: result.data.email,
+    options: {
+      emailRedirectTo: getEmailVerificationCallbackUrl(
+        continuation.nextPath,
+        continuation.selectedRole,
+      ),
+    },
+  });
+
+  if (error?.status === 429) {
+    throw new ApplicationError(
+      "RATE_LIMITED",
+      "Terlalu banyak permintaan. Tunggu sebentar sebelum mengirim ulang.",
+    );
+  }
+
+  // Expected provider errors for unknown or already-confirmed addresses are
+  // deliberately collapsed into the same result to prevent account discovery.
+  if (error && (error.status ?? 500) >= 500) {
+    throw mapAuthProviderError(error, "sign-up");
+  }
+
+  return { requested: true as const };
 }
 
 export async function signIn(input: unknown) {

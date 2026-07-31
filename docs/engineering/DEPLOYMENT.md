@@ -78,6 +78,10 @@ Rules:
 - Secrets are rotated after accidental disclosure.
 - `NEXT_PUBLIC_SUPABASE_URL` and the publishable key may be exposed only as intended by Supabase Auth; database passwords, direct/pooler URLs, service-role keys, and code peppers remain server-only secrets.
 - `RINTARA_APP_URL` is the canonical origin used to build `/auth/callback`; each environment must allowlist that callback in its isolated Supabase project.
+- Supabase Auth email/password registration must have **Confirm email** enabled.
+  Configure the environment's supported sender/template and verify that both
+  initial signup and resend links reach the allowlisted `/auth/callback` before
+  accepting the release candidate.
 - Production must set `RINTARA_ENV=production`; startup/build access to the
   runtime database configuration fails instead of falling back to a placeholder
   when `DATABASE_URL` is missing.
@@ -199,8 +203,16 @@ Configure the platform scheduler to call
 schedule must run frequently enough that selection-cutoff state does not remain
 stale during the pilot.
 
-The committed Vercel configuration runs this operation daily at `17:00 UTC`
-(`00:00 Asia/Jakarta`) so it remains compatible with the Hobby plan. Set
+Configure `GET /api/maintenance/confirm-cash-payments` as a bounded daily scan
+on Vercel Hobby. The response deadline remains exactly 48 hours in stored
+domain state; the automatic result is persisted on the first daily run after
+that deadline, so persistence can lag by up to one daily scheduler interval.
+The Worker response continues to win safely until the conditional automatic
+update commits.
+
+The committed Vercel configuration runs job expiry daily at `17:00 UTC`
+(`00:00 Asia/Jakarta`) and cash confirmation daily shortly afterward. Hobby
+Cron timing is approximate within its scheduling window. Set
 `CRON_SECRET` to a random value of at least 32 bytes in the Vercel Production
 environment; Vercel sends it automatically as a bearer token. Manual schedulers
 may instead use `RINTARA_MAINTENANCE_SECRET`.

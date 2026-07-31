@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
-import { expireUnfilledJobs } from "@/server/domain/jobs/expiry";
+import { autoConfirmCashPayments } from "@/server/domain/payment-confirmations/automatic-confirmation";
 import { isAuthorizedMaintenanceRequest } from "@/server/infrastructure/maintenance-authorization";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   const incomingRequestId = request.headers.get("x-request-id")?.trim();
-  const result = await expireUnfilledJobs({
+  const result = await autoConfirmCashPayments({
     requestId:
       incomingRequestId && incomingRequestId.length <= 128
         ? incomingRequestId

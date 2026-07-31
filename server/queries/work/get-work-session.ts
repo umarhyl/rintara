@@ -9,6 +9,7 @@ import { db } from "@/server/db/client";
 import * as schema from "@/server/db/schema";
 import {
   agreements,
+  cashPaymentConfirmations,
   employerProfiles,
   jobs,
   reports,
@@ -18,6 +19,7 @@ import {
   workerProfiles,
 } from "@/server/db/schema";
 import { ApplicationError } from "@/server/errors/application-error";
+import { isCashPaymentMethod } from "@/server/domain/payment-confirmations/policy";
 
 type WorkSessionDatabase = PostgresJsDatabase<typeof schema>;
 
@@ -63,6 +65,19 @@ export type WorkView = {
     verifiedAt: string | null;
   };
   workProofId: string | null;
+  cashPayment: {
+    eligible: boolean;
+    status:
+      | "awaiting_worker"
+      | "confirmed_received"
+      | "reported_not_received"
+      | "auto_confirmed"
+      | null;
+    employerMarkedPaidAt: string | null;
+    workerRespondedAt: string | null;
+    confirmedAt: string | null;
+    autoConfirmAt: string | null;
+  };
   hasActiveReport: boolean;
   allowedActions: {
     generateCheckInCode: boolean;
@@ -70,6 +85,8 @@ export type WorkView = {
     checkOut: boolean;
     uploadEvidence: boolean;
     verifyCompletion: boolean;
+    markCashPaymentPaid: boolean;
+    confirmCashPaymentReceipt: boolean;
   };
 };
 
@@ -110,6 +127,11 @@ export async function getWorkView(
       evidenceByteSize: workCompletionEvidence.byteSize,
       verifiedAt: workSessions.verifiedAt,
       workProofId: workProofs.id,
+      cashPaymentStatus: cashPaymentConfirmations.status,
+      employerMarkedPaidAt: cashPaymentConfirmations.employerMarkedPaidAt,
+      paymentWorkerRespondedAt: cashPaymentConfirmations.workerRespondedAt,
+      paymentConfirmedAt: cashPaymentConfirmations.confirmedAt,
+      paymentAutoConfirmAt: cashPaymentConfirmations.autoConfirmAt,
     })
     .from(agreements)
     .innerJoin(jobs, eq(agreements.jobId, jobs.id))
@@ -121,6 +143,10 @@ export async function getWorkView(
       eq(workCompletionEvidence.workSessionId, workSessions.id),
     )
     .leftJoin(workProofs, eq(workProofs.agreementId, agreements.id))
+    .leftJoin(
+      cashPaymentConfirmations,
+      eq(cashPaymentConfirmations.agreementId, agreements.id),
+    )
     .where(and(eq(agreements.id, agreementId), partyCondition))
     .limit(1);
 
@@ -142,6 +168,13 @@ export async function getWorkView(
   const isEmployer = actor.role === "employer";
   const isWorker = actor.role === "worker";
   const isActive = row.agreementStatus === "active";
+  const isCompleted =
+    row.agreementStatus === "completed" &&
+    row.jobStatus === "completed" &&
+    row.sessionStatus === "verified";
+  const cashPaymentEligible = isCashPaymentMethod(
+    row.termsSnapshot.paymentMethod,
+  );
 
   return {
     agreementId: row.agreementId,
@@ -181,6 +214,16 @@ export async function getWorkView(
       verifiedAt: row.verifiedAt?.toISOString() ?? null,
     },
     workProofId: row.workProofId,
+    cashPayment: {
+      eligible: cashPaymentEligible,
+      status: row.cashPaymentStatus,
+      employerMarkedPaidAt:
+        row.employerMarkedPaidAt?.toISOString() ?? null,
+      workerRespondedAt:
+        row.paymentWorkerRespondedAt?.toISOString() ?? null,
+      confirmedAt: row.paymentConfirmedAt?.toISOString() ?? null,
+      autoConfirmAt: row.paymentAutoConfirmAt?.toISOString() ?? null,
+    },
     hasActiveReport: Boolean(activeReport),
     allowedActions: {
       generateCheckInCode:
@@ -195,6 +238,18 @@ export async function getWorkView(
         row.jobStatus === "in_progress" &&
         row.sessionStatus === "checked_out" &&
         !activeReport,
+      markCashPaymentPaid:
+        isEmployer &&
+        isCompleted &&
+        cashPaymentEligible &&
+        (row.cashPaymentStatus === null ||
+          row.cashPaymentStatus === "reported_not_received"),
+      confirmCashPaymentReceipt:
+        isWorker &&
+        isCompleted &&
+        cashPaymentEligible &&
+        row.cashPaymentStatus !== null &&
+        row.cashPaymentStatus !== "confirmed_received",
     },
   };
 }

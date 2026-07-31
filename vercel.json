@@ -4,6 +4,10 @@
     {
       "path": "/api/maintenance/expire-jobs",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/maintenance/confirm-cash-payments",
+      "schedule": "15 17 * * *"
     }
   ]
 }

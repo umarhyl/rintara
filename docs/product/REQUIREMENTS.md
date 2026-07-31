@@ -20,7 +20,9 @@ Priority labels:
 ### FR-001 — Authentication and session management [P0]
 
 The system MUST support registration, sign-in, sign-out, password recovery, and
-secure session handling through a mature authentication solution.
+secure session handling through a mature authentication solution. New
+self-service accounts MUST verify ownership of their email address before an
+authenticated onboarding session is established.
 
 Acceptance criteria:
 
@@ -29,6 +31,17 @@ Acceptance criteria:
 - Passwords, tokens, and session implementation are not built or logged by application code.
 - Password recovery returns a generic request result, uses a one-time provider
   callback, and rejects an invalid or expired recovery session.
+- Registration uses a one-time provider email callback; an invalid or expired
+  verification link can be retried without revealing whether the email belongs
+  to an existing, confirmed, or pending account.
+- A successful email verification retains the selected Worker or Employer role
+  and any validated internal continuation destination.
+- Registration keeps an explicit consent checkbox and exposes **Ketentuan
+  Penggunaan** and **Kebijakan Privasi** as separate readable document dialogs
+  before submission. Opening either document does not change consent state.
+- Each registration document is scrollable in a near-full-height, bounded-width
+  dialog and can be dismissed using its back action, Escape, or the surrounding
+  overlay without losing valid form input.
 
 ### FR-002 — Role onboarding and account status [P0]
 
@@ -292,9 +305,30 @@ Acceptance criteria:
 - Revoking a redeemed credit can deactivate its active boost.
 - Admin actions do not hard-delete lifecycle or audit evidence.
 
+### FR-045 — Confirm external cash payment receipt [P0]
+
+After verified completion of a cash job, the related Employer MUST be able to
+record that cash was given and the related Worker MUST be able to record whether
+it was received. Rintara MUST NOT hold, move, or guarantee the funds.
+
+Acceptance criteria:
+
+- The operation is unavailable for non-cash jobs or unfinished work.
+- Employer marking creates at most one confirmation per agreement and starts an
+  exact 48-hour response deadline using server time.
+- Worker may confirm `received` or `not received`; a `not received` response
+  prevents automatic confirmation and notifies the Employer.
+- Only an unanswered `awaiting_worker` record becomes `auto_confirmed` after
+  the deadline through bounded, authenticated, concurrency-safe maintenance.
+- Worker may correct `auto_confirmed` to `not received`; Employer may re-mark
+  after `not received`, starting a new deadline.
+- Every change writes safe notifications and audit entries transactionally.
+- Cash confirmation never blocks Work Proof or Opportunity Credit issuance.
+
 ### FR-070 — In-app notifications [P0]
 
-The system MUST persist notifications for application, agreement, attendance, completion, proof, credit, boost, and report events.
+The system MUST persist notifications for application, agreement, attendance,
+completion, cash payment confirmation, proof, credit, boost, and report events.
 
 Acceptance criteria:
 
@@ -330,7 +364,7 @@ Acceptance criteria:
 
 ### NFR-003 — Reliability and consistency [P0]
 
-- Acceptance, agreement activation, completion, and credit redemption MUST be transactional.
+- Acceptance, agreement activation, completion, cash payment confirmation, and credit redemption MUST be transactional.
 - Agreement confirmation, completion, and redemption MUST be idempotent.
 - Foreign keys, unique indexes, check constraints, and restricted deletes MUST protect critical invariants.
 - Failed multi-write operations MUST leave no partial business state.

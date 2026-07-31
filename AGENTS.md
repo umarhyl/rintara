@@ -15,6 +15,7 @@ Employer publishes a fair First Opportunity job
 -> worker uploads one private result photo and checks out
 -> employer verifies completion
 -> Rintara issues one Work Proof
+-> for cash jobs, employer and worker record external payment receipt confirmation
 -> eligible employer receives one Opportunity Credit
 -> employer redeems it for a 24-hour job boost
 ```
@@ -62,7 +63,10 @@ Do not silently resolve contradictions. Report the conflict and update all affec
 - `applicationDeadline` closes new applications only; employer selection closes
   24 hours before `startsAt`.
 - Acceptance creates an immutable agreement snapshot.
-- Payment method/timing is recorded, but payment happens outside Rintara.
+- Payment method/timing is recorded, but payment happens outside Rintara. For
+  completed cash jobs only, Rintara records party statements about whether the
+  external payment was given/received and auto-confirms an unanswered request
+  after 48 hours; it never holds, moves, or guarantees funds.
 - One agreement has at most one work session and one Work Proof.
 - A qualifying First Opportunity completion creates at most one credit.
 - An employer can hold at most three active credits.
@@ -76,7 +80,7 @@ Do not silently resolve contradictions. Report the conflict and update all affec
 Do not implement, scaffold, prepare hidden database fields for, or describe as MVP:
 
 - bidding, auctions, counteroffers, or wage negotiation;
-- payments, escrow, Midtrans, wallets, bank accounts, or transaction fees;
+- payment processing, escrow, Midtrans, wallets, bank accounts, or transaction fees;
 - realtime chat, video calls, SMS, email, or WhatsApp integration;
 - Fast Rematch, AI matching, worker scoring, or recommendations;
 - direct worker search by employers;

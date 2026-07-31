@@ -61,7 +61,7 @@ databaseTest(
         estimatedMinutes: 120,
         wageAmount: "200000",
         wageUnit: "job" as const,
-        paymentMethod: "Transfer di luar Rintara",
+        paymentMethod: "Tunai di luar Rintara",
         paymentTiming: "Setelah pekerjaan diverifikasi",
         toolsProvided: "Peralatan tersedia",
         toolsRequired: null,
@@ -113,7 +113,7 @@ databaseTest(
             wageAmount: BigInt(200_000),
             wageUnit: "job",
             wageStatus: "compliant",
-            paymentMethod: "Transfer",
+            paymentMethod: "Tunai di luar Rintara",
             paymentTiming: "Setelah verifikasi",
             riskLevel: "low",
             isFirstOpportunity: true,
@@ -250,6 +250,13 @@ databaseTest(
         generateCheckInCode,
         verifyCompletion,
       } = await import("@/server/domain/work/actions");
+      const {
+        confirmCashPaymentReceipt,
+        markCashPaymentPaid,
+      } = await import("@/server/domain/payment-confirmations/actions");
+      const { autoConfirmCashPayments } = await import(
+        "@/server/domain/payment-confirmations/automatic-confirmation"
+      );
       const { getAuthorizedWorkEvidence } = await import(
         "@/server/domain/work/evidence"
       );
@@ -442,6 +449,57 @@ databaseTest(
       expect(verifiedSession.status).toBe("verified");
       expect(proofs).toHaveLength(1);
       expect(proofs[0]!.categoryId).toBe(categoryId);
+
+      const initialCashView = await getWorkView(agreementId);
+      expect(initialCashView.cashPayment).toMatchObject({
+        eligible: true,
+        status: null,
+      });
+      expect(initialCashView.allowedActions.markCashPaymentPaid).toBe(true);
+
+      const markedPaid = await markCashPaymentPaid(agreementId);
+      expect(markedPaid.status).toBe("awaiting_worker");
+
+      activeContext = otherWorkerContext;
+      await expect(
+        confirmCashPaymentReceipt({ agreementId, received: true }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+
+      activeContext = workerContext;
+      await expect(
+        confirmCashPaymentReceipt({ agreementId, received: false }),
+      ).resolves.toMatchObject({ status: "reported_not_received" });
+
+      await expect(
+        autoConfirmCashPayments({
+          now: new Date(new Date(markedPaid.autoConfirmAt).getTime() + 1),
+          requestId: "cash-auto-blocked-by-worker-response",
+        }),
+      ).resolves.toEqual({ confirmedPaymentCount: 0 });
+
+      activeContext = employerContext;
+      const markedAgain = await markCashPaymentPaid(agreementId);
+      expect(markedAgain.status).toBe("awaiting_worker");
+      await expect(
+        autoConfirmCashPayments({
+          now: new Date(new Date(markedAgain.autoConfirmAt).getTime() + 1),
+          requestId: "cash-auto-confirm",
+        }),
+      ).resolves.toEqual({ confirmedPaymentCount: 1 });
+
+      activeContext = workerContext;
+      await expect(
+        confirmCashPaymentReceipt({ agreementId, received: false }),
+      ).resolves.toMatchObject({ status: "reported_not_received" });
+
+      activeContext = employerContext;
+      await expect(markCashPaymentPaid(agreementId)).resolves.toMatchObject({
+        status: "awaiting_worker",
+      });
+      activeContext = workerContext;
+      await expect(
+        confirmCashPaymentReceipt({ agreementId, received: true }),
+      ).resolves.toMatchObject({ status: "confirmed_received" });
 
       activeContext = workerContext;
       const passport = await getMyPassport({}, undefined, database);

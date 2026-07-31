@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import {
   agreementStatusEnum,
+  cashPaymentConfirmationStatusEnum,
   proofStatusEnum,
   wageStatusEnum,
   wageUnitEnum,
@@ -197,6 +198,63 @@ export const workCompletionEvidence = pgTable(
     check(
       "work_completion_evidence_sha256_check",
       sql`char_length(${table.sha256}) = 64`,
+    ),
+  ],
+);
+
+export const cashPaymentConfirmations = pgTable(
+  "cash_payment_confirmations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    agreementId: uuid("agreement_id")
+      .notNull()
+      .references(() => agreements.id, { onDelete: "restrict" }),
+    status: cashPaymentConfirmationStatusEnum("status")
+      .notNull()
+      .default("awaiting_worker"),
+    employerMarkedPaidAt: timestamp("employer_marked_paid_at", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    workerRespondedAt: timestamp("worker_responded_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    confirmedAt: timestamp("confirmed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    autoConfirmAt: timestamp("auto_confirm_at", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("cash_payment_confirmations_agreement_unique").on(
+      table.agreementId,
+    ),
+    index("cash_payment_confirmations_auto_confirm_idx").on(
+      table.status,
+      table.autoConfirmAt,
+    ),
+    check(
+      "cash_payment_confirmations_deadline_check",
+      sql`${table.autoConfirmAt} = ${table.employerMarkedPaidAt} + interval '48 hours'`,
+    ),
+    check(
+      "cash_payment_confirmations_state_metadata_check",
+      sql`
+        (${table.status} = 'awaiting_worker' AND ${table.workerRespondedAt} IS NULL AND ${table.confirmedAt} IS NULL)
+        OR (${table.status} = 'confirmed_received' AND ${table.workerRespondedAt} IS NOT NULL AND ${table.confirmedAt} IS NOT NULL)
+        OR (${table.status} = 'reported_not_received' AND ${table.workerRespondedAt} IS NOT NULL AND ${table.confirmedAt} IS NULL)
+        OR (${table.status} = 'auto_confirmed' AND ${table.workerRespondedAt} IS NULL AND ${table.confirmedAt} IS NOT NULL)
+      `,
     ),
   ],
 );

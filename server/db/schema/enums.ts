@@ -1,6 +1,7 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 import {
   APPLICATION_STATUSES,
+  CASH_PAYMENT_CONFIRMATION_STATUSES,
   JOB_STATUSES,
   MINI_AGREEMENT_STATUSES,
   OPPORTUNITY_CREDIT_STATUSES,
@@ -68,6 +69,11 @@ export const proofStatusEnum = pgEnum("proof_status", [
   "verified",
   "revoked",
 ]);
+
+export const cashPaymentConfirmationStatusEnum = pgEnum(
+  "cash_payment_confirmation_status",
+  CASH_PAYMENT_CONFIRMATION_STATUSES,
+);
 
 export const creditStatusEnum = pgEnum(
   "credit_status",

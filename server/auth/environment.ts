@@ -16,13 +16,35 @@ export function getAuthenticationCallbackUrl(nextPath?: string): string {
 
   const callbackUrl = new URL("/auth/callback", baseUrl);
   if (nextPath) {
-    const safeNextPath = safeApplicationPath(nextPath, "/account/continue");
     callbackUrl.searchParams.set(
       "next",
-      `/onboarding/role?next=${encodeURIComponent(safeNextPath)}`,
+      safeApplicationPath(nextPath, "/account/continue"),
     );
   }
 
+  return callbackUrl.toString();
+}
+
+export function getEmailVerificationCallbackUrl(
+  nextPath?: string,
+  selectedRole?: "worker" | "employer" | null,
+): string {
+  const safeSelectedRole =
+    selectedRole === "worker" || selectedRole === "employer"
+      ? selectedRole
+      : null;
+  const safeNextPath = nextPath
+    ? safeApplicationPath(nextPath, "/account/continue")
+    : null;
+  const onboardingPath = safeSelectedRole
+    ? `/onboarding/${safeSelectedRole}${
+        safeNextPath ? `?next=${encodeURIComponent(safeNextPath)}` : ""
+      }`
+    : safeNextPath
+      ? `/onboarding/role?next=${encodeURIComponent(safeNextPath)}`
+      : "/onboarding/role";
+  const callbackUrl = new URL(getAuthenticationCallbackUrl(onboardingPath));
+  callbackUrl.searchParams.set("flow", "signup");
   return callbackUrl.toString();
 }
 

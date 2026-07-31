@@ -2,6 +2,7 @@
 
 import {
   requestPasswordRecovery,
+  resendSignUpVerification,
   signIn,
   signUp,
   updatePassword,
@@ -29,11 +30,19 @@ export async function submitSignIn(credentials: { email: string; password: strin
   }
 }
 
-export async function submitSignUp(credentials: { email: string; password: string; nextPath?: string }): Promise<AuthFormResult> {
+export async function submitSignUp(credentials: {
+  email: string;
+  password: string;
+  nextPath?: string;
+  selectedRole?: "worker" | "employer" | null;
+}): Promise<AuthFormResult> {
   try {
     const result = await signUp(
       { email: credentials.email, password: credentials.password },
-      credentials.nextPath,
+      {
+        nextPath: credentials.nextPath,
+        selectedRole: credentials.selectedRole,
+      },
     );
     return {
       ok: true,
@@ -42,6 +51,22 @@ export async function submitSignUp(credentials: { email: string; password: strin
           ? "confirm-or-sign-in"
           : undefined,
     };
+  } catch (error) {
+    return safeAuthFailure(error);
+  }
+}
+
+export async function submitVerificationEmailRequest(input: {
+  email: string;
+  nextPath?: string;
+  selectedRole?: "worker" | "employer" | null;
+}): Promise<AuthFormResult> {
+  try {
+    await resendSignUpVerification(
+      { email: input.email },
+      { nextPath: input.nextPath, selectedRole: input.selectedRole },
+    );
+    return { ok: true };
   } catch (error) {
     return safeAuthFailure(error);
   }

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -11,6 +11,7 @@ import * as schema from "@/server/db/schema";
 import {
   areas,
   categories,
+  employerProfiles,
   users,
   workerInterests,
   workerProfiles,
@@ -29,17 +30,21 @@ databaseTest(
       ssl: process.env.TEST_DATABASE_SSL === "disable" ? false : "require",
     });
     const database = drizzle(client, { schema });
+    const createdAreaIds: string[] = [];
+    const createdCategoryIds: string[] = [];
+    const createdAuthSubjects: string[] = [];
 
     try {
       await migrate(database, { migrationsFolder: "./drizzle" });
       const areaId = randomUUID();
       const inactiveAreaId = randomUUID();
       const provinceId = randomUUID();
+      createdAreaIds.push(areaId, inactiveAreaId, provinceId);
       await database.insert(areas).values({
         id: areaId,
         level: "city_regency",
         code: `test-${areaId}`,
-        name: "Kota Uji",
+        name: `000 Kota Uji ${areaId}`,
       });
       await database.insert(areas).values({
         id: inactiveAreaId,
@@ -57,25 +62,26 @@ databaseTest(
 
       const activeCategoryIds = [randomUUID(), randomUUID()];
       const inactiveCategoryId = randomUUID();
+      createdCategoryIds.push(...activeCategoryIds, inactiveCategoryId);
       await database.insert(categories).values([
         {
           id: activeCategoryIds[0],
           slug: `test-${activeCategoryIds[0]}`,
-          name: "Kategori Uji A",
+          name: `000 Kategori Uji A ${activeCategoryIds[0]}`,
           riskLevel: "low",
           firstOpportunityAllowed: true,
         },
         {
           id: activeCategoryIds[1],
           slug: `test-${activeCategoryIds[1]}`,
-          name: "Kategori Uji B",
+          name: `000 Kategori Uji B ${activeCategoryIds[1]}`,
           riskLevel: "restricted",
           firstOpportunityAllowed: false,
         },
         {
           id: inactiveCategoryId,
           slug: `test-${inactiveCategoryId}`,
-          name: "Kategori Uji Nonaktif",
+          name: `000 Kategori Uji Nonaktif ${inactiveCategoryId}`,
           riskLevel: "low",
           firstOpportunityAllowed: true,
           isActive: false,
@@ -83,18 +89,22 @@ databaseTest(
       ]);
 
       const referenceData = await queryOnboardingReferenceData(database);
-      expect(referenceData.areas).toContainEqual({ id: areaId, name: "Kota Uji" });
+      expect(referenceData.areas).toContainEqual({
+        id: areaId,
+        name: `000 Kota Uji ${areaId}`,
+      });
       expect(referenceData.areas.some((area) => area.id === inactiveAreaId)).toBe(false);
       expect(referenceData.areas.some((area) => area.id === provinceId)).toBe(false);
       expect(referenceData.categories).toContainEqual({
         id: activeCategoryIds[0],
-        name: "Kategori Uji A",
+        name: `000 Kategori Uji A ${activeCategoryIds[0]}`,
       });
       expect(
         referenceData.categories.some((category) => category.id === inactiveCategoryId),
       ).toBe(false);
 
       const authSubject = `auth-${randomUUID()}`;
+      createdAuthSubjects.push(authSubject);
       const workerInput = {
         role: "worker",
         displayName: "Ayu Pratama",
@@ -163,6 +173,7 @@ databaseTest(
         .where(eq(areas.id, areaId));
 
       const inactiveInterestSubject = `auth-${randomUUID()}`;
+      createdAuthSubjects.push(inactiveInterestSubject);
       await expect(
         synchronizeIdentityInDatabase(database, inactiveInterestSubject, {
           ...workerInput,
@@ -177,6 +188,7 @@ databaseTest(
       ).toHaveLength(0);
 
       const invalidAreaSubject = `auth-${randomUUID()}`;
+      createdAuthSubjects.push(invalidAreaSubject);
       await expect(
         synchronizeIdentityInDatabase(database, invalidAreaSubject, {
           ...workerInput,
@@ -191,6 +203,7 @@ databaseTest(
       ).toHaveLength(0);
 
       const suspendedSubject = `auth-${randomUUID()}`;
+      createdAuthSubjects.push(suspendedSubject);
       await database.insert(users).values({
         authSubject: suspendedSubject,
         role: "worker",
@@ -201,6 +214,7 @@ databaseTest(
       ).rejects.toMatchObject({ code: "ACCOUNT_INACTIVE" });
 
       const rollbackSubject = `auth-${randomUUID()}`;
+      createdAuthSubjects.push(rollbackSubject);
       const invalidProfile = {
         ...workerInput,
         displayName: "x".repeat(121),
@@ -219,6 +233,33 @@ databaseTest(
           .where(eq(users.authSubject, rollbackSubject)),
       ).toHaveLength(0);
     } finally {
+      if (createdAuthSubjects.length > 0) {
+        const createdUsers = await database
+          .select({ id: users.id })
+          .from(users)
+          .where(inArray(users.authSubject, createdAuthSubjects));
+        const createdUserIds = createdUsers.map(({ id }) => id);
+        if (createdUserIds.length > 0) {
+          await database
+            .delete(workerInterests)
+            .where(inArray(workerInterests.workerId, createdUserIds));
+          await database
+            .delete(workerProfiles)
+            .where(inArray(workerProfiles.userId, createdUserIds));
+          await database
+            .delete(employerProfiles)
+            .where(inArray(employerProfiles.userId, createdUserIds));
+          await database.delete(users).where(inArray(users.id, createdUserIds));
+        }
+      }
+      if (createdCategoryIds.length > 0) {
+        await database
+          .delete(categories)
+          .where(inArray(categories.id, createdCategoryIds));
+      }
+      if (createdAreaIds.length > 0) {
+        await database.delete(areas).where(inArray(areas.id, createdAreaIds));
+      }
       await client.end({ timeout: 5 });
     }
   },

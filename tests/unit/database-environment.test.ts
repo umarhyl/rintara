@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  assertDemoJobSeedAllowed,
   assertMigrationAllowed,
   assertSeedAllowed,
   getIntegrationDatabaseUrl,
@@ -8,6 +9,7 @@ import {
 
 const originalEnvironment = process.env.RINTARA_ENV;
 const originalSeedFlag = process.env.RINTARA_ALLOW_SEED;
+const originalDemoJobSeedFlag = process.env.RINTARA_ALLOW_DEMO_JOB_SEED;
 const originalMigrationFlag = process.env.RINTARA_ALLOW_PRODUCTION_MIGRATION;
 const originalTestDatabaseUrl = process.env.TEST_DATABASE_URL;
 const originalRuntimeDatabaseUrl = process.env.DATABASE_URL;
@@ -25,6 +27,10 @@ function restoreEnvironmentVariable(name: string, value: string | undefined) {
 afterEach(() => {
   restoreEnvironmentVariable("RINTARA_ENV", originalEnvironment);
   restoreEnvironmentVariable("RINTARA_ALLOW_SEED", originalSeedFlag);
+  restoreEnvironmentVariable(
+    "RINTARA_ALLOW_DEMO_JOB_SEED",
+    originalDemoJobSeedFlag,
+  );
   restoreEnvironmentVariable(
     "RINTARA_ALLOW_PRODUCTION_MIGRATION",
     originalMigrationFlag,
@@ -100,6 +106,24 @@ describe("database operation guards", () => {
         "postgresql://postgres:demo@db.demo-project.example:5432/postgres",
       ),
     ).toThrow("Use local or test");
+  });
+
+  test("allows only an explicitly approved, non-production demo job seed", () => {
+    process.env.RINTARA_ENV = "demo";
+    process.env.RINTARA_ALLOW_DEMO_JOB_SEED = "true";
+
+    expect(() =>
+      assertDemoJobSeedAllowed(
+        "postgresql://postgres:demo@db.demo-project.example:5432/postgres",
+      ),
+    ).not.toThrow();
+
+    process.env.RINTARA_ENV = "production";
+    expect(() =>
+      assertDemoJobSeedAllowed(
+        "postgresql://postgres:production@db.example.com:5432/postgres",
+      ),
+    ).toThrow("production");
   });
 
   test("requires an explicit production migration opt-in", () => {

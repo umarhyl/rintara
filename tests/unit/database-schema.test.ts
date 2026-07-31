@@ -6,6 +6,7 @@ import { publicJobCardProjection } from "@/server/queries/public-job-projection"
 import {
   applications,
   agreements,
+  cashPaymentConfirmations,
   jobBoosts,
   jobPrivateDetails,
   jobs,
@@ -29,6 +30,9 @@ describe("database schema invariants", () => {
     const sessionIndexes = getTableConfig(workSessions).indexes.map(
       (index) => index.config.name,
     );
+    const cashPaymentIndexes = getTableConfig(
+      cashPaymentConfirmations,
+    ).indexes.map((index) => index.config.name);
     const evidenceIndexes = getTableConfig(workCompletionEvidence).indexes.map(
       (index) => index.config.name,
     );
@@ -48,6 +52,12 @@ describe("database schema invariants", () => {
     expect(agreementIndexes).toContain("agreements_application_unique");
     expect(agreementIndexes).toContain("agreements_job_unique");
     expect(sessionIndexes).toContain("work_sessions_agreement_unique");
+    expect(cashPaymentIndexes).toContain(
+      "cash_payment_confirmations_agreement_unique",
+    );
+    expect(cashPaymentIndexes).toContain(
+      "cash_payment_confirmations_auto_confirm_idx",
+    );
     expect(evidenceIndexes).toContain(
       "work_completion_evidence_session_unique",
     );
@@ -111,5 +121,9 @@ describe("database schema invariants", () => {
     expect(migrationSql).toContain(
       "work_completion_evidence_session_unique",
     );
+    expect(migrationSql).toContain(
+      "cash_payment_confirmations_deadline_check",
+    );
+    expect(migrationSql).toContain("interval '48 hours'");
   });
 });

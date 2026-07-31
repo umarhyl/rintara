@@ -47,6 +47,13 @@ export const REPORT_STATUSES = [
   "rejected",
 ] as const;
 
+export const CASH_PAYMENT_CONFIRMATION_STATUSES = [
+  "awaiting_worker",
+  "confirmed_received",
+  "reported_not_received",
+  "auto_confirmed",
+] as const;
+
 export const jobStatusSchema = z.enum(JOB_STATUSES);
 export const applicationStatusSchema = z.enum(APPLICATION_STATUSES);
 export const miniAgreementStatusSchema = z.enum(MINI_AGREEMENT_STATUSES);
@@ -55,6 +62,9 @@ export const opportunityCreditStatusSchema = z.enum(
   OPPORTUNITY_CREDIT_STATUSES,
 );
 export const reportStatusSchema = z.enum(REPORT_STATUSES);
+export const cashPaymentConfirmationStatusSchema = z.enum(
+  CASH_PAYMENT_CONFIRMATION_STATUSES,
+);
 
 export type JobStatus = z.infer<typeof jobStatusSchema>;
 export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
@@ -64,6 +74,9 @@ export type OpportunityCreditStatus = z.infer<
   typeof opportunityCreditStatusSchema
 >;
 export type ReportStatus = z.infer<typeof reportStatusSchema>;
+export type CashPaymentConfirmationStatus = z.infer<
+  typeof cashPaymentConfirmationStatusSchema
+>;
 
 const jobTransitions = {
   draft: ["published", "cancelled"],
@@ -109,6 +122,20 @@ const reportTransitions = {
   resolved: [],
   rejected: [],
 } satisfies Record<ReportStatus, readonly ReportStatus[]>;
+
+const cashPaymentConfirmationTransitions = {
+  awaiting_worker: [
+    "confirmed_received",
+    "reported_not_received",
+    "auto_confirmed",
+  ],
+  confirmed_received: [],
+  reported_not_received: ["awaiting_worker", "confirmed_received"],
+  auto_confirmed: ["reported_not_received"],
+} satisfies Record<
+  CashPaymentConfirmationStatus,
+  readonly CashPaymentConfirmationStatus[]
+>;
 
 function assertTransition<Status extends string>(
   entity: string,
@@ -186,6 +213,19 @@ export function assertReportTransition(from: unknown, to: unknown) {
     "report",
     reportStatusSchema,
     reportTransitions,
+    from,
+    to,
+  );
+}
+
+export function assertCashPaymentConfirmationTransition(
+  from: unknown,
+  to: unknown,
+) {
+  return assertTransition(
+    "cash payment confirmation",
+    cashPaymentConfirmationStatusSchema,
+    cashPaymentConfirmationTransitions,
     from,
     to,
   );
