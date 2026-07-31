@@ -162,7 +162,7 @@ export function JobApplicationForm({ jobId }: { jobId: string }) {
           required
           disabled={isPending}
           placeholder="Tulis ketersediaanmu dan alasan kamu cocok untuk tugas ini."
-          className="mt-2 min-h-32 border-white/20 bg-white/[0.08] text-white placeholder:text-[#c9d8cd]/70"
+          className="mt-2 min-h-32 w-full max-w-full min-w-0 resize-none break-words whitespace-pre-wrap border-white/20 bg-white/[0.08] text-white placeholder:text-[#c9d8cd]/70"
         />
         <p className="mt-2 text-xs leading-5 text-[#c9d8cd]">
           Jangan menawar upah atau menulis data privat seperti alamat lengkap.

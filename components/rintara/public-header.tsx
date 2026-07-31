@@ -150,8 +150,6 @@ const directPublicNavLinks: PublicNavLink[] = [
 ];
 
 const CONDENSE_DISTANCE = 220;
-const EXPANDED_MAX_WIDTH = 80 * 16;
-const CONDENSED_MAX_WIDTH = 64 * 16;
 
 function interpolate(start: number, end: number, progress: number) {
   return start + (end - start) * progress;
@@ -330,29 +328,30 @@ export function PublicHeader() {
       animationFrame = null;
 
       const viewportWidth = window.innerWidth;
-      const layoutWidth = document.documentElement.clientWidth;
-      const outerGutter = viewportWidth >= 640 ? 12 : 8;
-      const availableWidth = layoutWidth - outerGutter * 2;
-      const expandedWidth = Math.min(EXPANDED_MAX_WIDTH, availableWidth);
-      const condensedWidth = Math.min(CONDENSED_MAX_WIDTH, availableWidth);
       const rawProgress = Math.min(
         Math.max(window.scrollY / CONDENSE_DISTANCE, 0),
         1,
       );
       const progress = reducedMotion.matches ? 0 : smoothStep(rawProgress);
       const startPadding =
-        viewportWidth >= 1024 ? 24 : viewportWidth >= 640 ? 16 : 8;
-      const endPadding = viewportWidth >= 640 ? 16 : 12;
+        viewportWidth >= 1024 ? 32 : viewportWidth >= 640 ? 24 : 16;
+      const endPadding = viewportWidth >= 1024 ? 24 : viewportWidth >= 640 ? 20 : 16;
       const startGap = viewportWidth >= 1280 ? 40 : 32;
       const endGap = viewportWidth >= 1280 ? 20 : 16;
 
+      const condensedWidthLimit = 1280;
+      const maxSideMargin =
+        viewportWidth > condensedWidthLimit
+          ? (viewportWidth - condensedWidthLimit) / 2
+          : viewportWidth >= 640
+          ? 16
+          : 8;
+      const currentSideMargin = interpolate(0, maxSideMargin, progress);
+
       surface.style.height = `${interpolate(72, 60, progress)}px`;
-      surface.style.maxWidth = `${interpolate(
-        expandedWidth,
-        condensedWidth,
-        progress,
-      )}px`;
       surface.style.marginTop = `${interpolate(0, 12, progress)}px`;
+      surface.style.width = `calc(100% - ${currentSideMargin * 2}px)`;
+      surface.style.marginInline = "auto";
       surface.style.borderRadius = `${interpolate(0, 16, progress)}px`;
       surface.style.paddingInline = `${interpolate(
         startPadding,
@@ -412,10 +411,10 @@ export function PublicHeader() {
   }, []);
 
   return (
-    <header className="pointer-events-none sticky top-0 z-40 h-18 px-2 sm:px-3">
+    <header className="pointer-events-none sticky top-0 inset-x-0 z-40 h-18 w-full">
       <div
         ref={surfaceRef}
-        className="pointer-events-auto mx-auto flex h-18 w-full max-w-[80rem] items-center justify-between border border-transparent bg-card/10 px-2 sm:px-4 lg:px-6"
+        className="pointer-events-auto flex h-18 w-full max-w-none items-center justify-between border border-transparent bg-card/10 px-4 sm:px-6 lg:px-8"
         data-condensed="false"
       >
         <div

@@ -1,6 +1,5 @@
-import { AuthRouteSwitch } from "@/features/auth/components/auth-route-switch";
 import { AuthPanel } from "@/features/auth/components/auth-shell";
-import { RegisterForm } from "@/features/auth/components/register-form";
+import { RegisterRoleGate } from "@/features/auth/components/register-role-gate";
 import { safeApplicationPath } from "@/server/auth/redirects";
 
 export const metadata = { title: "Buat akun" };
@@ -17,11 +16,9 @@ export default async function RegisterPage({
   return (
     <AuthPanel
       title="Buat akun Rintara"
-      description="Gunakan email aktif untuk melanjutkan ke pilihan peran."
-      stage={1}
+      description="Pilih peran yang sesuai, lalu lengkapi data akunmu."
     >
-      <AuthRouteSwitch active="register" nextPath={nextPath} />
-      <RegisterForm nextPath={nextPath} />
+      <RegisterRoleGate active="register" nextPath={nextPath} />
     </AuthPanel>
   );
 }

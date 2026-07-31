@@ -181,11 +181,11 @@ comparable terms, and the next action before unsupported promotion.
 - The green geometric Rintara **R** is the product identity. It may use the
   Mint inverse treatment on Deep Forest, but route vectors are not repeated as
   decoration.
-- The public header begins as a centered lightly frosted row capped at the
-  public content width and progressively condenses into a stronger translucent
-  blurred floating bar across the first 220 CSS pixels of scroll. Its height,
-  maximum width, padding, radius, gap, background opacity, blur, border, and
-  shadow interpolate together without hiding the primary route or mobile menu.
+- The public header spans the viewport width with responsive inline padding and
+  progressively condenses into a stronger translucent blurred bar across the
+  first 220 CSS pixels of scroll. Its height, padding, radius, gap, background
+  opacity, blur, border, and shadow interpolate together without hiding the
+  primary route or mobile menu.
 - Interaction feedback runs for roughly 150-300 ms and uses transform,
   opacity, color, or border.
 - Documentary images do not enter automatically or drive parallax.
