@@ -741,6 +741,14 @@ export async function verifyCompletion(
   });
 
   revalidateWork(result.agreementId);
+  revalidatePath(`/jobs/${result.jobId}`);
+  revalidatePath("/jobs");
+  revalidatePath(`/employer/jobs/${result.jobId}`);
+  revalidatePath("/employer/jobs");
+  revalidatePath("/worker/applications");
+  revalidatePath("/worker/notifications");
+  revalidatePath("/employer/notifications");
+  revalidatePath("/employer/opportunity-credits");
   revalidatePath("/worker/dashboard");
   revalidatePath("/employer/dashboard");
 

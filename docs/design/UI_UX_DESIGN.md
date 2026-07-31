@@ -568,6 +568,9 @@ Present the current lifecycle step and only the allowed next action.
 
 - Employer: generate code, then later verify completion.
 - Worker: enter code, then check out.
+- After verification, never leave either party on a generic waiting state.
+  Worker sees that the job is verified with a link to Paspor Rintara; Employer
+  sees that the job is completed with a link to the completed job.
 - Code entry supports numeric keyboards, paste, clear error, and expiry guidance.
 - Never display the previous plaintext code after leaving the generation result.
 

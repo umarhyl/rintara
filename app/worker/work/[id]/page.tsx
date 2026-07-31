@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Clock3, LockKeyhole, ShieldCheck } from "lucide-react";
 import {
@@ -127,7 +128,9 @@ export default async function WorkerWorkPage({
                 ? "Minta kode enam digit langsung dari pemberi kerja. Kode berlaku selama 15 menit."
                 : work.allowedActions.checkOut
                   ? "Unggah satu foto hasil pekerjaan. Setelah tersimpan, tambahkan catatan jika perlu lalu check-out."
-                  : "Tidak ada aksi pekerja yang tersedia pada status ini."}
+                  : work.session.status === "verified"
+                    ? "Penyelesaian sudah diverifikasi. Bukti Kerja tersedia di Paspor Rintara."
+                    : "Pemberi kerja sedang meninjau foto hasil dan catatan penyelesaianmu."}
             </p>
 
             <div className="mt-6 border-t border-border/75 pt-5">
@@ -144,9 +147,15 @@ export default async function WorkerWorkPage({
                     disabled={work.session.evidence === null}
                   />
                 </div>
+              ) : work.session.status === "verified" ? (
+                <Button type="button" className="w-full" asChild>
+                  <Link href="/worker/passport">
+                    Lihat Bukti Kerja
+                  </Link>
+                </Button>
               ) : (
                 <Button type="button" className="w-full" disabled>
-                  Menunggu
+                  Menunggu verifikasi
                 </Button>
               )}
             </div>
@@ -214,7 +223,9 @@ export default async function WorkerWorkPage({
           <div>
             <h2 id="privacy-note-title" className="font-semibold">Privasi dijaga</h2>
             <p className="mt-1 text-base leading-7 text-muted-foreground">
-              Bukti Kerja diterbitkan setelah penyelesaian diverifikasi pemberi kerja.
+              {work.session.status === "verified"
+                ? "Bukti Kerja sudah diterbitkan dan tersedia di Paspor Rintara."
+                : "Bukti Kerja diterbitkan setelah penyelesaian diverifikasi pemberi kerja."}
             </p>
           </div>
         </div>

@@ -426,6 +426,9 @@ only to the related worker, related employer, and authorized admin.
 5. Server checks states, ownership, and active reports, then runs the atomic completion operation.
 6. Worker receives a Work Proof notification and sees the new Passport entry.
 7. If reward conditions and balance cap permit, employer receives one Opportunity Credit.
+8. Both work screens replace pending actions with an explicit completed state;
+   the Worker can open Paspor Rintara and the Employer can open the completed
+   job. Job lists and public discovery refresh to the completed lifecycle state.
 
 Alternative paths:
 

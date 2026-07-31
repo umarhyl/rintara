@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Clock3, FileCheck2, KeyRound, ShieldCheck, UserRound } from "lucide-react";
 
@@ -195,21 +196,35 @@ export default async function EmployerWorkPage({
             Tindakan berikutnya
           </p>
           <h2 className="mt-3 text-xl font-semibold tracking-tight">
-            {work.allowedActions.generateCheckInCode
+            {work.session.status === "verified"
+              ? "Pekerjaan selesai"
+              : work.allowedActions.generateCheckInCode
               ? "Buat kode check-in"
               : work.allowedActions.verifyCompletion
                 ? "Verifikasi penyelesaian"
+                : work.hasActiveReport
+                  ? "Verifikasi dijeda"
                 : "Menunggu status berikutnya"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {work.allowedActions.generateCheckInCode
+            {work.session.status === "verified"
+              ? "Penyelesaian sudah diverifikasi dan Bukti Kerja telah diterbitkan kepada pekerja."
+              : work.allowedActions.generateCheckInCode
               ? "Berikan kode hanya kepada pekerja yang diterima ketika siap mulai."
               : work.allowedActions.verifyCompletion
                 ? "Tinjau foto hasil dan catatan pekerja. Verifikasi menerbitkan satu Bukti Kerja."
+                : work.hasActiveReport
+                  ? "Selesaikan laporan aktif sebelum memverifikasi penyelesaian."
                 : "Pekerja harus mengunggah foto hasil sebelum check-out."}
           </p>
           <div className="mt-5 border-t border-border/75 pt-5">
-            {work.allowedActions.generateCheckInCode ? (
+            {work.session.status === "verified" ? (
+              <Button type="button" className="w-full" asChild>
+                <Link href={`/employer/jobs/${work.jobId}`}>
+                  Lihat pekerjaan selesai
+                </Link>
+              </Button>
+            ) : work.allowedActions.generateCheckInCode ? (
               <GenerateCheckInCodeButton agreementId={work.agreementId} />
             ) : work.allowedActions.verifyCompletion ? (
               <VerifyCompletionButton agreementId={work.agreementId} />
