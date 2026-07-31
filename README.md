@@ -30,6 +30,7 @@ Pemberi kerja menerbitkan pekerjaan
 → pekerja mengunggah satu foto hasil dan melakukan check-out
 → pemberi kerja memverifikasi penyelesaian
 → Rintara menerbitkan satu Bukti Kerja
+→ untuk pekerjaan tunai, pemberi kerja dan pekerja mencatat konfirmasi pembayaran
 → pemberi kerja yang memenuhi syarat memperoleh Kredit Kesempatan
 → Kredit Kesempatan digunakan untuk meningkatkan visibilitas pekerjaan selama 24 jam
 ```
@@ -62,6 +63,7 @@ Pemberi kerja menerbitkan pekerjaan
 - Konfirmasi Mini Agreement dan pengelolaan sesi kerja.
 - Pembuatan kode check-in dengan masa berlaku 15 menit.
 - Peninjauan foto hasil dan verifikasi penyelesaian pekerjaan.
+- Pencatatan konfirmasi pembayaran tunai secara eksternal.
 - Kredit Kesempatan dan peningkatan visibilitas pekerjaan selama 24 jam.
 
 ### Untuk administrator
@@ -110,6 +112,7 @@ antarmuka.
 ├── app/          # Route, halaman, layout, loading, dan error boundary
 ├── components/   # Komponen antarmuka bersama
 ├── features/     # Komponen yang dikelompokkan berdasarkan fitur
+├── lib/          # Utilitas yang tidak bergantung pada framework
 ├── server/       # Autentikasi, query, aturan domain, dan akses data
 ├── drizzle/      # Migrasi PostgreSQL
 ├── tests/        # Unit test dan integration test PostgreSQL
@@ -139,6 +142,7 @@ bun run typecheck
 bun run test
 bun run test:integration
 bun run db:check
+bun run db:seed:demo-jobs
 bun run build
 ```
 
@@ -153,4 +157,6 @@ bun run build
 | Desain UI/UX | [UI/UX Design](./docs/design/UI_UX_DESIGN.md) |
 | Arsitektur | [Architecture](./docs/engineering/ARCHITECTURE.md) |
 | Basis data | [Database](./docs/engineering/DATABASE.md) |
+| Diagram entitas | [ERD](./docs/engineering/ERD.md) |
 | Kontrak aplikasi | [API](./docs/engineering/API.md) |
+| Jadwal rilis | [Roadmap](./docs/delivery/ROADMAP.md) |

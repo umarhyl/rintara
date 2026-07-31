@@ -1,7 +1,7 @@
 # Rintara Entity Relationship Diagram
 
-> **Version:** 1.0  
-> **Date:** July 19, 2026  
+> **Version:** 3.0  
+> **Date:** July 25, 2026  
 > **Status:** Canonical MVP logical ERD  
 > **Product authority:** `docs/product/PRD.md`  
 > **Domain authority:** `docs/product/BUSINESS_RULES.md`  
@@ -15,7 +15,7 @@ This document visualizes the PostgreSQL model required by the Rintara MVP. The m
 2. hiring and verified-work lifecycle; and
 3. rewards, moderation, notifications, audit, and idempotency.
 
-Authentication-provider tables are excluded because the provider is still an open ADR. Rintara links an authenticated identity through `users.auth_subject`.
+Authentication-provider tables (Supabase Auth, selected in ADR-012) are excluded because they are managed by the provider. Rintara links an authenticated identity through `users.auth_subject`.
 
 ## 2. Identity and Reference Data
 
