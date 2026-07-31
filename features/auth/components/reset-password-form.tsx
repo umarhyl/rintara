@@ -8,7 +8,6 @@ import { submitPasswordUpdate } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AuthPasswordField } from "./auth-password-field";
-import { useAuthSurfaceState } from "./auth-surface-state";
 
 export function ResetPasswordForm({ hasSession }: { hasSession: boolean }) {
   const router = useRouter();
@@ -17,7 +16,6 @@ export function ResetPasswordForm({ hasSession }: { hasSession: boolean }) {
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { setBusy } = useAuthSurfaceState();
 
   if (!hasSession) {
     return (
@@ -52,7 +50,6 @@ export function ResetPasswordForm({ hasSession }: { hasSession: boolean }) {
 
         submittingRef.current = true;
         setPending(true);
-        setBusy(true);
         setErrorMessage(null);
 
         try {
@@ -74,7 +71,6 @@ export function ResetPasswordForm({ hasSession }: { hasSession: boolean }) {
         } finally {
           submittingRef.current = false;
           setPending(false);
-          setBusy(false);
         }
       }}
     >

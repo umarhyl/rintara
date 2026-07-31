@@ -80,13 +80,17 @@ Rintara is not a generic job board. Its defining mechanism is a clear chain from
 - The public header progressively condenses from a contained lightly frosted
   row into a stronger translucent blurred floating bar across the first 220
   CSS pixels of scroll.
-- Sign-in and registration use a separate portrait documentary work image in
-  a split layout. Role selection and profile onboarding retain the narrow
-  Forest identity rail and operational form without imagery.
+- Sign-in, recovery, and password reset use a compact image-free
+  authentication frame. Registration reuses its compact logo-and-return
+  header above a route-owned Mint, Chalk, and Forest ellipse canvas without
+  adopting the shared form frame. Its Peran step presents Employer first and
+  Worker second with equal Mint graphic panels; the Akun step uses an opaque
+  white surface, while Profil retains the narrow Forest identity rail.
 - Role dashboards use a neutral sidebar and operational content density.
 - Motion is limited to interaction state, loading feedback, sheets/dialogs,
-  and the public header's measured condensation. There is no automatic
-  entrance, scroll-reveal choreography, or heavy motion system.
+  the public header's measured condensation, and one short registration-entry
+  reveal. There is no staggered entrance, scroll-reveal choreography, or heavy
+  motion system.
 - Avoid generic SaaS spectacle, decorative cosmic effects, excessive cards, giant headings, oversized radii, artificial social proof, and ornamental motion.
 
 ## Design Principles
@@ -96,14 +100,14 @@ Rintara is not a generic job board. Its defining mechanism is a clear chain from
 3. Organize the product as a search-compare-act workspace, using hierarchy and whitespace before adding containers.
 4. Treat forms and operational dashboards as calm tools, not marketing surfaces.
 5. Let Work Proof and agreement states feel official without imitating government bureaucracy.
-6. Use motion only to explain a state change or acknowledge interaction; content is visible without an entrance animation.
+6. Use motion only to orient the registration entry, explain a state change, or acknowledge interaction; content remains visible without animation.
 
 ## Design Evidence and Boundaries
 
 - The landing documentary asset is
   `public/visuals/rintara-local-work-v2.webp`.
-- The authentication portrait asset is
-  `public/visuals/rintara-auth-work-v1.webp`.
+- The registration ellipse composition is the committed local asset
+  `public/visuals/rintara-register-curves.svg`.
 - The implemented homepage composition in `app/page.tsx` is the current
   approved design reference.
 - Upwork-like homepage hierarchy is composition inspiration only; do not copy its brand, wording, visual identity, ranking claims, social mechanics, or features.

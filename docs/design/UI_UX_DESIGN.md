@@ -152,15 +152,18 @@ comparable terms, and the next action before unsupported promotion.
 - Job detail uses a dense decision header. Title, employer, task summary, wage,
   area, schedule, duration, deadline, and privacy context precede the
   application action.
-- Sign-in and registration use the separate portrait asset
-  `public/visuals/rintara-auth-work-v1.webp` in a stable split layout. The
-  image is separate from a plain focused form column and becomes a short
-  reserved-height crop on mobile. Both entry routes share the same persistent
-  frame, so changing mode replaces only the form panel and never reinitializes
-  the documentary image.
-- Role selection and Worker/Employer profile onboarding remain operational:
-  they use the narrow 10.5rem Deep Forest identity rail and a centered bordered
-  form without documentary imagery.
+- Sign-in, recovery, and password reset use the compact image-free
+  `AuthVisualFrame`, with the Rintara identity and return action above a plain
+  focused form column.
+- Registration reuses the compact authentication header for the Rintara logo
+  and return-home action, then owns a separate full-canvas composition rather
+  than using `AuthVisualFrame` or `AuthPanel`. The local
+  `public/visuals/rintara-register-curves.svg` layers Mint, Chalk, and Forest
+  ellipses behind Employer-first and Worker-second role cards. Both graphic
+  panels use Mint and remain distinguishable through icon and copy. The
+  credential step uses an opaque white surface.
+- Worker/Employer profile onboarding remains operational in the narrow 10.5rem
+  Deep Forest identity rail and centered bordered form.
 - Role dashboards use a neutral semantic sidebar on desktop, a four-item
   bottom navigation on mobile, compact page headers, and calm rows or
   timelines for work in progress.
@@ -194,11 +197,13 @@ comparable terms, and the next action before unsupported promotion.
   opacity, color, or border.
 - Documentary images do not enter automatically or drive parallax.
 - Pages, authentication forms, cards, and content below the viewport are
-  visible immediately. Do not add automatic entrance, list stagger,
-  scroll-reveal observers, parallax, infinite loops, pointer tracking, or
-  mouse-following effects.
+  visible immediately. The initial registration panel may use one 200ms
+  opacity-and-translate reveal without staggering its controls. Do not add
+  other automatic entrances, scroll-reveal observers, parallax, infinite
+  loops, pointer tracking, or mouse-following effects.
 - Do not add particle fields, cosmic scenes, decorative canvas, WebGL
-  ambience, static route-vector backgrounds, or fake animated dashboards.
+  ambience, fake animated dashboards, or decorative vector backgrounds beyond
+  the approved register ellipse asset.
 - Under `prefers-reduced-motion`, collapse the header and other nonessential
   transitions while preserving content, hierarchy, and focus behavior.
 
@@ -375,20 +380,31 @@ navigation sheet.
 
 ### Authentication and onboarding shell
 
-Sign-in and registration use the portrait documentary split. The image remains
-separate from the form and has no overlay copy, links, testimonial, or fake
-interface. **Masuk** and **Daftar** are two focused states of one persistent
-authentication surface, selected through a compact segmented control above the
-form. One solid selection pill moves horizontally between the two labels using
-a 260 ms transform transition, then completes the prefetched route change;
-reduced-motion removes both the movement and its navigation delay without
-changing state clarity. Both segments retain the canonical `/sign-in` and
-`/register` URLs, while the shared layout preserves the image, email draft,
-validated destination, and native browser history. Current-password and
-new-password drafts remain separate, and the alternate segment is unavailable
-during submission. Role selection and profile onboarding use the image-free
-operational shell. Both preserve form recovery, duplicate-submission
-prevention, and registration progress.
+Sign-in, recovery, and password reset use the compact `AuthVisualFrame`. Its
+header keeps the Rintara identity and return action above a centered,
+image-free form.
+
+Registration starts at `/register` with the reusable compact `AuthHeader`,
+including the Rintara logo and return-home action. Beneath it, the route owns a
+full-canvas role selection rather than using `AuthVisualFrame` or `AuthPanel`.
+The committed `public/visuals/rintara-register-curves.svg` supplies the Mint,
+Chalk, and Forest ellipse composition. Employer appears first and Worker
+second. Both choices are keyboard-accessible 44px-minimum controls with Mint
+graphic panels, differentiated by icon and copy. Below `md`, they remain
+single-column horizontal cards with descriptions visually hidden. At `md` and
+above, they become a two-column vertical pair and expose the descriptions.
+The progress indicator is visible at Peran. Choosing either role advances to
+the Akun credential step on an opaque white surface, followed by Profil.
+
+**Masuk** and **Daftar** remain canonical `/sign-in` and `/register` routes,
+linked directly from their focused tasks. `AuthSurfaceProvider` preserves the
+email draft and validated destination across those routes; current-password
+and new-password drafts remain separate. It does not preserve one shared
+visual frame. The role-selection content uses one non-blocking 200ms CSS
+opacity-and-translate entrance, while role interaction feedback stays within
+the same finite duration. Both become immediate under reduced motion and do
+not delay access to content. Profile onboarding keeps the separate operational
+shell. All states preserve form recovery and duplicate-submission prevention.
 
 If registration returns an ambiguous existing-account or pending-confirmation
 outcome, replace the form with a neutral **Lanjutkan dengan email ini** state.
@@ -399,10 +415,9 @@ sandi**. The shared authentication state carries the email to either route
 without placing it in the URL.
 
 The sign-in password label includes a **Lupa kata sandi?** link. Recovery and
-new-password screens reuse the same documentary frame without the
-Masuk/Daftar segmented control. The recovery success message never confirms
-whether an account exists. Invalid or expired links provide a direct,
-keyboard-accessible action to request a new link.
+new-password screens reuse the same focused authentication frame. The recovery
+success message never confirms whether an account exists. Invalid or expired
+links provide a direct, keyboard-accessible action to request a new link.
 
 ### Appearance and motion
 
@@ -410,7 +425,8 @@ Rintara exposes one light appearance and no appearance switch. State feedback
 uses short color, border, opacity, or transform transitions. Public-header
 condensation is mapped to the first 220 CSS pixels of scroll and scheduled at
 most once per animation frame; it is disabled for reduced-motion users. No
-page, card, form, or below-fold section waits for an entrance animation.
+page, card, form, or below-fold section waits for an entrance animation; the
+single registration reveal is a non-blocking visual orientation only.
 
 ## 8. Screen Specifications
 
@@ -659,8 +675,11 @@ Admin marketplace configuration provides:
 - Design and test at narrow mobile width first, then tablet and desktop.
 - Avoid horizontal scrolling except intentional data tables with an accessible alternative.
 - Use responsive images only where images add product value.
-- Keep the landing and authentication images route-specific and optimized;
-  neither is required to understand or operate its adjacent form.
+- Keep the landing image and register ellipse asset route-specific and
+  optimized. Registration remains operable without its decorative ellipses;
+  sign-in, recovery, and password reset stay image-free.
+- Keep registration cards single-column and horizontal below `md`; at `md` and
+  above, use a two-column vertical pair and reveal the supporting descriptions.
 - Do not require profile images. Require exactly one private result photo after
   check-in and before checkout; keep the upload island bounded and show
   progress, validation, replacement-before-checkout, and retry states.

@@ -38,7 +38,6 @@ export function RegisterForm({
     setRegisterPassword,
     termsAccepted,
     setTermsAccepted,
-    setBusy,
   } = useAuthSurfaceState();
 
   const checks = [
@@ -153,7 +152,6 @@ export function RegisterForm({
 
         if (submittingRef.current) return;
         submittingRef.current = true;
-        setBusy(true);
 
         void (async () => {
           setPending(true);
@@ -185,7 +183,6 @@ export function RegisterForm({
               "Koneksi terputus saat membuat akun. Periksa jaringan lalu coba lagi.",
             );
           } finally {
-            setBusy(false);
             if (!completed) {
               submittingRef.current = false;
               setPending(false);

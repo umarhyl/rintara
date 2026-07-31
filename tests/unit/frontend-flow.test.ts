@@ -85,6 +85,12 @@ describe("frontend flow surface", () => {
     const dashboardShell = await Bun.file(
       "features/dashboard/components/dashboard-shell.tsx",
     ).text();
+    const registerPage = await Bun.file(
+      "app/(public-auth)/register/page.tsx",
+    ).text();
+    const registerRoleGate = await Bun.file(
+      "features/auth/components/register-role-gate.tsx",
+    ).text();
 
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(css).not.toContain(".hero-media-enter");
@@ -101,6 +107,10 @@ describe("frontend flow surface", () => {
     expect(publicShell).not.toContain("data-scroll-flow");
     expect(dashboardShell).not.toContain("ScrollReveal");
     expect(dashboardShell).not.toContain("data-dashboard-flow");
+    expect(registerPage).toContain("motion-safe:animate-in");
+    expect(registerPage).toContain("motion-safe:duration-200");
+    expect(registerRoleGate).toContain("motion-safe:animate-in");
+    expect(registerRoleGate).toContain("motion-safe:duration-200");
   });
 
   test("keeps implementation-stage language out of user-facing source", () => {
@@ -286,7 +296,7 @@ describe("frontend flow surface", () => {
     expect(register).not.toContain("email sudah terdaftar");
   });
 
-  test("keeps one persistent authentication frame across both entry routes", async () => {
+  test("keeps focused auth pages and a responsive register shell", async () => {
     const shell = await Bun.file(
       "features/auth/components/auth-shell.tsx",
     ).text();
@@ -299,8 +309,8 @@ describe("frontend flow surface", () => {
     const registerPage = await Bun.file(
       "app/(public-auth)/register/page.tsx",
     ).text();
-    const switcher = await Bun.file(
-      "features/auth/components/auth-route-switch.tsx",
+    const registerRoleGate = await Bun.file(
+      "features/auth/components/register-role-gate.tsx",
     ).text();
     const surfaceState = await Bun.file(
       "features/auth/components/auth-surface-state.tsx",
@@ -315,36 +325,48 @@ describe("frontend flow surface", () => {
     expect(shell.match(/prefetch=\{false\}/g)?.length).toBeGreaterThanOrEqual(
       4,
     );
-    expect(existsSync("public/visuals/rintara-auth-work-v1.webp")).toBe(true);
-    expect(shell).toContain('from "next/image"');
-    expect(shell).toContain("/visuals/rintara-auth-work-v1.webp");
-    expect(shell).toContain('sizes="(max-width: 1023px) 100vw, 42vw"');
-    expect(shell.match(/<Image/g)?.length).toBe(1);
-    expect(layout).toContain("<AuthVisualFrame>");
+    expect(shell).not.toContain('from "next/image"');
+    expect(shell).not.toContain("/visuals/rintara-auth-work-v1.webp");
+    expect(shell).toContain("<AuthVisualFrame>");
+    expect(layout).not.toContain("<AuthVisualFrame>");
     expect(layout).toContain("<AuthSurfaceProvider>");
     expect(signInPage).toContain("<AuthPanel");
-    expect(registerPage).toContain("<AuthPanel");
-    expect(signInPage).toContain('active="sign-in"');
-    expect(registerPage).toContain('active="register"');
+    expect(registerPage).not.toContain("<AuthPanel");
+    expect(registerPage).not.toContain("<AuthVisualFrame");
+    expect(registerPage).toContain('import { AuthHeader }');
+    expect(registerPage).toContain("<AuthHeader");
+    expect(registerPage).toContain("data-register-canvas");
+    expect(registerPage).toContain(
+      'src="/visuals/rintara-register-curves.svg"',
+    );
+    expect(registerPage).toContain("width={3018}");
+    expect(registerPage).toContain("height={1486}");
+    expect(
+      existsSync("public/visuals/rintara-register-curves.svg"),
+    ).toBe(true);
     expect(signInPage).toContain("safeApplicationPath");
     expect(registerPage).toContain("safeApplicationPath");
-    expect(switcher).toContain('label: "Masuk"');
-    expect(switcher).toContain('label: "Daftar"');
-    expect(switcher).toContain("grid-cols-2");
-    expect(switcher).toContain('aria-current={selected ? "page"');
-    expect(switcher).toContain("(busy || switching) && !selected");
-    expect(switcher).toContain("data-auth-mode-slider");
-    expect(switcher).toContain('selectedMode === "register"');
-    expect(switcher).toContain("translate-x-full");
-    expect(switcher).toContain("cubic-bezier(0.16,1,0.3,1)");
-    expect(switcher).toContain("navigationDelay = reducedMotion ? 0 : 220");
-    expect(switcher).toContain("router.push(href)");
-    expect(switcher).not.toContain("Belum punya akun?");
-    expect(switcher).not.toContain("Sudah punya akun?");
+    expect(registerRoleGate).toContain("Sudah punya akun?");
+    expect(registerRoleGate).toContain(
+      '<RegistrationProgress stage={1} tone="inverse" />',
+    );
+    expect(registerRoleGate).toContain("<RegistrationProgress stage={2} />");
+    expect(
+      registerRoleGate.match(
+        /graphicBg: "bg-accent text-accent-foreground"/g,
+      )?.length,
+    ).toBe(2);
+    expect(registerRoleGate).toContain("md:grid-cols-2");
+    expect(registerRoleGate).toContain("md:flex-col");
+    expect(registerRoleGate).toContain("motion-safe:hover:-translate-y-1");
+    expect(registerRoleGate).toContain("min-h-11");
+    expect(registerRoleGate.indexOf('value: "employer"')).toBeLessThan(
+      registerRoleGate.indexOf('value: "worker"'),
+    );
     expect(surfaceState).toContain("signInPassword");
     expect(surfaceState).toContain("registerPassword");
     expect(surfaceState).toContain("termsAccepted");
-    expect(surfaceState).toContain("visualMode");
+    expect(surfaceState).not.toContain("visualMode");
     expect(header).toContain("checkingAccount");
     expect(header).toContain('aria-label="Memeriksa status akun"');
     expect(header).toContain("usePublicAccountState");

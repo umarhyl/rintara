@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { BriefcaseBusiness, HardHat, Check, RotateCcw } from "lucide-react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  HardHat,
+  RotateCcw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RegistrationProgress } from "@/features/auth/components/auth-shell";
 import { RegisterForm } from "@/features/auth/components/register-form";
@@ -11,22 +16,22 @@ export type SelectedRole = "worker" | "employer" | null;
 
 const roleCards = [
   {
-    value: "worker" as const,
-    title: "Worker",
-    subtitle: "Mencari pekerjaan harian",
-    description: "Temukan lowongan harian lokal, kirim lamaran cepat, dan kumpulkan Bukti Kerja.",
-    icon: HardHat,
-    graphicBg: "bg-primary/10 text-primary",
-    activeBorder: "border-primary ring-2 ring-primary/20 bg-primary/5",
-  },
-  {
     value: "employer" as const,
     title: "Employer",
     subtitle: "Pemberi pekerjaan",
-    description: "Terbitkan pekerjaan fair 1-on-1, pilih pekerja terpercaya, dan verifikasi hasil kerja.",
+    description:
+      "Pasang pekerjaan yang jelas, pilih satu pekerja, lalu verifikasi hasilnya.",
     icon: BriefcaseBusiness,
-    graphicBg: "bg-primary/10 text-primary",
-    activeBorder: "border-primary ring-2 ring-primary/20 bg-primary/5",
+    graphicBg: "bg-accent text-accent-foreground",
+  },
+  {
+    value: "worker" as const,
+    title: "Worker",
+    subtitle: "Mencari pekerjaan harian",
+    description:
+      "Temukan pekerjaan lokal, ajukan lamaran singkat, lalu bangun Bukti Kerja.",
+    icon: HardHat,
+    graphicBg: "bg-accent text-accent-foreground",
   },
 ] as const;
 
@@ -34,69 +39,46 @@ export function RegisterRoleGate({
   nextPath,
 }: {
   nextPath?: string;
-  active?: "register";
 }) {
   const [selectedRole, setSelectedRole] = useState<SelectedRole>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const [entering, setEntering] = useState(false);
-
-  useEffect(() => {
-    if (selectedRole && !showForm) {
-      const timer = window.setTimeout(() => {
-        setShowForm(true);
-        setEntering(true);
-        window.setTimeout(() => {
-          setEntering(false);
-        }, 50);
-      }, 250);
-
-      return () => window.clearTimeout(timer);
-    }
-  }, [selectedRole, showForm]);
 
   function handleRoleSelect(role: Exclude<SelectedRole, null>) {
     setSelectedRole(role);
-    setExiting(true);
   }
 
   function handleBack() {
-    setEntering(true);
-    window.setTimeout(() => {
-      setShowForm(false);
-      setExiting(false);
-      setSelectedRole(null);
-      setEntering(false);
-    }, 50);
+    setSelectedRole(null);
   }
 
-  if (showForm) {
+  if (selectedRole) {
     return (
-      <div
-        className={cn(
-          "w-full transition-all duration-300 ease-out",
-          entering ? "translate-y-2 opacity-0" : "translate-y-0 opacity-100",
-        )}
-      >
-        {/* Step 2 Indicator: Akun */}
+      <div className="w-full rounded-2xl bg-white p-5 text-foreground shadow-[0_4px_8px_rgb(16_37_27/0.18)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)] sm:p-8">
+        <h1 className="sr-only">Buat akun Rintara</h1>
+
         <RegistrationProgress stage={2} />
 
-        {/* Active Role Selection Banner */}
-        <div className="mb-6 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/8 px-4 py-3 text-sm">
+        <div className="mb-6 flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/8 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
             <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {selectedRole === "worker" ? <HardHat className="size-4" /> : <BriefcaseBusiness className="size-4" />}
+              {selectedRole === "worker" ? (
+                <HardHat className="size-4" aria-hidden="true" />
+              ) : (
+                <BriefcaseBusiness className="size-4" aria-hidden="true" />
+              )}
             </span>
             <span>
-              Mendaftar sebagai <strong className="font-semibold text-foreground">{selectedRole === "worker" ? "Worker" : "Employer"}</strong>
+              Mendaftar sebagai{" "}
+              <strong className="font-semibold text-foreground">
+                {selectedRole === "worker" ? "Worker" : "Employer"}
+              </strong>
             </span>
           </div>
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+            className="inline-flex min-h-11 self-start items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 sm:self-auto"
           >
-            <RotateCcw className="size-3.5" />
+            <RotateCcw className="size-3.5" aria-hidden="true" />
             Ubah Peran
           </button>
         </div>
@@ -107,73 +89,67 @@ export function RegisterRoleGate({
   }
 
   return (
-    <div
-      className={cn(
-        "w-full transition-all duration-300 ease-out",
-        exiting ? "scale-98 opacity-0" : "scale-100 opacity-100",
-      )}
-    >
-      {/* Step 1 Indicator: Peran */}
-      <RegistrationProgress stage={1} />
+    <div className="w-full">
+      <RegistrationProgress stage={1} tone="inverse" />
 
-      <div className="mb-6 text-center">
-        <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+      <div className="mb-8 text-center sm:mb-9">
+        <h1 className="text-balance text-[2rem] font-semibold leading-tight tracking-[-0.025em] text-white sm:text-[2.5rem] lg:text-5xl">
           Selamat datang di Rintara!
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        </h1>
+        <p className="mt-3 text-base text-white/90 sm:text-lg">
           Manakah yang lebih mendeskripsikan dirimu?
         </p>
       </div>
 
-      {/* Role Cards Grid in Container (Centered Content) */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="mx-auto grid max-w-[46rem] gap-4 md:grid-cols-2 md:gap-5">
         {roleCards.map((card) => {
           const Icon = card.icon;
-          const isSelected = selectedRole === card.value;
 
           return (
             <button
               key={card.value}
               type="button"
               onClick={() => handleRoleSelect(card.value)}
-              disabled={!!selectedRole}
               className={cn(
-                "group relative flex flex-col items-center rounded-2xl border border-border bg-card p-6 text-center shadow-xs outline-none transition-all duration-200",
-                "hover:border-primary/50 hover:shadow-md",
-                "focus-visible:ring-2 focus-visible:ring-primary",
-                "disabled:pointer-events-none",
-                isSelected && card.activeBorder,
+                "group relative flex min-h-32 flex-row items-center gap-4 overflow-hidden rounded-2xl bg-card p-3.5 text-left outline-none transition-[transform,box-shadow] duration-200 sm:min-h-36 sm:p-4 md:min-h-[17rem] md:flex-col md:gap-4 md:p-3 md:text-center 2xl:min-h-[20rem]",
+                "shadow-[0_4px_8px_rgb(16_37_27/0.16)] hover:shadow-[0_6px_8px_rgb(16_37_27/0.2)] motion-safe:hover:-translate-y-1 motion-safe:active:scale-[0.99]",
+                "focus-visible:ring-3 focus-visible:ring-[#def4c6] focus-visible:ring-offset-2 focus-visible:ring-offset-primary",
               )}
             >
-              <div className="relative flex w-full items-center justify-center">
-                <div className={cn("grid size-12 place-items-center rounded-xl transition-colors", card.graphicBg)}>
-                  <Icon className="size-6" aria-hidden="true" />
-                </div>
-                {isSelected && (
-                  <div className="absolute right-0 top-0 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
-                    <Check className="size-3.5 stroke-[3]" />
-                  </div>
-                )}
+              <div className="relative grid size-20 shrink-0 place-items-center sm:size-24 md:h-32 md:w-full 2xl:h-44">
+                <div
+                  className={cn(
+                    "absolute inset-0 rounded-xl",
+                    card.graphicBg,
+                  )}
+                />
+                <span className="relative grid size-12 place-items-center rounded-full bg-white/55 transition-transform duration-200 motion-safe:group-hover:scale-105 sm:size-14 md:size-16">
+                  <Icon className="size-6 sm:size-7 md:size-8" aria-hidden="true" />
+                </span>
               </div>
 
-              <div className="mt-4 flex flex-col items-center text-center">
-                <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+              <div className="flex min-w-0 flex-1 flex-col items-start text-left md:items-center md:px-3 md:pb-2 md:text-center">
+                <h2 className="text-lg font-bold text-foreground transition-colors group-hover:text-primary md:text-xl">
                   {card.title}
-                </h3>
-                <p className="mt-0.5 text-xs font-semibold text-primary">
+                </h2>
+                <p className="mt-0.5 text-base font-semibold text-primary">
                   {card.subtitle}
                 </p>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                <p className="sr-only text-pretty text-base leading-6 text-muted-foreground md:not-sr-only md:mt-2 md:max-w-[32ch]">
                   {card.description}
                 </p>
               </div>
+
+              <ArrowRight
+                className="ml-auto hidden size-5 shrink-0 text-primary transition-transform duration-200 motion-safe:group-hover:translate-x-1 sm:block md:absolute md:bottom-5 md:right-5"
+                aria-hidden="true"
+              />
             </button>
           );
         })}
       </div>
 
-      {/* Footer Link to Sign In */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
+      <p className="mt-5 text-center text-base text-white/90 sm:mt-6">
         Sudah punya akun?{" "}
         <Link
           href={
@@ -181,7 +157,7 @@ export function RegisterRoleGate({
               ? { pathname: "/sign-in", query: { next: nextPath } }
               : "/sign-in"
           }
-          className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
+          className="font-semibold text-white underline underline-offset-4 transition-colors hover:text-white/90"
         >
           Masuk
         </Link>

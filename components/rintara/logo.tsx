@@ -25,7 +25,7 @@ export function RintaraLogo({
         <Image
           src={
             tone === "inverse"
-              ? "/brand/rintara-mark-inverse.svg"
+              ? "/brand/rintara-mark-white.svg"
               : "/brand/rintara-mark.svg"
           }
           alt=""

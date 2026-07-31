@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import { RintaraLogo } from "@/components/rintara/logo";
@@ -36,8 +35,8 @@ export function RegistrationProgress({
                     ? active
                       ? "border-[#def4c6] bg-[#def4c6] text-[#1b512d]"
                       : completed
-                        ? "border-[#73e2a7]/40 bg-[#73e2a7]/20 text-[#73e2a7]"
-                        : "border-white/20 bg-white/10 text-white/60"
+                        ? "border-white/35 bg-white/15 text-white"
+                        : "border-white/35 bg-white/10 text-white/90"
                     : active
                       ? "border-primary bg-primary text-primary-foreground"
                       : completed
@@ -50,13 +49,13 @@ export function RegistrationProgress({
               </span>
               <span
                 className={cn(
-                  "text-xs transition-colors",
+                  "text-sm transition-colors",
                   tone === "inverse"
                     ? active
                       ? "font-semibold text-white"
                       : completed
-                        ? "text-[#73e2a7]"
-                        : "text-white/60"
+                        ? "text-white"
+                        : "text-white/90"
                     : active
                       ? "font-semibold text-foreground"
                       : completed
@@ -74,7 +73,7 @@ export function RegistrationProgress({
   );
 }
 
-function AuthHeader({ className }: { className?: string }) {
+export function AuthHeader({ className }: { className?: string }) {
   return (
     <header
       className={cn(
@@ -152,17 +151,6 @@ export function AuthVisualFrame({
       <div className="flex min-w-0 flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         {children}
       </div>
-
-      {/* Hidden asset reference for test compatibility */}
-      <div className="hidden" aria-hidden="true">
-        <Image
-          src="/visuals/rintara-auth-work-v1.webp"
-          alt="Pekerja menyiapkan pesanan tanaman di toko lokal"
-          fill
-          fetchPriority="high"
-          sizes="(max-width: 1023px) 100vw, 42vw"
-        />
-      </div>
     </main>
   );
 }
@@ -179,14 +167,16 @@ export function AuthPanel({
   children: React.ReactNode;
 }) {
   return (
-    <AuthContent
-      title={title}
-      description={description}
-      stage={stage}
-      plain
-    >
-      {children}
-    </AuthContent>
+    <AuthVisualFrame>
+      <AuthContent
+        title={title}
+        description={description}
+        stage={stage}
+        plain
+      >
+        {children}
+      </AuthContent>
+    </AuthVisualFrame>
   );
 }
 

@@ -73,8 +73,8 @@ export function PublicFooter() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[80rem] px-4 pb-7 sm:px-6 lg:px-8">
-        <p className="rounded-xl bg-white/7 px-4 py-3 text-sm leading-6 text-white/68">
+      <div className="mx-auto max-w-[80rem] px-4 pb-8 sm:px-6 lg:px-8">
+        <p className="text-sm leading-6 text-white/68">
           © 2026 Rintara. Pembayaran dilakukan langsung di luar platform. Rintara tidak menyimpan rekening atau kartu.
         </p>
       </div>
